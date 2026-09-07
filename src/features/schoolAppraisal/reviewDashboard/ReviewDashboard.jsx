@@ -20,6 +20,7 @@ import {
   deleteAttachment,
   withApproverSignOff,
 } from "../../../api/submissions";
+import { fetchActiveSchema, fetchSchemaByVersion } from "../../../api/config";
 import { fetchCurrentUser, fetchUsers } from "../../../api/users";
 import universityLogo from "../../../assets/images/image.png";
 import iqacLogo from "../../../assets/images/IQAS.png";
@@ -304,6 +305,27 @@ const blocksFor = (section) =>
     ...(section.fields?.length ? [{ type: "fields", fields: section.fields }] : []),
     ...(section.tables?.length ? [{ type: "tables", tables: section.tables }] : []),
   ];
+
+const normalizeDynamicSchema = (schema) => {
+  if (!schema || !Array.isArray(schema.sections) || schema.sections.length === 0) {
+    return null;
+  }
+  const normalizedSections = schema.sections.map((sec, idx) => ({
+    ...sec,
+    id: sec.idString || sec.id || sec.sectionKey || `section-${idx + 1}`,
+    sectionKey: sec.sectionKey || sec.idString || String(sec.id || `section-${idx + 1}`),
+    number: sec.number || sec.sectionNumber || sec.sectionKey || String(idx + 1),
+    title: sec.title || sec.sectionTitle || sec.name || `Section ${idx + 1}`,
+    blocks: sec.blocks || [
+      ...(sec.fields?.length ? [{ type: "fields", fields: sec.fields }] : []),
+      ...(sec.tables?.length ? [{ type: "tables", tables: sec.tables }] : []),
+    ],
+  }));
+  return {
+    ...schema,
+    sections: normalizedSections,
+  };
+};
 
 const sectionsForAudit = (auditType) => auditType === "academic" ? academicAudit2025Schema.sections : administrativeAuditModules;
 
@@ -1372,7 +1394,8 @@ const normalizeSubmission = (submission = {}) => {
     parentSubmissionId: submission.parentSubmissionId || submission.previousSubmissionId || null,
     previousApprovedSubmissionId: submission.previousApprovedSubmissionId || submission.sourceApprovedSubmissionId || null,
     hasNextCycle: Boolean(submission.hasNextCycle || submission.nextCycleStarted || submission.nextVersionId),
-    sections: (Array.isArray(submission.sections) && submission.sections.length && typeof submission.sections[0] === "object") ? submission.sections : sectionsForAudit(auditType),
+    sections: (Array.isArray(submission.sections) && submission.sections.length && typeof submission.sections[0] === "object") ? submission.sections : (submission.schema?.sections || sectionsForAudit(auditType)),
+    schema: submission.schema || null,
     attachments: formData.attachments.length ? formData.attachments : submission.attachments || [],
     status,
     remarks: submission.remarks || "",
@@ -1742,10 +1765,37 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
         ...responseList(historyPayload),
         ...(Array.isArray(embeddedHistory) ? embeddedHistory : []),
       ].map(normalizeHistoryEntry);
-      const detailedSubmission = normalizeSubmission({
+
+      const rawSub = {
         ...submission,
         ...submissionPayload(detailData),
         versionHistory: historyEntries,
+      };
+
+      let dynamicSchema = null;
+      if (rawSub.schemaVersionId) {
+        try {
+          const fetched = await fetchSchemaByVersion(rawSub.schemaVersionId);
+          dynamicSchema = normalizeDynamicSchema(fetched);
+        } catch (e) {
+          console.warn("Could not fetch schema by version", e);
+        }
+      }
+      if (!dynamicSchema) {
+        try {
+          const universityCode = rawSub.universityCode || sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || "dypiu";
+          const schoolOrPost = rawSub.auditType === "academic" ? rawSub.school : rawSub.administrativePost;
+          const fetched = await fetchActiveSchema(rawSub.auditType || "academic", universityCode, schoolOrPost);
+          dynamicSchema = normalizeDynamicSchema(fetched);
+        } catch (e) {
+          console.warn("Could not fetch active schema", e);
+        }
+      }
+
+      const detailedSubmission = normalizeSubmission({
+        ...rawSub,
+        schema: dynamicSchema,
+        sections: dynamicSchema ? dynamicSchema.sections : undefined,
       });
       if (!submissionVisibleForRole(detailedSubmission, role, profile)) {
         setError("This submission is no longer available for your role.");
@@ -4228,6 +4278,42 @@ function SubmissionCard({
 }
 
 function PreviousReportOnlyView({ submission, onBack, onDownload, downloadingAttachments }) {
+  const [resolvedSchema, setResolvedSchema] = useState(submission.schema || null);
+
+  useEffect(() => {
+    let isSubscribed = true;
+    if (submission.schema && Array.isArray(submission.schema.sections) && submission.schema.sections.length > 0) {
+      setResolvedSchema(submission.schema);
+      return;
+    }
+    const loadSchema = async () => {
+      try {
+        let dynamicSchema = null;
+        if (submission.schemaVersionId) {
+          const fetched = await fetchSchemaByVersion(submission.schemaVersionId);
+          dynamicSchema = normalizeDynamicSchema(fetched);
+        }
+        if (!dynamicSchema) {
+          const universityCode = submission.universityCode || sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || "dypiu";
+          const schoolOrPost = submission.auditType === "academic" ? submission.school : submission.administrativePost;
+          const fetched = await fetchActiveSchema(submission.auditType || "academic", universityCode, schoolOrPost);
+          dynamicSchema = normalizeDynamicSchema(fetched);
+        }
+        if (isSubscribed && dynamicSchema) {
+          setResolvedSchema(dynamicSchema);
+        }
+      } catch (err) {
+        console.warn("Could not dynamically resolve schema in PreviousReportOnlyView", err);
+      }
+    };
+    loadSchema();
+    return () => {
+      isSubscribed = false;
+    };
+  }, [submission.id, submission.schemaVersionId, submission.auditType, submission.school, submission.administrativePost, submission.universityCode, submission.schema]);
+
+  const activeSchema = resolvedSchema || (submission.auditType === "academic" ? { ...academicAudit2025Schema, sections: submission.sections || academicAudit2025Schema.sections } : null);
+
   const previousInternalReport = (submission.versionHistory || [])
     .filter((entry) =>
       (
@@ -4263,7 +4349,7 @@ function PreviousReportOnlyView({ submission, onBack, onDownload, downloadingAtt
       </div>
       {submission.auditType === "academic" ? (
         <AuditReportPanel
-          schema={academicAudit2025Schema}
+          schema={activeSchema || academicAudit2025Schema}
           values={submission.values}
           tables={submission.tables}
           submissionSchool={submission.school}
@@ -4282,7 +4368,7 @@ function PreviousReportOnlyView({ submission, onBack, onDownload, downloadingAtt
       ) : (
         <AdministrativeReportPanel
           meta={administrativeAuditMeta}
-          modules={administrativeAuditModules}
+          modules={resolvedSchema?.sections || administrativeAuditModules}
           data={{ fields: submission.values, tables: submission.tables }}
           reportCategory={submission.reportCategory}
           auditorAssignments={submission.auditorAssignments || []}
@@ -4313,7 +4399,47 @@ function FullFormReview({
   currentProfile,
   submitterAvatarUrl,
 }) {
-  const sections = sectionsForAudit(submission.auditType);
+  const [resolvedSchema, setResolvedSchema] = useState(submission.schema || null);
+
+  useEffect(() => {
+    let isSubscribed = true;
+    if (submission.schema && Array.isArray(submission.schema.sections) && submission.schema.sections.length > 0) {
+      setResolvedSchema(submission.schema);
+      return;
+    }
+    const loadSchema = async () => {
+      try {
+        let dynamicSchema = null;
+        if (submission.schemaVersionId) {
+          const fetched = await fetchSchemaByVersion(submission.schemaVersionId);
+          dynamicSchema = normalizeDynamicSchema(fetched);
+        }
+        if (!dynamicSchema) {
+          const universityCode = submission.universityCode || sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || "dypiu";
+          const schoolOrPost = submission.auditType === "academic" ? submission.school : submission.administrativePost;
+          const fetched = await fetchActiveSchema(submission.auditType || "academic", universityCode, schoolOrPost);
+          dynamicSchema = normalizeDynamicSchema(fetched);
+        }
+        if (isSubscribed && dynamicSchema) {
+          setResolvedSchema(dynamicSchema);
+        }
+      } catch (err) {
+        console.warn("Could not dynamically resolve schema in FullFormReview", err);
+      }
+    };
+    loadSchema();
+    return () => {
+      isSubscribed = false;
+    };
+  }, [submission.id, submission.schemaVersionId, submission.auditType, submission.school, submission.administrativePost, submission.universityCode, submission.schema]);
+
+  const sections = useMemo(() => {
+    if (resolvedSchema?.sections?.length) return resolvedSchema.sections;
+    if (submission.sections?.length && typeof submission.sections[0] === "object") return submission.sections;
+    return sectionsForAudit(submission.auditType);
+  }, [resolvedSchema, submission.sections, submission.auditType]);
+
+  const activeSchema = resolvedSchema || (submission.auditType === "academic" ? { ...academicAudit2025Schema, sections } : null);
   const previousInternalReport = (submission.versionHistory || [])
     .filter((entry) =>
       (
@@ -4466,7 +4592,7 @@ function FullFormReview({
               <button type="button" className="btn btn-primary" onClick={() => window.print()}>Print Report</button>
             </div>
             <AuditReportPanel
-              schema={academicAudit2025Schema}
+              schema={activeSchema || academicAudit2025Schema}
               values={submission.values}
               tables={submission.tables}
               submissionSchool={submission.school}
@@ -4486,7 +4612,7 @@ function FullFormReview({
         ) : (
           <AdministrativeReportPanel
             meta={administrativeAuditMeta}
-            modules={administrativeAuditModules}
+            modules={resolvedSchema?.sections || administrativeAuditModules}
             data={{ fields: submission.values, tables: submission.tables }}
             reportCategory={submission.reportCategory}
             auditorAssignments={submission.auditorAssignments || []}
@@ -4558,6 +4684,7 @@ function FullFormReview({
         <PreviousAuditorReference
           auditType={submission.auditType}
           history={submission.versionHistory || []}
+          sections={sections}
         />
       )}
 
@@ -4702,13 +4829,15 @@ function FullFormReview({
   );
 }
 
-function PreviousAuditorReference({ auditType, history }) {
+function PreviousAuditorReference({ auditType, history, sections: customSections }) {
   const previousReview = [...history]
     .reverse()
     .find((entry) => isAuditorCompleted(entry) || getAuditorSignOff(entry.values).name);
   if (!previousReview) return null;
 
-  const sections = sectionsForAudit(auditType);
+  const sections = (Array.isArray(customSections) && customSections.length && typeof customSections[0] === "object")
+    ? customSections
+    : sectionsForAudit(auditType);
   const auditorSectionIndex = Math.max(0, sections.findIndex((section) => isAuditorSection(section, auditType)));
 
   return (
