@@ -4653,12 +4653,49 @@ function FullFormReview({
       : shouldClearFreshAuditorDraft
         ? []
         : submission.attachments || [];
+  const auditorTableKeys = useMemo(() => {
+    const keys = new Set();
+    sections.forEach((sec) => {
+      if (isAuditorSection(sec, submission.auditType)) {
+        (sec.tables || []).forEach((t) => {
+          if (t.tableKey) keys.add(String(t.tableKey));
+          if (t.idString) keys.add(String(t.idString));
+          if (t.id != null) keys.add(String(t.id));
+          if (t.title) keys.add(String(t.title));
+        });
+        (sec.blocks || []).forEach((b) => {
+          if (b.type === "tables" && Array.isArray(b.tables)) {
+            b.tables.forEach((t) => {
+              if (t.tableKey) keys.add(String(t.tableKey));
+              if (t.idString) keys.add(String(t.idString));
+              if (t.id != null) keys.add(String(t.id));
+              if (t.title) keys.add(String(t.title));
+            });
+          }
+        });
+      }
+    });
+    return keys;
+  }, [sections, submission.auditType]);
+
   const currentAssignmentTables = currentUserAssignments
     .map((assignment) => safeObjectValue(assignment.tables || assignment.tablesData))
     .find((tables) => Object.keys(tables).length > 0);
+
+  const baseTables = { ...(submission.tables || {}) };
+  if (!currentAssignmentTables && canEditAuditorSection) {
+    auditorTableKeys.forEach((key) => {
+      delete baseTables[key];
+    });
+    Object.keys(baseTables).forEach((k) => {
+      if (Array.from(auditorTableKeys).some((ak) => String(ak).toLowerCase().trim() === String(k).toLowerCase().trim())) {
+        delete baseTables[k];
+      }
+    });
+  }
   const initialDraftTables = currentAssignmentTables
-    ? { ...(submission.tables || {}), ...currentAssignmentTables }
-    : submission.tables || {};
+    ? { ...baseTables, ...currentAssignmentTables }
+    : baseTables;
   const [draftValues, setDraftValues] = useState(
     initialDraftValues
   );
@@ -4941,6 +4978,7 @@ function FullFormReview({
         auditorAssignments={submission.auditorAssignments || []}
         currentAuditorAssignments={currentUserAssignments}
         previousInternalPartEValues={previousInternalPartE?.values}
+        previousInternalPartETables={previousInternalPartE?.tables}
         previousInternalIqacRemarks={previousInternalPartE?.remarks}
         previousInternalPartEMeta={
           previousInternalPartE
@@ -5245,6 +5283,7 @@ function SubmittedFormViewer({
   auditorAssignments = [],
   currentAuditorAssignments = [],
   previousInternalPartEValues,
+  previousInternalPartETables,
   previousInternalIqacRemarks = "",
   previousInternalPartEMeta = "",
 }) {
@@ -5431,20 +5470,49 @@ function SubmittedFormViewer({
                   {block.tables.map((table) => {
                     const tableKey = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
                     const rows = getTableRows(formData.tables, table);
+                    const previousRows = showPreviousInternalPartE && previousInternalPartETables
+                      ? getTableRows(previousInternalPartETables, table)
+                      : [];
+                    const hasPreviousRows = Array.isArray(previousRows) && previousRows.length > 0 && previousRows.some((r) => Object.values(r).some((v) => String(v || "").trim() !== ""));
+
                     return (
-                      <AuditTable
-                        key={table.id || tableKey || table.tableKey || table.idString}
-                        table={table}
-                        rows={rows}
-                        values={formData.values}
-                        onFieldChange={onFieldChange}
-                        onChange={(rowIndex, column, value) => onTableChange?.(tableKey || table.id, rowIndex, column, value)}
-                        onAddRow={onAddRow}
-                        onDeleteLastRow={onDeleteLastRow}
-                        onUploadAttachment={onUploadAttachment}
-                        onDeleteAttachment={onDeleteAttachment}
-                        readOnly={false}
-                      />
+                      <div key={table.id || tableKey || table.tableKey || table.idString} style={{ marginBottom: 24, width: "100%" }}>
+                        {hasPreviousRows && (
+                          <div style={{ marginBottom: 20 }}>
+                            <div style={{ marginBottom: 8 }}>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: "#1e40af", background: "#dbeafe", padding: "4px 10px", borderRadius: 6, border: "1px solid #bfdbfe" }}>
+                                Internal Auditor Reference Table (Read-Only)
+                              </span>
+                            </div>
+                            <ReadOnlyTable
+                              table={table}
+                              rows={previousRows}
+                              values={previousInternalPartEValues || {}}
+                            />
+                          </div>
+                        )}
+                        <div>
+                          {hasPreviousRows && (
+                            <div style={{ marginBottom: 8 }}>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: "#166534", background: "#dcfce7", padding: "4px 10px", borderRadius: 6, border: "1px solid #bbf7d0" }}>
+                                External Auditor Table (Your Review)
+                              </span>
+                            </div>
+                          )}
+                          <AuditTable
+                            table={table}
+                            rows={rows}
+                            values={formData.values}
+                            onFieldChange={onFieldChange}
+                            onChange={(rowIndex, column, value) => onTableChange?.(tableKey || table.id, rowIndex, column, value)}
+                            onAddRow={onAddRow}
+                            onDeleteLastRow={onDeleteLastRow}
+                            onUploadAttachment={onUploadAttachment}
+                            onDeleteAttachment={onDeleteAttachment}
+                            readOnly={false}
+                          />
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
