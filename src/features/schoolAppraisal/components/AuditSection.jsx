@@ -1,9 +1,21 @@
 //renders a section of the audit form, like part A, part B, etc. It can contain fields and tables
 import AuditTable from "./AuditTable";
 import DateInput from "./DateInput";
+import { columnsWithSerial, serialColumnFor } from "./tableHelpers";
 import { getAttachmentUrl } from "../../../utils/attachment";
 
 const ACADEMIC_PART_E_SECTION_ID = "part-e-observations";
+
+const parseIfJson = (value) => {
+  if (typeof value === "string" && (value.trim().startsWith("[") || value.trim().startsWith("{"))) {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value;
+    }
+  }
+  return value;
+};
 
 const isAttachmentValue = (value) =>
   value &&
@@ -61,6 +73,156 @@ const assignmentAuditor = (assignment = {}) => ({
   email: assignment.auditorEmail || assignment.email || "",
   date: assignment.submittedAt || assignment.auditorReviewedOn || "",
 });
+
+const getTableRows = (tables = {}, table = {}) => {
+  if (!tables || typeof tables !== "object") return [];
+  const keysToTry = [
+    table.tableKey,
+    table.idString,
+    table.id != null ? String(table.id) : null,
+    table.id,
+    table.title,
+  ].filter((k) => k !== undefined && k !== null && k !== "");
+
+  for (const k of keysToTry) {
+    if (Array.isArray(tables[k]) && tables[k].length > 0) return tables[k];
+  }
+  for (const k of keysToTry) {
+    if (tables[k] !== undefined) return Array.isArray(tables[k]) ? tables[k] : [];
+  }
+  const tableEntries = Object.entries(tables);
+  for (const k of keysToTry) {
+    const kLower = String(k).toLowerCase().trim();
+    const found = tableEntries.find(([entryKey]) => String(entryKey).toLowerCase().trim() === kLower);
+    if (found && Array.isArray(found[1])) return found[1];
+  }
+  return [];
+};
+
+const getCellValue = (row = {}, column = "", table = {}) => {
+  if (!row || typeof row !== "object") return "";
+  if (row[column] !== undefined) return row[column];
+
+  const colLower = String(column).toLowerCase().trim();
+  const rowEntries = Object.entries(row);
+  const found = rowEntries.find(([k]) => String(k).toLowerCase().trim() === colLower);
+  if (found && found[1] !== undefined) return found[1];
+
+  if (Array.isArray(table?.fields)) {
+    const field = table.fields.find((f) =>
+      String(f.label || "").toLowerCase().trim() === colLower ||
+      String(f.fieldKey || "").toLowerCase().trim() === colLower ||
+      String(f.id || "").toLowerCase().trim() === colLower
+    );
+    if (field) {
+      if (field.fieldKey && row[field.fieldKey] !== undefined) return row[field.fieldKey];
+      if (field.label && row[field.label] !== undefined) return row[field.label];
+      if (field.id && row[field.id] !== undefined) return row[field.id];
+    }
+  }
+  return "";
+};
+
+const resolveTableColumns = (table = {}) => {
+  const raw = (Array.isArray(table.columns) && table.columns.length > 0)
+    ? table.columns
+    : (Array.isArray(table.fields) && table.fields.length > 0)
+      ? table.fields.map((f) => f.label || f.fieldKey || f.id)
+      : [];
+  return columnsWithSerial(raw);
+};
+
+function renderTableCellValue(rawValue) {
+  const value = parseIfJson(rawValue);
+
+  if (Array.isArray(value)) {
+    return value.length ? (
+      <div style={styles.attachmentList}>
+        {value.map((file, index) => (
+          <div key={`${file?.url || file?.name || "attachment"}-${index}`}>
+            {renderTableCellValue(file)}
+          </div>
+        ))}
+      </div>
+    ) : "-";
+  }
+
+  if (isAttachmentValue(value)) {
+    const name = value.name || value.fileName || value.filename || "Attachment";
+    const url = value.url || value.publicUrl || value.downloadUrl;
+    return url ? (
+      <a href={getAttachmentUrl(url)} target="_blank" rel="noreferrer" style={styles.attachmentLink}>
+        {name}
+      </a>
+    ) : (
+      <span>{name}</span>
+    );
+  }
+
+  return value !== undefined && value !== null && String(value).trim() !== "" ? String(value).trim() : "-";
+}
+
+function ReadOnlyTable({ table, rows = [], values = {} }) {
+  const columns = resolveTableColumns(table);
+  const visibleRows = (Array.isArray(rows) && rows.length > 0)
+    ? rows
+    : [columns.reduce((row, column) => ({ ...row, [column]: "" }), {})];
+
+  return (
+    <div style={styles.readOnlyTableBlock}>
+      {table.showTitle !== false && <h4 style={styles.readOnlyTableTitle}>{table.title}</h4>}
+      {!!table.notes?.length && (
+        <div style={styles.readOnlyNotes}>
+          {table.notes.map((note) => (
+            <div key={note}>{note}</div>
+          ))}
+        </div>
+      )}
+      <div style={styles.readOnlyScroller}>
+        <table className="audit-data-table" style={styles.readOnlyTable}>
+          <thead>
+            <tr>
+              {columns.map((column) => {
+                const isSerial = Boolean(serialColumnFor([column]));
+                return (
+                  <th
+                    key={column}
+                    style={{
+                      ...styles.readOnlyTh,
+                      ...(isSerial ? { width: "65px", maxWidth: "70px", textAlign: "center" } : {}),
+                    }}
+                  >
+                    {column}
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {visibleRows.map((row, rowIndex) => (
+              <tr key={`${table.id || table.tableKey || "tbl"}-readonly-${rowIndex}`}>
+                {columns.map((column) => {
+                  const isSerial = Boolean(serialColumnFor([column]));
+                  return (
+                    <td
+                      key={column}
+                      style={{
+                        ...styles.readOnlyTd,
+                        ...(isSerial ? { width: "65px", maxWidth: "70px", textAlign: "center" } : {}),
+                      }}
+                    >
+                      {renderTableCellValue(getCellValue(row, column, table))}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
 
 function FieldGrid({ fields, values, onFieldChange, readOnly = false }) {
   return (
@@ -192,133 +354,154 @@ function ReadOnlyPartEValue({ value }) {
   return text ? <span style={styles.readOnlyText}>{text}</span> : <span style={styles.emptyText}>-</span>;
 }
 
-function PartEAuditorBlock({ title, fields = [], values = {}, auditor }) {
-  if (!hasPartEValues(values)) return null;
-
-  const displayFields = fields.length > 0 ? fields : [
-    { id: "auditObservations", label: "Observations & Key Findings" },
-    { id: "auditRecommendations", label: "Recommendations & Action Items" },
-    { id: "remarks", label: "Review Remarks" },
-    { id: "auditDocumentation", label: "Supporting Documentation" },
-  ].filter((f) => values[f.id] !== undefined && String(values[f.id]).trim() !== "");
-
-  return (
-    <section style={styles.partEReviewBlock}>
-      <div style={styles.partEReviewHeader}>
-        <h3 style={styles.partEReviewTitle}>{title}</h3>
-        {auditor?.name && <span style={styles.partEReviewMeta}>{auditor.name}</span>}
-      </div>
-      <div style={styles.partEReviewGrid}>
-        {displayFields.map((field) => (
-          <div key={field.id} style={styles.partEReviewField}>
-            <span style={styles.partEReviewLabel}>{field.label}</span>
-            <ReadOnlyPartEValue value={values?.[field.id]} />
-          </div>
-        ))}
-        {values.remarks && !displayFields.some((f) => f.id === "remarks" || f.id === "auditObservations") && (
-          <div style={styles.partEReviewField}>
-            <span style={styles.partEReviewLabel}>Review Remarks / Observations</span>
-            <ReadOnlyPartEValue value={values.remarks} />
-          </div>
-        )}
-      </div>
-    </section>
+function AuditorSectionReviewPanel({ section, review, tables = {}, values = {} }) {
+  const tableDefinitions = (section.tables || []).concat(
+    (section.blocks || []).flatMap((b) => (b.type === "tables" && Array.isArray(b.tables) ? b.tables : []))
   );
-}
+  const fieldDefinitions = (section.fields || []).concat(
+    (section.blocks || []).flatMap((b) => (b.type === "fields" && Array.isArray(b.fields) ? b.fields : []))
+  );
 
-function PartEAuditorAssignmentBlocks({ title, fields, assignments = [] }) {
-  const reviews = assignments
-    .map((assignment) => ({
-      values: assignmentPartEValues(assignment),
-      auditor: assignmentAuditor(assignment),
-    }))
-    .filter((review) => hasPartEValues(review.values));
+  const internalValues = review?.internalValues || {};
+  const internalTables = review?.internalTables || {};
+  const internalRemarks = review?.internalRemarks || internalValues.remarks || internalValues.auditObservations || "";
+  const externalValues = review?.externalValues || {};
+  const externalTables = review?.externalTables || tables || {};
+  const externalRemarks = review?.externalRemarks || externalValues.remarks || externalValues.auditObservations || "";
 
-  if (!reviews.length) return null;
+  const hasInternalTables = tableDefinitions.some((t) => {
+    const rows = getTableRows(internalTables, t);
+    return Array.isArray(rows) && rows.length > 0 && rows.some((r) => Object.values(r).some((v) => String(v || "").trim() !== ""));
+  });
+  const hasInternalFields = hasPartEValues(internalValues);
+  const hasInternalData = hasInternalTables || hasInternalFields || Boolean(internalRemarks);
 
-  return reviews.map((review, index) => (
-    <PartEAuditorBlock
-      key={`${title}-${review.auditor.email || review.auditor.name || index}`}
-      title={reviews.length > 1 ? `${title} - ${index + 1}` : title}
-      fields={fields}
-      values={review.values}
-      auditor={review.auditor}
-    />
-  ));
-}
+  const hasExternalTables = tableDefinitions.some((t) => {
+    const rows = getTableRows(externalTables, t);
+    return Array.isArray(rows) && rows.length > 0 && rows.some((r) => Object.values(r).some((v) => String(v || "").trim() !== ""));
+  });
+  const hasExternalFields = hasPartEValues(externalValues);
+  const hasExternalData = (hasExternalTables || hasExternalFields || Boolean(externalRemarks));
 
-function AcademicPartEReviewPanel({ fields = [], review }) {
-  if (!review || review.isApproved === false) {
+  if (!hasInternalData && !hasExternalData) {
     return (
-      <div style={styles.pendingIqacCard}>
-        <div style={styles.pendingIqacTitle}>IQAC Approval Pending</div>
-        <div style={styles.pendingIqacMessage}>
-          IQAC has not approved your form yet. Auditor observations, recommendations, and IQAC review remarks will be displayed here once your form is reviewed and approved by IQAC.
+      <div style={styles.partEReviewPanel}>
+        <div style={{ padding: "14px 18px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "10px", color: "#92400e", fontSize: "13px", fontWeight: 600, display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{ fontSize: "18px" }}>🔒</span>
+          <div>
+            <strong>Designated for Auditor:</strong> This section is designated to be filled exclusively by the Auditor during the audit review stage. Submitter inputs are locked.
+          </div>
         </div>
+        {fieldDefinitions.length > 0 && (
+          <FieldGrid fields={fieldDefinitions} values={values} onFieldChange={() => {}} readOnly={true} />
+        )}
+        {tableDefinitions.map((table) => (
+          <ReadOnlyTable key={table.id || table.tableKey || table.idString} table={table} rows={getTableRows(tables, table)} values={values} />
+        ))}
       </div>
     );
   }
 
-  const hasExternalReview = hasPartEValues(review?.externalValues);
-  const internalAssignments = review?.reportCategory === "external"
-    ? review?.previousInternalAssignments
-    : review?.auditorAssignments;
-  const hasInternalAssignmentReviews = (internalAssignments || []).some((assignment) => hasPartEValues(assignmentPartEValues(assignment)));
-  const externalAssignments = review?.reportCategory === "external" ? review?.auditorAssignments : [];
-  const hasExternalAssignmentReviews = (externalAssignments || []).some((assignment) => hasPartEValues(assignmentPartEValues(assignment)));
-
   return (
     <div style={styles.partEReviewPanel}>
-      {hasInternalAssignmentReviews ? (
-        <PartEAuditorAssignmentBlocks title="Internal Auditor Review" fields={fields} assignments={internalAssignments} />
-      ) : hasPartEValues(review?.internalValues) ? (
-        <PartEAuditorBlock
-          title="Internal Auditor Review"
-          fields={fields}
-          values={review?.internalValues}
-          auditor={review?.internalAuditor}
-        />
-      ) : null}
-      {review?.reportCategory === "external" && (
-        hasExternalAssignmentReviews ? (
-          <PartEAuditorAssignmentBlocks title="External Auditor Review" fields={fields} assignments={externalAssignments} />
-        ) : hasExternalReview ? (
-          <PartEAuditorBlock
-            title="External Auditor Review"
-            fields={fields}
-            values={review?.externalValues}
-            auditor={review?.externalAuditor}
-          />
-        ) : (
-          <section style={styles.partEReviewBlock}>
-            <div style={styles.partEReviewHeader}>
-              <h3 style={styles.partEReviewTitle}>External Auditor Review</h3>
+      {hasInternalData && (
+        <details open style={styles.historyReference}>
+          <summary style={styles.historyReferenceSummary}>
+            Internal Auditor Review
+            <span style={styles.historyReferenceMeta}>
+              {review?.internalAuditor?.name ? `${review.internalAuditor.name} · ` : ""}Internal Audit V1
+            </span>
+          </summary>
+          <div style={styles.historyReferenceBody}>
+            {internalRemarks && (
+              <div style={styles.partEReviewBlock}>
+                <h4 style={styles.partEReviewTitle}>Internal Auditor Review Remarks / Observations</h4>
+                <p style={styles.readOnlyText}>{internalRemarks}</p>
+              </div>
+            )}
+            {fieldDefinitions.length > 0 && hasInternalFields && (
+              <div style={styles.partEReviewBlock}>
+                <h4 style={styles.partEReviewTitle}>Internal Auditor Observations</h4>
+                <FieldGrid fields={fieldDefinitions} values={internalValues} onFieldChange={() => {}} readOnly={true} />
+              </div>
+            )}
+            {tableDefinitions.map((table) => {
+              const rows = getTableRows(internalTables, table);
+              return (
+                <div key={`internal-${table.id || table.tableKey || table.idString}`} style={{ marginBottom: 16 }}>
+                  <div style={{ marginBottom: 8 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#1e40af", background: "#dbeafe", padding: "4px 10px", borderRadius: 6, border: "1px solid #bfdbfe" }}>
+                      Internal Auditor Reference Table (Read-Only)
+                    </span>
+                  </div>
+                  <ReadOnlyTable table={table} rows={rows} values={internalValues} />
+                </div>
+              );
+            })}
+            {review?.previousIqacRemarks && (
+              <div style={styles.partEReviewBlock}>
+                <h4 style={styles.partEReviewTitle}>IQAC Internal Audit Review Remarks</h4>
+                <p style={styles.readOnlyText}>{review.previousIqacRemarks}</p>
+              </div>
+            )}
+          </div>
+        </details>
+      )}
+
+      {(review?.reportCategory === "external" || hasExternalData) && (
+        <div style={{ ...styles.partEReviewBlock, background: "#fff", border: "1px solid #e2e8f0" }}>
+          <div style={styles.partEReviewHeader}>
+            <h3 style={styles.partEReviewTitle}>External Auditor Review</h3>
+            {review?.externalAuditor?.name && (
+              <span style={styles.partEReviewMeta}>{review.externalAuditor.name} · External Audit</span>
+            )}
+          </div>
+          {hasExternalData ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {tableDefinitions.map((table) => {
+                const rows = getTableRows(externalTables, table);
+                return (
+                  <div key={`external-${table.id || table.tableKey || table.idString}`} style={{ marginBottom: 16 }}>
+                    {hasInternalData && (
+                      <div style={{ marginBottom: 8 }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: "#166534", background: "#dcfce7", padding: "4px 10px", borderRadius: 6, border: "1px solid #bbf7d0" }}>
+                          External Auditor Table (Read-Only)
+                        </span>
+                      </div>
+                    )}
+                    <ReadOnlyTable table={table} rows={rows} values={externalValues} />
+                  </div>
+                );
+              })}
+              {fieldDefinitions.length > 0 && hasExternalFields && (
+                <FieldGrid fields={fieldDefinitions} values={externalValues} onFieldChange={() => {}} readOnly={true} />
+              )}
+              {externalRemarks && (
+                <div style={styles.partEReviewField}>
+                  <span style={styles.partEReviewLabel}>Auditor Review Remarks / Observations</span>
+                  <p style={styles.readOnlyText}>{externalRemarks}</p>
+                </div>
+              )}
             </div>
+          ) : (
             <div style={styles.pendingIqacCard}>
               <div style={styles.pendingIqacMessage}>
-                Your form has not been reviewed by external.
+                Your form has not been reviewed by external auditor yet.
               </div>
             </div>
-          </section>
-        )
+          )}
+        </div>
       )}
-      {review?.previousIqacRemarks && review?.reportCategory === "external" && (
-        <section style={styles.partEReviewBlock}>
-          <div style={styles.partEReviewHeader}>
-            <h3 style={styles.partEReviewTitle}>IQAC Internal Audit Review Remarks</h3>
-          </div>
-          <p style={styles.readOnlyText}>{review.previousIqacRemarks}</p>
-        </section>
-      )}
+
       {review?.iqacRemarks && (
-        <section style={styles.partEReviewBlock}>
+        <div style={styles.partEReviewBlock}>
           <div style={styles.partEReviewHeader}>
             <h3 style={styles.partEReviewTitle}>
               {review?.reportCategory === "external" ? "IQAC External Audit Review Remarks" : "IQAC Review Remarks"}
             </h3>
           </div>
           <p style={styles.readOnlyText}>{review.iqacRemarks}</p>
-        </section>
+        </div>
       )}
     </div>
   );
@@ -346,40 +529,31 @@ export default function AuditSection({ section, values, tables, onFieldChange, o
         </div>
       </div>
 
-      {isAuditorDesignated && (
-        <div style={{ padding: "14px 18px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "10px", color: "#92400e", fontSize: "13px", fontWeight: 600, display: "flex", alignItems: "center", gap: "10px" }}>
-          <span style={{ fontSize: "18px" }}>🔒</span>
-          <div>
-            <strong>Designated for Auditor:</strong> This section is designated to be filled exclusively by the Auditor during the audit review stage. Submitter inputs are locked.
-          </div>
-        </div>
-      )}
-
-      {blocks.map((block, index) => {
-        if (block.type === "fields") {
-          if (isPartESection) {
-            return <AcademicPartEReviewPanel key={`part-e-review-${index}`} fields={block.fields} review={academicPartEReview} />;
+      {isAuditorDesignated ? (
+        <AuditorSectionReviewPanel section={section} review={academicPartEReview} tables={tables} values={values} />
+      ) : (
+        blocks.map((block, index) => {
+          if (block.type === "fields") {
+            return <FieldGrid key={`fields-${index}`} fields={block.fields} values={values} onFieldChange={onFieldChange} readOnly={effectiveReadOnly} />;
           }
 
-          return <FieldGrid key={`fields-${index}`} fields={block.fields} values={values} onFieldChange={onFieldChange} readOnly={effectiveReadOnly} />;
-        }
-
-        return (
-          <TableList
-            key={`tables-${index}`}
-            tableValues={tables}
-            tableDefinitions={block.tables}
-            values={values}
-            onFieldChange={onFieldChange}
-            onTableChange={onTableChange}
-            onAddRow={onAddRow}
-            onDeleteLastRow={onDeleteLastRow}
-            onUploadAttachment={onUploadAttachment}
-            onDeleteAttachment={onDeleteAttachment}
-            readOnly={effectiveReadOnly}
-          />
-        );
-      })}
+          return (
+            <TableList
+              key={`tables-${index}`}
+              tableValues={tables}
+              tableDefinitions={block.tables}
+              values={values}
+              onFieldChange={onFieldChange}
+              onTableChange={onTableChange}
+              onAddRow={onAddRow}
+              onDeleteLastRow={onDeleteLastRow}
+              onUploadAttachment={onUploadAttachment}
+              onDeleteAttachment={onDeleteAttachment}
+              readOnly={effectiveReadOnly}
+            />
+          );
+        })
+      )}
     </section>
   );
 }
@@ -553,5 +727,84 @@ const styles = {
     fontSize: 13,
     fontWeight: 750,
     textDecoration: "none",
+  },
+  historyReference: {
+    border: "1px solid #bfdbfe",
+    borderRadius: 14,
+    background: "#f8fbff",
+    overflow: "hidden",
+    boxShadow: "0 6px 18px rgba(37, 99, 235, .05)",
+  },
+  historyReferenceSummary: {
+    padding: "14px 18px",
+    background: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)",
+    color: "#1e3a8a",
+    fontSize: 14,
+    fontWeight: 800,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderBottom: "1px solid #bfdbfe",
+  },
+  historyReferenceMeta: {
+    fontSize: 12,
+    fontWeight: 700,
+    color: "#2563eb",
+  },
+  historyReferenceBody: {
+    padding: 16,
+    display: "flex",
+    flexDirection: "column",
+    gap: 14,
+  },
+  readOnlyTableBlock: {
+    marginTop: 8,
+  },
+  readOnlyTableTitle: {
+    margin: "0 0 9px",
+    padding: 0,
+    color: "#0f172a",
+    background: "transparent",
+    fontSize: 15,
+    fontWeight: 700,
+    lineHeight: 1.35,
+  },
+  readOnlyNotes: {
+    margin: "0 0 8px",
+    color: "#334155",
+    fontSize: 12,
+    lineHeight: 1.6,
+  },
+  readOnlyScroller: {
+    overflowX: "auto",
+    border: "1px solid #d7dee8",
+  },
+  readOnlyTable: {
+    width: "100%",
+    minWidth: 0,
+    borderCollapse: "collapse",
+    tableLayout: "fixed",
+  },
+  readOnlyTh: {
+    padding: "10px 11px",
+    borderBottom: "1px solid #334155",
+    borderRight: "1px solid #3a465b",
+    background: "#1e293b",
+    color: "#f8fafc",
+    fontSize: 11.5,
+    fontWeight: 700,
+    letterSpacing: ".025em",
+    textAlign: "left",
+    verticalAlign: "top",
+  },
+  readOnlyTd: {
+    padding: "8px 9px",
+    borderBottom: "1px solid #dfe5ec",
+    borderRight: "1px solid #dfe5ec",
+    color: "#0f172a",
+    fontSize: 12.5,
+    verticalAlign: "top",
+    whiteSpace: "pre-wrap",
   },
 };

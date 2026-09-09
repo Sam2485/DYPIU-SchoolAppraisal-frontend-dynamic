@@ -164,20 +164,17 @@ const buildAcademicPartEReview = (draft = {}, history = []) => {
   const status = normalizeStatus(draft.overallStatus || draft.status);
   const reportCategory = normalizeCategory(draft.reportCategory || draft.cycleType);
 
-  if (reportCategory === "internal" && status !== "approved") {
-    return { isApproved: false };
-  }
-
   const sortedHistory = [...history].sort((first, second) => Number(second.version || 0) - Number(first.version || 0));
   const previousInternal = sortedHistory.find((entry) =>
     (
       normalizeCategory(entry.reportCategory || entry.cycleType) === "internal" ||
       (reportCategory === "external" && Number(entry.version || 0) < Number(draft.version || 0))
     ) &&
-    (hasAcademicPartEValues(entry.values) || (entry.auditorAssignments && entry.auditorAssignments.length > 0))
+    (hasAcademicPartEValues(entry.values) || (entry.tables && Object.keys(entry.tables).length > 0) || (entry.auditorAssignments && entry.auditorAssignments.length > 0))
   );
 
   const currentHasPartE = hasAcademicPartEValues(draft.values);
+  const currentTables = draft.tables || safeJsonParse(draft.tablesData, {});
 
   if (reportCategory === "internal") {
     const assignments = Array.isArray(draft.auditorAssignments) ? draft.auditorAssignments : [];
@@ -187,12 +184,32 @@ const buildAcademicPartEReview = (draft = {}, history = []) => {
       internalAssignment ? normalizedAssignmentValues(internalAssignment) :
       currentHasPartE ? draft.values :
       {};
+    const internalTables =
+      (internalAssignment && internalAssignment.tables && Object.keys(internalAssignment.tables).length > 0) ? internalAssignment.tables :
+      (internalAssignment && internalAssignment.tablesData) ? safeJsonParse(internalAssignment.tablesData, {}) :
+      currentTables;
+    const internalRemarks =
+      internalAssignment?.remarks ||
+      internalAssignment?.auditObservations ||
+      internalValues?.remarks ||
+      internalValues?.auditObservations ||
+      draft.remarks ||
+      "";
+
+    const hasAnyInternalData =
+      hasAcademicPartEValues(internalValues) ||
+      Object.values(internalTables).some((rows) => Array.isArray(rows) && rows.length > 0 && rows.some((r) => Object.values(r).some((v) => String(v || "").trim() !== ""))) ||
+      Boolean(internalRemarks);
 
     return {
-      isApproved: true,
+      isApproved: hasAnyInternalData || status === "approved" || status === "under-review" || status === "auditor-completed",
       reportCategory: "internal",
       internalValues,
+      internalTables,
+      internalRemarks,
       externalValues: {},
+      externalTables: {},
+      externalRemarks: "",
       iqacRemarks: draft.remarks || "",
       previousIqacRemarks: "",
       internalAuditor: internalAssignment ? assignmentAuditor(internalAssignment) : getAuditorSignOff(draft),
@@ -209,43 +226,63 @@ const buildAcademicPartEReview = (draft = {}, history = []) => {
   const internalValues =
     previousInternalAssignment ? normalizedAssignmentValues(previousInternalAssignment) :
     previousInternal?.values || {};
+  const internalTables =
+    (previousInternalAssignment && previousInternalAssignment.tables && Object.keys(previousInternalAssignment.tables).length > 0) ? previousInternalAssignment.tables :
+    (previousInternalAssignment && previousInternalAssignment.tablesData) ? safeJsonParse(previousInternalAssignment.tablesData, {}) :
+    previousInternal?.tables || safeJsonParse(previousInternal?.tablesData, {});
+  const internalRemarks =
+    previousInternalAssignment?.remarks ||
+    previousInternalAssignment?.auditObservations ||
+    internalValues?.remarks ||
+    internalValues?.auditObservations ||
+    previousInternal?.remarks ||
+    previousInternal?.auditObservations ||
+    "";
 
   const internalAuditor = previousInternalAssignment ? assignmentAuditor(previousInternalAssignment) : getAuditorSignOff(previousInternal);
   const previousIqacRemarks = previousInternal?.remarks || "";
+
   const assignments = Array.isArray(draft.auditorAssignments) ? draft.auditorAssignments : [];
   const externalAssignments = assignmentsForType(assignments, "external");
   const externalAssignment = latestSubmittedAssignment(externalAssignments);
 
-  if (status === "approved") {
-    const externalValues =
-      externalAssignment ? normalizedAssignmentValues(externalAssignment) :
-      currentHasPartE ? draft.values :
-      {};
+  const externalValues =
+    externalAssignment ? normalizedAssignmentValues(externalAssignment) :
+    currentHasPartE ? draft.values :
+    {};
+  const externalTables =
+    (externalAssignment && externalAssignment.tables && Object.keys(externalAssignment.tables).length > 0) ? externalAssignment.tables :
+    (externalAssignment && externalAssignment.tablesData) ? safeJsonParse(externalAssignment.tablesData, {}) :
+    currentTables;
+  const externalRemarks =
+    externalAssignment?.remarks ||
+    externalAssignment?.auditObservations ||
+    externalValues?.remarks ||
+    externalValues?.auditObservations ||
+    draft.remarks ||
+    "";
 
-    return {
-      isApproved: true,
-      reportCategory: "external",
-      internalValues,
-      externalValues,
-      iqacRemarks: draft.remarks || "",
-      previousIqacRemarks,
-      internalAuditor,
-      externalAuditor: externalAssignment ? assignmentAuditor(externalAssignment) : getAuditorSignOff(draft),
-      auditorAssignments: externalAssignments,
-      previousInternalAssignments: submittedPreviousInternalAssignments,
-    };
-  }
+  const hasAnyData =
+    hasAcademicPartEValues(internalValues) ||
+    Object.keys(internalTables || {}).length > 0 ||
+    hasAcademicPartEValues(externalValues) ||
+    Object.keys(externalTables || {}).length > 0 ||
+    Boolean(internalRemarks) ||
+    Boolean(externalRemarks);
 
-  // External cycle, but not approved yet (e.g. draft, under-review)
   return {
-    isApproved: true,
+    isApproved: hasAnyData || status === "approved" || status === "under-review" || status === "auditor-completed",
     reportCategory: "external",
     internalValues,
-    externalValues: {},
-    iqacRemarks: "",
+    internalTables,
+    internalRemarks,
+    externalValues,
+    externalTables,
+    externalRemarks,
+    iqacRemarks: draft.remarks || "",
     previousIqacRemarks,
     internalAuditor,
-    externalAuditor: externalAssignment ? assignmentAuditor(externalAssignment) : null,
+    externalAuditor: externalAssignment ? assignmentAuditor(externalAssignment) : getAuditorSignOff(draft),
     auditorAssignments: externalAssignments,
     previousInternalAssignments: submittedPreviousInternalAssignments,
   };

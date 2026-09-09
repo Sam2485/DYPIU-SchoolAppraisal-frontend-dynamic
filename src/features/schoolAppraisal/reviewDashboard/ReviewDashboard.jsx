@@ -2676,7 +2676,14 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
                 !currentAuditorCorrectionRequested(selectedSubmission, profile)
               }
               auditorCorrectionMode={isAuditor && currentAuditorCorrectionRequested(selectedSubmission, profile)}
-              showPreviousAuditorReference={isAuditor && profile.auditorType === "external"}
+              showPreviousAuditorReference={
+                (isAuditor && profile.auditorType === "external") ||
+                (!isAuditor && Boolean(
+                  (selectedSubmission?.versionHistory && selectedSubmission.versionHistory.length > 0) ||
+                  String(selectedSubmission?.reportCategory || "").toLowerCase() === "external" ||
+                  (selectedSubmission?.auditorAssignments || []).some((a) => normalizeUserRole(a.auditorType || a.type || "").includes("internal"))
+                ))
+              }
               currentProfile={profile}
               submitterAvatarUrl={resolveSubmitterAvatar(selectedSubmission)}
             />
@@ -4841,7 +4848,7 @@ function FullFormReview({
     if (attachment?.url) await deleteAttachment(attachment);
   };
   const previousInternalPartE =
-    (isExternalAcademicReport || showPreviousAuditorReference || normalizeUserRole(currentProfile?.auditorType || "").includes("external")) &&
+    (isExternalAcademicReport || showPreviousAuditorReference || normalizeUserRole(currentProfile?.auditorType || "").includes("external") || !isAuditorRole(currentProfile?.role)) &&
     previousInternalReport
       ? previousInternalReport
       : null;
@@ -5308,6 +5315,7 @@ function SubmittedFormViewer({
     (
       hasAcademicPartEValues(previousInternalPartEValues) ||
       (previousInternalPartEValues && Object.keys(previousInternalPartEValues).length > 0) ||
+      (previousInternalPartETables && Object.keys(previousInternalPartETables).length > 0) ||
       (Boolean(previousInternalPartEMeta) && previousInternalPartEValues !== undefined) ||
       submittedAuditorAssignments.some((a) => normalizeUserRole(a.auditorType || a.type || "").includes("internal"))
     );
@@ -5521,14 +5529,54 @@ function SubmittedFormViewer({
 
             return (
               <div key={`${activeSection.id}-tables-${blockIndex}`} style={styles.reviewTables}>
-                {block.tables.map((table) => (
-                  <ReadOnlyTable
-                    key={table.id || table.tableKey || table.idString}
-                    table={table}
-                    rows={getTableRows(formData.tables, table)}
-                    values={formData.values}
-                  />
-                ))}
+                {block.tables.map((table) => {
+                  const tableKey = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
+                  const rows = getTableRows(formData.tables, table);
+                  const previousRows = showPreviousInternalPartE && previousInternalPartETables
+                    ? getTableRows(previousInternalPartETables, table)
+                    : [];
+                  const hasPreviousRows = Array.isArray(previousRows) && previousRows.length > 0 && previousRows.some((r) => Object.values(r).some((v) => String(v || "").trim() !== ""));
+
+                  if (hasPreviousRows) {
+                    return (
+                      <div key={table.id || tableKey || table.tableKey || table.idString} style={{ marginBottom: 24, width: "100%" }}>
+                        <div style={{ marginBottom: 20 }}>
+                          <div style={{ marginBottom: 8 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: "#1e40af", background: "#dbeafe", padding: "4px 10px", borderRadius: 6, border: "1px solid #bfdbfe" }}>
+                              Internal Auditor Reference Table (Read-Only)
+                            </span>
+                          </div>
+                          <ReadOnlyTable
+                            table={table}
+                            rows={previousRows}
+                            values={previousInternalPartEValues || {}}
+                          />
+                        </div>
+                        <div>
+                          <div style={{ marginBottom: 8 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: "#166534", background: "#dcfce7", padding: "4px 10px", borderRadius: 6, border: "1px solid #bbf7d0" }}>
+                              External Auditor Table (Read-Only)
+                            </span>
+                          </div>
+                          <ReadOnlyTable
+                            table={table}
+                            rows={rows}
+                            values={formData.values || {}}
+                          />
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <ReadOnlyTable
+                      key={table.id || table.tableKey || table.idString}
+                      table={table}
+                      rows={rows}
+                      values={formData.values}
+                    />
+                  );
+                })}
               </div>
             );
           })}
