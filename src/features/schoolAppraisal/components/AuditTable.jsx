@@ -1,7 +1,7 @@
 //academic & administrative table add rows and delete last row functionality , sr no, table heading(blue)
 import { useState } from "react";
 import { getApiErrorMessage } from "../../../api/client";
-import { columnsWithSerial, serialColumnFor } from "./tableHelpers";
+import { columnsWithSerial, serialColumnFor, numberedRowFor } from "./tableHelpers";
 import { getAttachmentUrl } from "../../../utils/attachment";
 import { formatDateDDMMYYYY } from "../../../utils/dateFormat";
 import DateInput from "./DateInput";
@@ -185,8 +185,16 @@ export default function AuditTable({
   allowManualAdd = true,
   showRowControls = true,
 }) {
-  const columns = columnsWithSerial(table.columns);
-  const fitToContainer = table.fitToContainer !== false;
+  const rawColumns = (Array.isArray(table?.columns) && table.columns.length > 0)
+    ? table.columns
+    : (Array.isArray(table?.fields) && table.fields.length > 0)
+      ? table.fields.map((f) => f.label || f.fieldKey || f.id)
+      : [];
+  const columns = columnsWithSerial(rawColumns);
+  const displayRows = (Array.isArray(rows) && rows.length > 0)
+    ? rows
+    : [numberedRowFor(columns, 0)];
+  const fitToContainer = table?.fitToContainer !== false;
   const denseTable = columns.length >= 9;
   const [uploadingCell, setUploadingCell] = useState("");
   const [deletingAttachment, setDeletingAttachment] = useState("");
@@ -199,7 +207,7 @@ export default function AuditTable({
       return;
     }
 
-    onCellChange?.(table.id, rowIndex, column, value);
+    onCellChange?.(table?.id || table?.tableKey || table?.idString, rowIndex, column, value);
   };
 
   const handleExcelImport = async (selectedFiles) => {
@@ -249,10 +257,10 @@ export default function AuditTable({
       const uploaded = onUploadAttachment
         ? await onUploadAttachment(files)
         : files.map((file) => ({ name: file.name, fileName: file.name, url: URL.createObjectURL(file) }));
-      const currentFiles = Array.isArray(rows[rowIndex]?.[column])
-        ? rows[rowIndex][column]
-        : rows[rowIndex]?.[column]
-          ? [rows[rowIndex][column]]
+      const currentFiles = Array.isArray(displayRows[rowIndex]?.[column])
+        ? displayRows[rowIndex][column]
+        : displayRows[rowIndex]?.[column]
+          ? [displayRows[rowIndex][column]]
           : [];
       handleCellChange(rowIndex, column, [...currentFiles, ...uploaded]);
     } catch (error) {
@@ -278,10 +286,10 @@ export default function AuditTable({
 
     try {
       await onDeleteAttachment?.(attachment);
-      const currentFiles = Array.isArray(rows[rowIndex]?.[column])
-        ? rows[rowIndex][column]
-        : rows[rowIndex]?.[column]
-          ? [rows[rowIndex][column]]
+      const currentFiles = Array.isArray(displayRows[rowIndex]?.[column])
+        ? displayRows[rowIndex][column]
+        : displayRows[rowIndex]?.[column]
+          ? [displayRows[rowIndex][column]]
           : [];
       handleCellChange(
         rowIndex,
@@ -359,8 +367,8 @@ export default function AuditTable({
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, rowIndex) => (
-              <tr key={`${table.id}-${rowIndex}`}>
+            {displayRows.map((row, rowIndex) => (
+              <tr key={`${table?.id || table?.tableKey || table?.idString || "tbl"}-${rowIndex}`}>
                 {columns.map((column) => (
                   <td key={column} style={{ ...styles.td, ...(serialColumnFor([column]) ? styles.serialCell : {}) }}>
                     {isAttachmentColumn(column, table) ? (
@@ -541,7 +549,7 @@ export default function AuditTable({
                 ))}
               </tr>
             ))}
-            {!rows.length && (
+            {!displayRows.length && (
               <tr>
                 <td style={styles.emptyCell} colSpan={columns.length}>
                   No rows added.
@@ -559,7 +567,7 @@ export default function AuditTable({
               + Add Row
             </button>
           )}
-          <button type="button" className="audit-table-delete-row" onClick={() => onDeleteLastRow?.(table)} disabled={readOnly || rows.length <= 1}>
+          <button type="button" className="audit-table-delete-row" onClick={() => onDeleteLastRow?.(table)} disabled={readOnly || displayRows.length <= 1}>
             Delete Last Row
           </button>
         </div>

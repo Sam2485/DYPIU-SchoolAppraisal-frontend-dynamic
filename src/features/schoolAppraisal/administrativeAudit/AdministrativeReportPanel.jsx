@@ -1,9 +1,79 @@
+import { columnsWithSerial, serialColumnFor } from "../components/tableHelpers";
 import universityLogo from "../../../assets/images/image.png";
 import iqacLogo from "../../../assets/images/IQAS.png";
 import { SIGN_OFF_FIELD } from "../../../api/submissions";
 import { formatDateDDMMYYYY } from "../../../utils/dateFormat";
 import AdministrativePartE from "./AdministrativePartE";
 import { getAttachmentUrl } from "../../../utils/attachment";
+
+const parseIfJson = (value) => {
+  if (typeof value === "string" && (value.trim().startsWith("[") || value.trim().startsWith("{"))) {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value;
+    }
+  }
+  return value;
+};
+
+const getTableRows = (tables = {}, table = {}) => {
+  if (!tables || typeof tables !== "object") return [];
+  const keysToTry = [
+    table.tableKey,
+    table.idString,
+    table.id != null ? String(table.id) : null,
+    table.id,
+    table.title,
+  ].filter((k) => k !== undefined && k !== null && k !== "");
+
+  for (const k of keysToTry) {
+    if (Array.isArray(tables[k]) && tables[k].length > 0) return tables[k];
+  }
+  for (const k of keysToTry) {
+    if (tables[k] !== undefined) return Array.isArray(tables[k]) ? tables[k] : [];
+  }
+  const tableEntries = Object.entries(tables);
+  for (const k of keysToTry) {
+    const kLower = String(k).toLowerCase().trim();
+    const found = tableEntries.find(([entryKey]) => String(entryKey).toLowerCase().trim() === kLower);
+    if (found && Array.isArray(found[1])) return found[1];
+  }
+  return [];
+};
+
+const getCellValue = (row = {}, column = "", table = {}) => {
+  if (!row || typeof row !== "object") return "";
+  if (row[column] !== undefined) return row[column];
+
+  const colLower = String(column).toLowerCase().trim();
+  const rowEntries = Object.entries(row);
+  const found = rowEntries.find(([k]) => String(k).toLowerCase().trim() === colLower);
+  if (found && found[1] !== undefined) return found[1];
+
+  if (Array.isArray(table?.fields)) {
+    const field = table.fields.find((f) =>
+      String(f.label || "").toLowerCase().trim() === colLower ||
+      String(f.fieldKey || "").toLowerCase().trim() === colLower ||
+      String(f.id || "").toLowerCase().trim() === colLower
+    );
+    if (field) {
+      if (field.fieldKey && row[field.fieldKey] !== undefined) return row[field.fieldKey];
+      if (field.label && row[field.label] !== undefined) return row[field.label];
+      if (field.id && row[field.id] !== undefined) return row[field.id];
+    }
+  }
+  return "";
+};
+
+const resolveTableColumns = (table = {}) => {
+  const raw = (Array.isArray(table.columns) && table.columns.length > 0)
+    ? table.columns
+    : (Array.isArray(table.fields) && table.fields.length > 0)
+      ? table.fields.map((f) => f.label || f.fieldKey || f.id)
+      : [];
+  return columnsWithSerial(raw);
+};
 
 const moduleBlocksFor = (module) =>
   module.blocks || [
@@ -212,42 +282,66 @@ export default function AdministrativeReportPanel({
                 return null;
               }
 
-              return block.tables.map((table) => (
-                <div className="generated-report__table-block" key={table.id} style={styles.tableBlock}>
-                  <h4 className="generated-report__table-title" style={styles.tableTitle}>{table.title}</h4>
-                  {!!table.notes?.length && (
-                    <div style={styles.notes}>
-                      {table.notes.map((note) => (
-                        <div key={note}>{note}</div>
-                      ))}
-                    </div>
-                  )}
-                  <div className="generated-report__table-wrap" style={styles.scroller}>
-                    <table className="audit-data-table" style={styles.table}>
-                      <thead>
-                        <tr>
-                          {table.columns.map((column) => (
-                            <th key={column} style={styles.th}>
-                              {column}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(data.tables[table.id] || []).map((row, rowIndex) => (
-                          <tr key={`${table.id}-${rowIndex}`}>
-                            {table.columns.map((column) => (
-                              <td key={column} style={styles.td}>
-                                <ReportCellValue value={row[column]} />
-                              </td>
-                            ))}
-                          </tr>
+              return block.tables.map((table) => {
+                const columns = resolveTableColumns(table);
+                const tableKey = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
+                const rows = getTableRows(data.tables, table);
+
+                return (
+                  <div className="generated-report__table-block" key={table.id || tableKey} style={styles.tableBlock}>
+                    <h4 className="generated-report__table-title" style={styles.tableTitle}>{table.title}</h4>
+                    {!!table.notes?.length && (
+                      <div style={styles.notes}>
+                        {table.notes.map((note) => (
+                          <div key={note}>{note}</div>
                         ))}
-                      </tbody>
-                    </table>
+                      </div>
+                    )}
+                    <div className="generated-report__table-wrap" style={styles.scroller}>
+                      <table className="audit-data-table" style={styles.table}>
+                        <thead>
+                          <tr>
+                            {columns.map((column) => {
+                              const isSerial = Boolean(serialColumnFor([column]));
+                              return (
+                                <th
+                                  key={column}
+                                  style={{
+                                    ...styles.th,
+                                    ...(isSerial ? { width: "65px", maxWidth: "70px", textAlign: "center" } : {}),
+                                  }}
+                                >
+                                  {column}
+                                </th>
+                              );
+                            })}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {rows.map((row, rowIndex) => (
+                            <tr key={`${table.id || tableKey}-${rowIndex}`}>
+                              {columns.map((column) => {
+                                const isSerial = Boolean(serialColumnFor([column]));
+                                return (
+                                  <td
+                                    key={column}
+                                    style={{
+                                      ...styles.td,
+                                      ...(isSerial ? { width: "65px", maxWidth: "70px", textAlign: "center" } : {}),
+                                    }}
+                                  >
+                                    <ReportCellValue value={getCellValue(row, column, table)} />
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                </div>
-              ));
+                );
+              });
             })}
           </section>
         ))}
@@ -386,7 +480,8 @@ function ReportFieldsTable({ fields, values }) {
   );
 }
 
-function ReportCellValue({ value }) {
+function ReportCellValue({ value: rawValue }) {
+  const value = parseIfJson(rawValue);
   if (!value) return "-";
   if (Array.isArray(value)) {
     return value.length ? (

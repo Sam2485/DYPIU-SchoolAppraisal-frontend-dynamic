@@ -148,9 +148,9 @@ const moduleFieldsFor = (module) =>
 const moduleTablesFor = (module) =>
   moduleBlocksFor(module).flatMap((block) => (block.type === "tables" ? block.tables : []));
 
-const ensureDefaultTableRows = (tables = {}) => {
+const ensureDefaultTableRows = (tables = {}, modules = administrativeAuditModules) => {
   const nextTables = { ...tables };
-  administrativeAuditModules.forEach((module) => {
+  modules.forEach((module) => {
     moduleTablesFor(module).forEach((table) => {
       if (!Array.isArray(nextTables[table.id]) || !nextTables[table.id].length) {
         nextTables[table.id] = [emptyRowFor(table.columns, 0)];
@@ -162,11 +162,11 @@ const ensureDefaultTableRows = (tables = {}) => {
   return nextTables;
 };
 
-const buildInitialData = () => {
+const buildInitialData = (modules = administrativeAuditModules) => {
   const fields = {};
   const tables = {};
 
-  administrativeAuditModules.forEach((module) => {
+  modules.forEach((module) => {
     moduleFieldsFor(module).forEach((field) => {
       fields[field.id] = field.initialValue ?? "";
     });
@@ -322,10 +322,54 @@ export default function AdministrativeAuditDashboard() {
     };
   }, []);
 
+  const dynamicModules = useMemo(() => {
+    if (!dynamicSchema || !Array.isArray(dynamicSchema.sections) || dynamicSchema.sections.length === 0) {
+      return administrativeUserModules;
+    }
+    const mapped = dynamicSchema.sections.map((sec, idx) => ({
+      id: sec.idString || String(sec.id || `section-${idx + 1}`),
+      number: sec.number || String(idx + 1),
+      title: sec.title || `Section ${idx + 1}`,
+      owner: sec.ownerRole || 'registrar',
+      isAuditorSection: sec.ownerRole === 'auditor' || sec.isAuditorSection === true,
+      note: sec.description || '',
+      blocks: [
+        ...(sec.fields?.length ? [{ type: 'fields', fields: sec.fields.map((f) => ({
+          id: f.fieldKey || f.idString || String(f.id),
+          label: f.label,
+          type: (f.fieldType || 'text').toLowerCase(),
+          options: Array.isArray(f.options) ? f.options : (typeof f.options === 'string' ? (JSON.parse(f.options || '[]') || []) : []),
+          required: f.isRequired,
+          placeholder: f.placeholder,
+        })) }] : []),
+        ...(sec.tables?.length ? [{ type: 'tables', tables: sec.tables.map((t) => ({
+          id: t.tableKey || t.idString || String(t.id),
+          title: t.title,
+          isRepeatable: t.isRepeatable ?? true,
+          showTitle: t.showTitle ?? true,
+          columns: (t.fields && t.fields.length > 0)
+            ? t.fields.map((f) => f.label || f.fieldKey)
+            : (t.columns || []),
+          fields: t.fields || [],
+        })) }] : []),
+      ],
+    }));
+
+    return [
+      ...mapped,
+      {
+        id: "submission-status",
+        number: "",
+        title: "Submission Status",
+        owner: "system",
+      },
+    ];
+  }, [dynamicSchema]);
+
   const profile = { ...getUserProfile(), avatarUrl: accountAvatarUrl, ...profileOverrides };
   const userPost = normalizePost(profile.post || profile.designation);
-  const firstOwnedModule = administrativeUserModules.find((module) => moduleOwnerPost(module) === userPost);
-  const [activeModuleId, setActiveModuleId] = useState(firstOwnedModule?.id || administrativeUserModules[0].id);
+  const firstOwnedModule = dynamicModules.find((module) => !module.isAuditorSection && moduleOwnerPost(module) === userPost);
+  const [activeModuleId, setActiveModuleId] = useState(firstOwnedModule?.id || dynamicModules[0].id);
   const [reportMode, setReportMode] = useState(false);
   const [printReportAfterRender, setPrintReportAfterRender] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -342,20 +386,20 @@ export default function AdministrativeAuditDashboard() {
   const [contributionApproved, setContributionApproved] = useState(false);
   const [workflow, setWorkflow] = useState(workflowFromDraft());
   const [administrativeProgress, setAdministrativeProgress] = useState({});
-  const [data, setData] = useState(buildInitialData);
+  const [data, setData] = useState(() => buildInitialData(dynamicModules));
 
   const activeModule = useMemo(
-    () => administrativeUserModules.find((module) => module.id === activeModuleId) || administrativeUserModules[0],
-    [activeModuleId],
+    () => dynamicModules.find((module) => module.id === activeModuleId) || dynamicModules[0],
+    [dynamicModules, activeModuleId],
   );
   const ownedModules = useMemo(
-    () => administrativeUserModules.filter((module) => module.id !== "submission-status" && moduleOwnerPost(module) === userPost),
-    [userPost],
+    () => dynamicModules.filter((module) => module.id !== "submission-status" && !module.isAuditorSection && moduleOwnerPost(module) === userPost),
+    [dynamicModules, userPost],
   );
-  const activeModuleIndex = administrativeUserModules.findIndex((module) => module.id === activeModuleId);
-  const isLastModule = activeModuleIndex === administrativeUserModules.length - 1;
+  const activeModuleIndex = dynamicModules.findIndex((module) => module.id === activeModuleId);
+  const isLastModule = activeModuleIndex === dynamicModules.length - 1;
   const finalOwnedModule = ownedModules[ownedModules.length - 1];
-  const canEditActiveModule = moduleOwnerPost(activeModule) === userPost;
+  const canEditActiveModule = !activeModule?.isAuditorSection && moduleOwnerPost(activeModule) === userPost;
   const backendAllowsContributionEdit =
     workflow.canEditContribution === true ||
     isEditableContributionStatus(workflow.contributionStatus || workflow.overallStatus);
@@ -388,7 +432,7 @@ export default function AdministrativeAuditDashboard() {
       setStatus("");
 
       try {
-        const initial = buildInitialData();
+        const initial = buildInitialData(dynamicModules);
         const { data: draftResponse } = await fetchMyDraft("administrative", academicYear);
         const draft = normalizeDraft(draftResponse, initial.fields, initial.tables);
         const activeDraft = draftBelongsToAcademicYear(draft, academicYear)
@@ -398,7 +442,7 @@ export default function AdministrativeAuditDashboard() {
         if (!isActive) return;
         setData({
           fields: activeDraft.values,
-          tables: ensureDefaultTableRows(activeDraft.tables),
+          tables: ensureDefaultTableRows(activeDraft.tables, dynamicModules),
           attachments: activeDraft.attachments,
           lastSavedAt: new Date().toISOString(),
         });
@@ -424,7 +468,7 @@ export default function AdministrativeAuditDashboard() {
     return () => {
       isActive = false;
     };
-  }, [academicYear, currentStatusRole?.key, userPost]);
+  }, [academicYear, currentStatusRole?.key, userPost, dynamicModules]);
 
   useEffect(() => {
     if (!reportMode || !printReportAfterRender) return undefined;
@@ -519,7 +563,7 @@ export default function AdministrativeAuditDashboard() {
     if (!window.confirm(`Reset Section ${activeModule.number}? Unsaved data in this section will be cleared.`)) return;
 
     setData((current) => {
-      const initial = buildInitialData();
+      const initial = buildInitialData(dynamicModules);
       const fields = { ...current.fields };
       const tables = { ...current.tables };
       moduleFieldsFor(activeModule).forEach((field) => {
@@ -591,7 +635,7 @@ export default function AdministrativeAuditDashboard() {
   };
 
   const saveAndGoNext = async () => {
-    const moduleIds = administrativeUserModules.map((module) => module.id);
+    const moduleIds = dynamicModules.map((module) => module.id);
     const currentIndex = moduleIds.indexOf(activeModuleId);
     const nextModuleId = moduleIds[Math.min(currentIndex + 1, moduleIds.length - 1)];
 
@@ -722,11 +766,13 @@ export default function AdministrativeAuditDashboard() {
             academicYear={academicYear}
             onLogout={() => setShowLogoutModal(true)}
             onOpenProfile={() => setShowProfileModal(true)}
+            hasSchema={Boolean(dynamicSchema?.sections?.length)}
+            modules={dynamicModules}
           />
           <main className="admin-audit-main" style={styles.main}>
             <AdministrativeReportPanel
               meta={{ ...administrativeAuditMeta, academicYear }}
-              modules={administrativeUserModules}
+              modules={dynamicModules}
               data={data}
               onClose={() => setReportMode(false)}
             />
@@ -766,6 +812,7 @@ export default function AdministrativeAuditDashboard() {
           onLogout={() => setShowLogoutModal(true)}
           onOpenProfile={() => setShowProfileModal(true)}
           hasSchema={Boolean(dynamicSchema?.sections?.length)}
+          modules={dynamicModules}
         />
 
         <main className="admin-audit-main" style={styles.main}>
@@ -874,9 +921,18 @@ export default function AdministrativeAuditDashboard() {
             </div>
 
             {!canEditActiveModule && activeModuleId !== "submission-status" && (
-              <div style={styles.ownershipNotice}>
-                This section can only be edited by {activeModule.owner}.
-              </div>
+              activeModule?.isAuditorSection ? (
+                <div style={{ padding: "14px 18px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "10px", color: "#92400e", fontSize: "13px", fontWeight: 600, display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
+                  <span style={{ fontSize: "18px" }}>🔒</span>
+                  <div>
+                    <strong>Auditor Section:</strong> This section is designated to be filled exclusively by the Auditor during the audit review stage.
+                  </div>
+                </div>
+              ) : (
+                <div style={styles.ownershipNotice}>
+                  This section can only be edited by {activeModule.owner}.
+                </div>
+              )
             )}
 
             {activeModuleId === "submission-status" ? (
@@ -1167,7 +1223,7 @@ function AttachmentField({
   );
 }
 
-function Sidebar({ activeModuleId, setActiveModuleId, profile, academicYear, currentAcademicYear, availableYears, onYearChange, onLogout, onOpenProfile, hasSchema }) {
+function Sidebar({ activeModuleId, setActiveModuleId, profile, academicYear, currentAcademicYear, availableYears, onYearChange, onLogout, onOpenProfile, hasSchema, modules = administrativeUserModules }) {
   return (
     <AppSidebar
       title="Administrative Audit"
@@ -1179,7 +1235,7 @@ function Sidebar({ activeModuleId, setActiveModuleId, profile, academicYear, cur
       availableYears={availableYears}
       onYearChange={onYearChange}
       roleText="Registrar · HR · DSW · Placement"
-      items={hasSchema ? administrativeUserModules : []}
+      items={hasSchema ? modules : []}
       activeId={activeModuleId}
       onChange={setActiveModuleId}
       profile={profile}

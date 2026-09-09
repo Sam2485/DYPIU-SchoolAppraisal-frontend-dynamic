@@ -91,13 +91,24 @@ const isAttachmentValue = (value) =>
   !Array.isArray(value) &&
   (value.url || value.publicUrl || value.downloadUrl || value.name || value.fileName);
 
-const hasAcademicPartEValues = (values = {}) =>
-  ACADEMIC_PART_E_FIELD_IDS.some((fieldId) => {
-    const value = values?.[fieldId];
-    if (Array.isArray(value)) return value.length > 0;
-    if (isAttachmentValue(value)) return true;
-    return String(value || "").trim().length > 0;
-  });
+const hasAcademicPartEValues = (values = {}) => {
+  if (!values || typeof values !== "object") return false;
+  return (
+    [...ACADEMIC_PART_E_FIELD_IDS, "remarks", "reviewRemarks", "auditObservations"].some((fieldId) => {
+      const value = values?.[fieldId];
+      if (Array.isArray(value)) return value.length > 0;
+      if (isAttachmentValue(value)) return true;
+      if (value && typeof value === "object") return Object.keys(value).length > 0;
+      return String(value || "").trim().length > 0;
+    }) ||
+    Object.entries(values).some(([k, v]) => {
+      if (k.startsWith("__") || k === "status" || k === "auditType") return false;
+      if (Array.isArray(v)) return v.length > 0;
+      if (isAttachmentValue(v)) return true;
+      return typeof v === "string" && v.trim().length > 0;
+    })
+  );
+};
 
 const getAuditorSignOff = (entry = {}) => {
   const signOff = entry.values?.__auditSignOff || {};
@@ -118,9 +129,10 @@ const normalizedAssignmentValues = (assignment = {}) => {
 
   return {
     ...parsed,
-    auditObservations: assignment.auditObservations || parsed.auditObservations || "",
+    auditObservations: assignment.auditObservations || assignment.remarks || parsed.auditObservations || parsed.remarks || "",
     auditRecommendations: assignment.auditRecommendations || parsed.auditRecommendations || "",
     auditDocumentation: assignment.auditDocumentation || parsed.auditDocumentation || "",
+    remarks: assignment.remarks || assignment.auditObservations || parsed.remarks || parsed.auditObservations || "",
   };
 };
 
@@ -134,8 +146,13 @@ const assignmentAuditor = (assignment = {}) => ({
 
 const assignmentsForType = (assignments = [], auditorType = "") =>
   assignments.filter((assignment) =>
-    normalizeCategory(assignment.auditorType || assignment.forwardedAuditorType || assignment.type).includes(auditorType) &&
-    hasAcademicPartEValues(normalizedAssignmentValues(assignment))
+    normalizeCategory(assignment.auditorType || assignment.forwardedAuditorType || assignment.type || "").includes(auditorType) &&
+    (
+      assignment.status === "submitted" ||
+      assignment.reviewStatus === "submitted" ||
+      hasAcademicPartEValues(normalizedAssignmentValues(assignment)) ||
+      Boolean(assignment.submittedAt || assignment.auditorReviewedOn)
+    )
   );
 const latestSubmittedAssignment = (assignments = []) =>
   [...assignments].sort((first, second) =>

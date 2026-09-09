@@ -11,13 +11,23 @@ const isAttachmentValue = (value) =>
   !Array.isArray(value) &&
   (value.url || value.publicUrl || value.downloadUrl || value.name || value.fileName);
 
-const hasPartEValues = (values = {}) =>
-  ["auditObservations", "auditRecommendations", "auditDocumentation"].some((fieldId) => {
-    const value = values?.[fieldId];
-    if (Array.isArray(value)) return value.length > 0;
-    if (isAttachmentValue(value)) return true;
-    return String(value || "").trim().length > 0;
-  });
+const hasPartEValues = (values = {}) => {
+  if (!values || typeof values !== "object") return false;
+  return (
+    ["auditObservations", "auditRecommendations", "auditDocumentation", "remarks", "reviewRemarks"].some((fieldId) => {
+      const value = values?.[fieldId];
+      if (Array.isArray(value)) return value.length > 0;
+      if (isAttachmentValue(value)) return true;
+      return String(value || "").trim().length > 0;
+    }) ||
+    Object.entries(values).some(([k, v]) => {
+      if (k.startsWith("__") || k === "status" || k === "auditType") return false;
+      if (Array.isArray(v)) return v.length > 0;
+      if (isAttachmentValue(v)) return true;
+      return typeof v === "string" && v.trim().length > 0;
+    })
+  );
+};
 
 const safeObjectValue = (value) => {
   if (!value) return {};
@@ -37,9 +47,10 @@ const assignmentPartEValues = (assignment = {}) => {
   const values = safeObjectValue(assignment.values || assignment.valuesData || assignment.reviewValues || assignment.reviewValuesData);
   return {
     ...values,
-    auditObservations: assignment.auditObservations || values.auditObservations || "",
+    auditObservations: assignment.auditObservations || assignment.remarks || values.auditObservations || values.remarks || "",
     auditRecommendations: assignment.auditRecommendations || values.auditRecommendations || "",
     auditDocumentation: assignment.auditDocumentation || values.auditDocumentation || "",
+    remarks: assignment.remarks || assignment.auditObservations || values.remarks || values.auditObservations || "",
   };
 };
 
@@ -181,8 +192,15 @@ function ReadOnlyPartEValue({ value }) {
   return text ? <span style={styles.readOnlyText}>{text}</span> : <span style={styles.emptyText}>-</span>;
 }
 
-function PartEAuditorBlock({ title, fields, values, auditor }) {
+function PartEAuditorBlock({ title, fields = [], values = {}, auditor }) {
   if (!hasPartEValues(values)) return null;
+
+  const displayFields = fields.length > 0 ? fields : [
+    { id: "auditObservations", label: "Observations & Key Findings" },
+    { id: "auditRecommendations", label: "Recommendations & Action Items" },
+    { id: "remarks", label: "Review Remarks" },
+    { id: "auditDocumentation", label: "Supporting Documentation" },
+  ].filter((f) => values[f.id] !== undefined && String(values[f.id]).trim() !== "");
 
   return (
     <section style={styles.partEReviewBlock}>
@@ -191,12 +209,18 @@ function PartEAuditorBlock({ title, fields, values, auditor }) {
         {auditor?.name && <span style={styles.partEReviewMeta}>{auditor.name}</span>}
       </div>
       <div style={styles.partEReviewGrid}>
-        {fields.map((field) => (
+        {displayFields.map((field) => (
           <div key={field.id} style={styles.partEReviewField}>
             <span style={styles.partEReviewLabel}>{field.label}</span>
             <ReadOnlyPartEValue value={values?.[field.id]} />
           </div>
         ))}
+        {values.remarks && !displayFields.some((f) => f.id === "remarks" || f.id === "auditObservations") && (
+          <div style={styles.partEReviewField}>
+            <span style={styles.partEReviewLabel}>Review Remarks / Observations</span>
+            <ReadOnlyPartEValue value={values.remarks} />
+          </div>
+        )}
       </div>
     </section>
   );
@@ -223,13 +247,13 @@ function PartEAuditorAssignmentBlocks({ title, fields, assignments = [] }) {
   ));
 }
 
-function AcademicPartEReviewPanel({ fields, review }) {
+function AcademicPartEReviewPanel({ fields = [], review }) {
   if (!review || review.isApproved === false) {
     return (
       <div style={styles.pendingIqacCard}>
         <div style={styles.pendingIqacTitle}>IQAC Approval Pending</div>
         <div style={styles.pendingIqacMessage}>
-          IQAC has not approved your form yet. Part E audit observations, recommendations, and IQAC review remarks will be displayed here once your form is reviewed and approved by IQAC.
+          IQAC has not approved your form yet. Auditor observations, recommendations, and IQAC review remarks will be displayed here once your form is reviewed and approved by IQAC.
         </div>
       </div>
     );
@@ -241,26 +265,26 @@ function AcademicPartEReviewPanel({ fields, review }) {
     : review?.auditorAssignments;
   const hasInternalAssignmentReviews = (internalAssignments || []).some((assignment) => hasPartEValues(assignmentPartEValues(assignment)));
   const externalAssignments = review?.reportCategory === "external" ? review?.auditorAssignments : [];
-  const hasExternalAssignmentReviews = externalAssignments.some((assignment) => hasPartEValues(assignmentPartEValues(assignment)));
+  const hasExternalAssignmentReviews = (externalAssignments || []).some((assignment) => hasPartEValues(assignmentPartEValues(assignment)));
 
   return (
     <div style={styles.partEReviewPanel}>
       {hasInternalAssignmentReviews ? (
-        <PartEAuditorAssignmentBlocks title="Internal Auditor Part E" fields={fields} assignments={internalAssignments} />
-      ) : (
+        <PartEAuditorAssignmentBlocks title="Internal Auditor Review" fields={fields} assignments={internalAssignments} />
+      ) : hasPartEValues(review?.internalValues) ? (
         <PartEAuditorBlock
-          title="Internal Auditor Part E"
+          title="Internal Auditor Review"
           fields={fields}
           values={review?.internalValues}
           auditor={review?.internalAuditor}
         />
-      )}
+      ) : null}
       {review?.reportCategory === "external" && (
         hasExternalAssignmentReviews ? (
-          <PartEAuditorAssignmentBlocks title="External Auditor Part E" fields={fields} assignments={externalAssignments} />
+          <PartEAuditorAssignmentBlocks title="External Auditor Review" fields={fields} assignments={externalAssignments} />
         ) : hasExternalReview ? (
           <PartEAuditorBlock
-            title="External Auditor Part E"
+            title="External Auditor Review"
             fields={fields}
             values={review?.externalValues}
             auditor={review?.externalAuditor}
@@ -268,7 +292,7 @@ function AcademicPartEReviewPanel({ fields, review }) {
         ) : (
           <section style={styles.partEReviewBlock}>
             <div style={styles.partEReviewHeader}>
-              <h3 style={styles.partEReviewTitle}>External Auditor Part E</h3>
+              <h3 style={styles.partEReviewTitle}>External Auditor Review</h3>
             </div>
             <div style={styles.pendingIqacCard}>
               <div style={styles.pendingIqacMessage}>
@@ -305,13 +329,31 @@ export default function AuditSection({ section, values, tables, onFieldChange, o
     ...(section.fields?.length ? [{ type: "fields", fields: section.fields }] : []),
     ...(section.tables?.length ? [{ type: "tables", tables: section.tables }] : []),
   ];
-  const isPartESection = section.id === ACADEMIC_PART_E_SECTION_ID;
+  const isAuditorDesignated = section.ownerRole === "auditor" || section.isAuditorSection === true;
+  const isPartESection = section.id === ACADEMIC_PART_E_SECTION_ID || isAuditorDesignated;
+  const effectiveReadOnly = readOnly || isAuditorDesignated;
 
   return (
     <section className="audit-section-card" id={section.id} style={styles.section}>
       <div style={styles.headingRow}>
-        <h2 style={styles.heading}>{section.title}</h2>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px" }}>
+          <h2 style={styles.heading}>{section.title}</h2>
+          {isAuditorDesignated && (
+            <span style={{ fontSize: "11px", fontWeight: 700, padding: "3px 8px", borderRadius: "5px", background: "#fef3c7", color: "#92400e", border: "1px solid #fcd34d" }}>
+              🔒 Auditor Section
+            </span>
+          )}
+        </div>
       </div>
+
+      {isAuditorDesignated && (
+        <div style={{ padding: "14px 18px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "10px", color: "#92400e", fontSize: "13px", fontWeight: 600, display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{ fontSize: "18px" }}>🔒</span>
+          <div>
+            <strong>Designated for Auditor:</strong> This section is designated to be filled exclusively by the Auditor during the audit review stage. Submitter inputs are locked.
+          </div>
+        </div>
+      )}
 
       {blocks.map((block, index) => {
         if (block.type === "fields") {
@@ -319,7 +361,7 @@ export default function AuditSection({ section, values, tables, onFieldChange, o
             return <AcademicPartEReviewPanel key={`part-e-review-${index}`} fields={block.fields} review={academicPartEReview} />;
           }
 
-          return <FieldGrid key={`fields-${index}`} fields={block.fields} values={values} onFieldChange={onFieldChange} readOnly={readOnly} />;
+          return <FieldGrid key={`fields-${index}`} fields={block.fields} values={values} onFieldChange={onFieldChange} readOnly={effectiveReadOnly} />;
         }
 
         return (
@@ -334,7 +376,7 @@ export default function AuditSection({ section, values, tables, onFieldChange, o
             onDeleteLastRow={onDeleteLastRow}
             onUploadAttachment={onUploadAttachment}
             onDeleteAttachment={onDeleteAttachment}
-            readOnly={readOnly}
+            readOnly={effectiveReadOnly}
           />
         );
       })}

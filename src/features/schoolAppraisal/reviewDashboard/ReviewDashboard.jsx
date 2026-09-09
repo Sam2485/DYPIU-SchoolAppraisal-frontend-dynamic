@@ -27,7 +27,8 @@ import iqacLogo from "../../../assets/images/IQAS.png";
 import AppSidebar from "../components/AppSidebar";
 import AuditReportPanel from "../components/AuditReportPanel";
 import { InlineSpinner, LoadingState, SkeletonList } from "../components/LoadingState";
-import { columnsWithSerial } from "../components/tableHelpers";
+import { columnsWithSerial, serialColumnFor, numberedRowFor, withSerialNumbers } from "../components/tableHelpers";
+import AuditTable from "../components/AuditTable";
 import UserProfileModal from "../components/UserProfileModal";
 import { administrativeAuditMeta, administrativeAuditModules } from "../administrativeAudit/administrativeAuditConfig";
 import AdministrativeReportPanel from "../administrativeAudit/AdministrativeReportPanel";
@@ -300,6 +301,75 @@ const downloadAttachmentFile = async (url, name) => {
   }
 };
 
+const parseIfJson = (value) => {
+  if (typeof value === "string" && (value.trim().startsWith("[") || value.trim().startsWith("{"))) {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value;
+    }
+  }
+  return value;
+};
+
+const getTableRows = (tables = {}, table = {}) => {
+  if (!tables || typeof tables !== "object") return [];
+  const keysToTry = [
+    table.tableKey,
+    table.idString,
+    table.id != null ? String(table.id) : null,
+    table.id,
+    table.title,
+  ].filter((k) => k !== undefined && k !== null && k !== "");
+
+  for (const k of keysToTry) {
+    if (Array.isArray(tables[k]) && tables[k].length > 0) return tables[k];
+  }
+  for (const k of keysToTry) {
+    if (tables[k] !== undefined) return Array.isArray(tables[k]) ? tables[k] : [];
+  }
+  const tableEntries = Object.entries(tables);
+  for (const k of keysToTry) {
+    const kLower = String(k).toLowerCase().trim();
+    const found = tableEntries.find(([entryKey]) => String(entryKey).toLowerCase().trim() === kLower);
+    if (found && Array.isArray(found[1])) return found[1];
+  }
+  return [];
+};
+
+const getCellValue = (row = {}, column = "", table = {}) => {
+  if (!row || typeof row !== "object") return "";
+  if (row[column] !== undefined) return row[column];
+
+  const colLower = String(column).toLowerCase().trim();
+  const rowEntries = Object.entries(row);
+  const found = rowEntries.find(([k]) => String(k).toLowerCase().trim() === colLower);
+  if (found && found[1] !== undefined) return found[1];
+
+  if (Array.isArray(table?.fields)) {
+    const field = table.fields.find((f) =>
+      String(f.label || "").toLowerCase().trim() === colLower ||
+      String(f.fieldKey || "").toLowerCase().trim() === colLower ||
+      String(f.id || "").toLowerCase().trim() === colLower
+    );
+    if (field) {
+      if (field.fieldKey && row[field.fieldKey] !== undefined) return row[field.fieldKey];
+      if (field.label && row[field.label] !== undefined) return row[field.label];
+      if (field.id && row[field.id] !== undefined) return row[field.id];
+    }
+  }
+  return "";
+};
+
+const resolveTableColumns = (table = {}) => {
+  const raw = (Array.isArray(table.columns) && table.columns.length > 0)
+    ? table.columns
+    : (Array.isArray(table.fields) && table.fields.length > 0)
+      ? table.fields.map((f) => f.label || f.fieldKey || f.id)
+      : [];
+  return columnsWithSerial(raw);
+};
+
 const blocksFor = (section) =>
   section.blocks || [
     ...(section.fields?.length ? [{ type: "fields", fields: section.fields }] : []),
@@ -314,8 +384,10 @@ const normalizeDynamicSchema = (schema) => {
     ...sec,
     id: sec.idString || sec.id || sec.sectionKey || `section-${idx + 1}`,
     sectionKey: sec.sectionKey || sec.idString || String(sec.id || `section-${idx + 1}`),
-    number: sec.number || sec.sectionNumber || sec.sectionKey || String(idx + 1),
+    number: sec.number || sec.sectionNumber || (sec.sectionKey && sec.sectionKey.length <= 4 ? sec.sectionKey : String(idx + 1)),
     title: sec.title || sec.sectionTitle || sec.name || `Section ${idx + 1}`,
+    ownerRole: sec.ownerRole || (sec.isAuditorSection ? "auditor" : "director-schools"),
+    isAuditorSection: sec.ownerRole === "auditor" || sec.isAuditorSection === true || sec.auditorSection === true,
     blocks: sec.blocks || [
       ...(sec.fields?.length ? [{ type: "fields", fields: sec.fields }] : []),
       ...(sec.tables?.length ? [{ type: "tables", tables: sec.tables }] : []),
@@ -348,16 +420,30 @@ const ACADEMIC_PART_E_SECTION_ID = "part-e-observations";
 const ACADEMIC_PART_E_FIELD_IDS = ["auditObservations", "auditRecommendations", "auditDocumentation"];
 const auditorSectionNumberFor = (auditType) => auditType === "academic" ? "E" : "F";
 const isAuditorSection = (section, auditType) =>
-  section.number === auditorSectionNumberFor(auditType) ||
-  new RegExp(`^Part\\s+${auditorSectionNumberFor(auditType)}\\b`, "i").test(section.title || "");
-const hasAcademicPartEValues = (values = {}) =>
-  ACADEMIC_PART_E_FIELD_IDS.some((fieldId) => {
-    const value = values[fieldId];
-    if (Array.isArray(value)) return value.length > 0;
-    if (isAttachmentValue(value)) return true;
-    if (value && typeof value === "object") return Object.keys(value).length > 0;
-    return String(value || "").trim().length > 0;
-  });
+  section?.ownerRole === "auditor" ||
+  String(section?.ownerRole || "").toLowerCase().includes("auditor") ||
+  section?.isAuditorSection === true ||
+  section?.auditorSection === true ||
+  section?.number === auditorSectionNumberFor(auditType) ||
+  new RegExp(`^Part\\s+${auditorSectionNumberFor(auditType)}\\b`, "i").test(section?.title || "");
+const hasAcademicPartEValues = (values = {}) => {
+  if (!values || typeof values !== "object") return false;
+  return (
+    [...ACADEMIC_PART_E_FIELD_IDS, "remarks", "reviewRemarks", "auditObservations"].some((fieldId) => {
+      const value = values[fieldId];
+      if (Array.isArray(value)) return value.length > 0;
+      if (isAttachmentValue(value)) return true;
+      if (value && typeof value === "object") return Object.keys(value).length > 0;
+      return String(value || "").trim().length > 0;
+    }) ||
+    Object.entries(values).some(([k, v]) => {
+      if (k.startsWith("__") || k === "status" || k === "auditType") return false;
+      if (Array.isArray(v)) return v.length > 0;
+      if (isAttachmentValue(v)) return true;
+      return typeof v === "string" && v.trim().length > 0;
+    })
+  );
+};
 const comparablePartEValue = (value) => {
   if (Array.isArray(value)) return JSON.stringify(value.map(comparablePartEValue));
   if (isAttachmentValue(value)) return attachmentKeyFor(value);
@@ -1773,22 +1859,30 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
       };
 
       let dynamicSchema = null;
-      if (rawSub.schemaVersionId) {
+      const universityCode = rawSub.universityCode || sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || "dypiu";
+      const schoolOrPost = rawSub.auditType === "academic"
+        ? (rawSub.school || rawSub.schoolName || rawSub.department)
+        : (rawSub.administrativePost || rawSub.department);
+
+      // Always attempt to fetch the active published schema for this school / university first
+      try {
+        const fetched = await fetchActiveSchema(rawSub.auditType || "academic", universityCode, schoolOrPost);
+        if (fetched && Array.isArray(fetched.sections) && fetched.sections.length > 0) {
+          dynamicSchema = normalizeDynamicSchema(fetched);
+        }
+      } catch (e) {
+        console.warn("Could not fetch active schema", e);
+      }
+
+      // If active schema is not found, fallback to schema by version
+      if (!dynamicSchema && rawSub.schemaVersionId) {
         try {
           const fetched = await fetchSchemaByVersion(rawSub.schemaVersionId);
-          dynamicSchema = normalizeDynamicSchema(fetched);
+          if (fetched && Array.isArray(fetched.sections) && fetched.sections.length > 0) {
+            dynamicSchema = normalizeDynamicSchema(fetched);
+          }
         } catch (e) {
           console.warn("Could not fetch schema by version", e);
-        }
-      }
-      if (!dynamicSchema) {
-        try {
-          const universityCode = rawSub.universityCode || sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || "dypiu";
-          const schoolOrPost = rawSub.auditType === "academic" ? rawSub.school : rawSub.administrativePost;
-          const fetched = await fetchActiveSchema(rawSub.auditType || "academic", universityCode, schoolOrPost);
-          dynamicSchema = normalizeDynamicSchema(fetched);
-        } catch (e) {
-          console.warn("Could not fetch active schema", e);
         }
       }
 
@@ -2288,7 +2382,7 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
     }
   };
 
-  const completeAuditorReview = async (submission, values, auditorAttachments = submission.attachments) => {
+  const completeAuditorReview = async (submission, values, auditorAttachments = submission.attachments, auditorTables = submission.tables, auditorRemarks = "") => {
     const ok = window.confirm(`Submit your ${auditLabels[submission.auditType]} auditor review? The form will move to IQAC only after every assigned auditor submits.`);
     if (!ok) return;
 
@@ -2298,13 +2392,17 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
     try {
       const auditorReviewedOn = new Date().toISOString();
       const signedValues = withAuditorSignOff(values, profile, auditorReviewedOn);
+      if (auditorRemarks) {
+        signedValues.remarks = auditorRemarks;
+        signedValues.auditObservations = auditorRemarks;
+      }
       const assignedPosts = auditorPostsForCurrentSubmission(submission, profile);
       const currentAssignments = auditorAssignmentsForCurrentUser(submission, profile);
       const assignmentKeys = currentAssignments.map((assignment) => assignment.key).filter(Boolean);
       const { valuesData, tablesData, attachments } = buildSubmissionPayload({
           auditType: submission.auditType,
           values: signedValues,
-          tables: submission.tables,
+          tables: auditorTables || submission.tables,
           attachments: uniqueAttachments([
             ...(auditorAttachments || []),
             ...attachmentsFromValues(signedValues),
@@ -2327,6 +2425,8 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
         auditorAssignmentKeys: assignmentKeys,
         submittedAt: auditorReviewedOn,
         reviewStatus: "submitted",
+        remarks: auditorRemarks || signedValues.remarks || "",
+        auditObservations: auditorRemarks || signedValues.auditObservations || "",
         valuesData,
         tablesData,
         attachments,
@@ -2369,7 +2469,11 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
             status: "submitted",
             reviewStatus: "submitted",
             submittedAt: assignment.submittedAt || auditorReviewedOn,
-            values: assignment.values && Object.keys(assignment.values).length ? assignment.values : signedValues,
+            values: assignment.values && Object.keys(assignment.values).length
+              ? { ...assignment.values, remarks: auditorRemarks || assignment.values.remarks || signedValues.remarks, auditObservations: auditorRemarks || assignment.values.auditObservations || signedValues.auditObservations }
+              : signedValues,
+            remarks: auditorRemarks || assignment.remarks || signedValues.remarks || "",
+            auditObservations: auditorRemarks || assignment.auditObservations || signedValues.auditObservations || "",
             attachments: assignment.attachments?.length ? assignment.attachments : attachments,
             auditorCorrectionRequested: false,
             correctionRequestedForAuditor: false,
@@ -2395,6 +2499,8 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
               reviewStatus: "submitted",
               submittedAt: auditorReviewedOn,
               values: signedValues,
+              remarks: auditorRemarks || assignment.remarks || signedValues.remarks || "",
+              auditObservations: auditorRemarks || assignment.auditObservations || signedValues.auditObservations || "",
               attachments,
               auditorCorrectionRequested: false,
               correctionRequestedForAuditor: false,
@@ -2438,6 +2544,8 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
           auditorReviewedByRole: role,
           auditorReviewedOn,
           auditorReviewedByEmail: profile.email,
+          remarks: auditorRemarks || submission.remarks,
+          auditObservations: auditorRemarks || submission.auditObservations,
           valuesData,
           tablesData,
           attachments,
@@ -2446,6 +2554,8 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
         await updateSubmissionById(submission.id, {
           auditorAssignments,
           auditorProgress,
+          remarks: auditorRemarks || submission.remarks,
+          auditObservations: auditorRemarks || submission.auditObservations,
         });
       }
       const nextStatus = allAssignedAuditorsSubmitted
@@ -2455,6 +2565,9 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
       updateSubmission(submission.auditType, submission.id, {
         status: nextStatus,
         values: responseSubmission.values ? parseSubmissionFormData(responseSubmission).values : signedValues,
+        tables: responseSubmission.tables ? parseSubmissionFormData(responseSubmission).tables : (auditorTables || submission.tables),
+        remarks: auditorRemarks || submission.remarks,
+        auditObservations: auditorRemarks || submission.auditObservations,
         auditorAssignments,
         auditorProgress,
         allAuditorsSubmitted: allAssignedAuditorsSubmitted,
@@ -2539,7 +2652,7 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
               onRemarksChange={(remarks) => updateSubmission(selectedSubmission.auditType, selectedSubmission.id, { remarks })}
               onApprove={() => openApprovalModal(selectedSubmission)}
               onReturnToAuditor={() => openCorrectionModal(selectedSubmission)}
-              onCompleteAuditorReview={(values, attachments) => completeAuditorReview(selectedSubmission, values, attachments)}
+              onCompleteAuditorReview={(values, attachments, tables, remarks) => completeAuditorReview(selectedSubmission, values, attachments, tables, remarks)}
               reviewingStatus={reviewingStatus}
               canApprove={!isAuditor && isAuditorCompleted(selectedSubmission)}
               canReturnToAuditor={
@@ -4403,25 +4516,39 @@ function FullFormReview({
 
   useEffect(() => {
     let isSubscribed = true;
-    if (submission.schema && Array.isArray(submission.schema.sections) && submission.schema.sections.length > 0) {
-      setResolvedSchema(submission.schema);
-      return;
-    }
     const loadSchema = async () => {
       try {
+        const universityCode = submission.universityCode || sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || "dypiu";
+        const schoolOrPost = submission.auditType === "academic"
+          ? (submission.school || submission.schoolName || submission.department)
+          : (submission.administrativePost || submission.department);
         let dynamicSchema = null;
-        if (submission.schemaVersionId) {
-          const fetched = await fetchSchemaByVersion(submission.schemaVersionId);
-          dynamicSchema = normalizeDynamicSchema(fetched);
-        }
-        if (!dynamicSchema) {
-          const universityCode = submission.universityCode || sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || "dypiu";
-          const schoolOrPost = submission.auditType === "academic" ? submission.school : submission.administrativePost;
+
+        // Try active schema first so newly published sections (e.g. auditor section) are always visible
+        try {
           const fetched = await fetchActiveSchema(submission.auditType || "academic", universityCode, schoolOrPost);
-          dynamicSchema = normalizeDynamicSchema(fetched);
+          if (fetched && Array.isArray(fetched.sections) && fetched.sections.length > 0) {
+            dynamicSchema = normalizeDynamicSchema(fetched);
+          }
+        } catch (e) {
+          console.warn("Could not fetch active schema in FullFormReview", e);
         }
-        if (isSubscribed && dynamicSchema) {
+
+        if (!dynamicSchema && submission.schemaVersionId) {
+          try {
+            const fetched = await fetchSchemaByVersion(submission.schemaVersionId);
+            if (fetched && Array.isArray(fetched.sections) && fetched.sections.length > 0) {
+              dynamicSchema = normalizeDynamicSchema(fetched);
+            }
+          } catch (e) {
+            console.warn("Could not fetch schema by version in FullFormReview", e);
+          }
+        }
+
+        if (isSubscribed && dynamicSchema && Array.isArray(dynamicSchema.sections) && dynamicSchema.sections.length > 0) {
           setResolvedSchema(dynamicSchema);
+        } else if (isSubscribed && submission.schema) {
+          setResolvedSchema(submission.schema);
         }
       } catch (err) {
         console.warn("Could not dynamically resolve schema in FullFormReview", err);
@@ -4431,7 +4558,7 @@ function FullFormReview({
     return () => {
       isSubscribed = false;
     };
-  }, [submission.id, submission.schemaVersionId, submission.auditType, submission.school, submission.administrativePost, submission.universityCode, submission.schema]);
+  }, [submission.id, submission.schemaVersionId, submission.auditType, submission.school, submission.schoolName, submission.department, submission.administrativePost, submission.universityCode]);
 
   const sections = useMemo(() => {
     if (resolvedSchema?.sections?.length) return resolvedSchema.sections;
@@ -4440,6 +4567,9 @@ function FullFormReview({
   }, [resolvedSchema, submission.sections, submission.auditType]);
 
   const activeSchema = resolvedSchema || (submission.auditType === "academic" ? { ...academicAudit2025Schema, sections } : null);
+  const internalAssignmentsFromSubmission = (submission.auditorAssignments || []).filter(
+    (assignment) => normalizeUserRole(assignment.auditorType || assignment.type || "").includes("internal")
+  );
   const previousInternalReport = (submission.versionHistory || [])
     .filter((entry) =>
       (
@@ -4449,9 +4579,23 @@ function FullFormReview({
           Number(entry.version || 0) < Number(submission.version || 0)
         )
       ) &&
-      (getSubmissionAuditorSignOff(entry).name || hasAcademicPartEValues(entry.values))
+      (getSubmissionAuditorSignOff(entry).name || hasAcademicPartEValues(entry.values) || (entry.auditorAssignments && entry.auditorAssignments.length > 0))
     )
-    .sort((first, second) => Number(second.version || 0) - Number(first.version || 0))[0];
+    .sort((first, second) => Number(second.version || 0) - Number(first.version || 0))[0] || (
+      internalAssignmentsFromSubmission.length > 0
+        ? {
+            reportCategory: "internal",
+            auditCycle: submission.auditCycle,
+            version: 1,
+            values: internalAssignmentsFromSubmission[0].values || {},
+            tables: internalAssignmentsFromSubmission[0].tables || {},
+            remarks: internalAssignmentsFromSubmission[0].remarks || internalAssignmentsFromSubmission[0].auditObservations || "",
+            auditorReviewedBy: internalAssignmentsFromSubmission[0].auditorName,
+            auditorReviewedByDesignation: internalAssignmentsFromSubmission[0].auditorDesignation,
+            auditorAssignments: internalAssignmentsFromSubmission,
+          }
+        : null
+    );
   const previousInternalAuditor = getSubmissionAuditorSignOff(previousInternalReport);
   const currentAuditor = getSubmissionAuditorSignOff(submission);
   const isExternalAcademicReport =
@@ -4509,11 +4653,20 @@ function FullFormReview({
       : shouldClearFreshAuditorDraft
         ? []
         : submission.attachments || [];
+  const currentAssignmentTables = currentUserAssignments
+    .map((assignment) => safeObjectValue(assignment.tables || assignment.tablesData))
+    .find((tables) => Object.keys(tables).length > 0);
+  const initialDraftTables = currentAssignmentTables
+    ? { ...(submission.tables || {}), ...currentAssignmentTables }
+    : submission.tables || {};
   const [draftValues, setDraftValues] = useState(
     initialDraftValues
   );
   const [draftAttachments, setDraftAttachments] = useState(
     initialDraftAttachments
+  );
+  const [draftTables, setDraftTables] = useState(
+    initialDraftTables
   );
   const [reviewRemarks, setReviewRemarks] = useState(reviewRemarksForDisplay(submission));
   const [activeSectionIndex, setActiveSectionIndex] = useState(0);
@@ -4524,11 +4677,41 @@ function FullFormReview({
   const shouldHidePendingAuditorValues = activeSectionIsAuditorOwned && !canShowAuditorReviewValues;
   const submittedForm = {
     values: shouldHidePendingAuditorValues ? hidePendingAuditorReviewValues(draftValues) : draftValues,
-    tables: submission.tables || {},
+    tables: draftTables,
     hasSavedData: submission.hasSavedData,
   };
   const isLastSection = activeSectionIndex === sections.length - 1;
   const hasRemarks = Boolean(reviewRemarks.trim());
+
+  const auditorRemarksForDisplay = useMemo(() => {
+    const myAssignment = currentUserAssignments.find(
+      (a) => a.remarks || a.auditObservations || a.values?.remarks || a.values?.auditObservations
+    );
+    if (myAssignment) {
+      const text = myAssignment.remarks || myAssignment.auditObservations || myAssignment.values?.remarks || myAssignment.values?.auditObservations;
+      if (text && String(text).trim()) return String(text).trim();
+    }
+
+    const anyAssignment = (submission.auditorAssignments || [])
+      .filter(auditorAssignmentSubmitted)
+      .find((a) => a.remarks || a.auditObservations || a.values?.remarks || a.values?.auditObservations);
+    if (anyAssignment) {
+      const text = anyAssignment.remarks || anyAssignment.auditObservations || anyAssignment.values?.remarks || anyAssignment.values?.auditObservations;
+      if (text && String(text).trim()) return String(text).trim();
+    }
+
+    if (draftValues?.remarks && String(draftValues.remarks).trim()) return String(draftValues.remarks).trim();
+    if (draftValues?.auditObservations && String(draftValues.auditObservations).trim()) return String(draftValues.auditObservations).trim();
+    if (submission.values?.remarks && String(submission.values.remarks).trim()) return String(submission.values.remarks).trim();
+    if (submission.values?.auditObservations && String(submission.values.auditObservations).trim()) return String(submission.values.auditObservations).trim();
+    if (submission.auditObservations && String(submission.auditObservations).trim()) return String(submission.auditObservations).trim();
+
+    if (auditorReviewReadOnly && reviewRemarks && String(reviewRemarks).trim()) {
+      return String(reviewRemarks).trim();
+    }
+    return "";
+  }, [currentUserAssignments, submission.auditorAssignments, submission.values, submission.auditObservations, draftValues, auditorReviewReadOnly, reviewRemarks]);
+
   const goToSection = (sectionIndex) => {
     setActiveSectionIndex(sectionIndex);
     scrollPageToTop();
@@ -4567,10 +4750,62 @@ function FullFormReview({
       current.filter((file) => attachmentKeyFor(file) !== attachmentKeyFor(attachment))
     );
   };
+  const handleAuditorTableChange = (tableId, rowIndex, column, value) => {
+    setDraftTables((current) => {
+      const strKey = String(tableId);
+      const existing = current[strKey] || (typeof tableId === "number" ? current[tableId] : []) || [];
+      let rows = Array.isArray(existing) ? [...existing] : [];
+      if (rowIndex >= rows.length) {
+        while (rows.length <= rowIndex) {
+          rows.push({});
+        }
+      }
+      rows = rows.map((row, index) => (index === rowIndex ? { ...row, [column]: value } : row));
+      return {
+        ...current,
+        [strKey]: rows,
+        ...(typeof tableId === "number" ? { [tableId]: rows } : {}),
+      };
+    });
+  };
+  const handleAuditorAddRow = (table) => {
+    const key = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
+    const cols = resolveTableColumns(table);
+    setDraftTables((current) => {
+      const existing = current[key] || (table.id != null ? current[table.id] : []) || [];
+      const rows = Array.isArray(existing) ? existing : [];
+      const nextRows = [...rows, numberedRowFor(cols, rows.length)];
+      return {
+        ...current,
+        ...(key ? { [key]: nextRows } : {}),
+        ...(table.id != null ? { [table.id]: nextRows } : {}),
+        ...(table.tableKey ? { [table.tableKey]: nextRows } : {}),
+      };
+    });
+  };
+  const handleAuditorDeleteLastRow = (table) => {
+    const key = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
+    const cols = resolveTableColumns(table);
+    setDraftTables((current) => {
+      const existing = current[key] || (table.id != null ? current[table.id] : []) || [];
+      const rows = Array.isArray(existing) ? existing : [];
+      const nextRows = rows.slice(0, -1);
+      const formatted = nextRows.length ? withSerialNumbers(cols, nextRows) : [numberedRowFor(cols, 0)];
+      return {
+        ...current,
+        ...(key ? { [key]: formatted } : {}),
+        ...(table.id != null ? { [table.id]: formatted } : {}),
+        ...(table.tableKey ? { [table.tableKey]: formatted } : {}),
+      };
+    });
+  };
+  const handleAuditorTableCellUpload = async (files) => uploadAttachments(files);
+  const handleAuditorTableCellDelete = async (attachment) => {
+    if (attachment?.url) await deleteAttachment(attachment);
+  };
   const previousInternalPartE =
-    isExternalAcademicReport &&
-    !showPreviousAuditorReference &&
-    hasAcademicPartEValues(previousInternalReport?.values)
+    (isExternalAcademicReport || showPreviousAuditorReference || normalizeUserRole(currentProfile?.auditorType || "").includes("external")) &&
+    previousInternalReport
       ? previousInternalReport
       : null;
 
@@ -4684,6 +4919,7 @@ function FullFormReview({
         <PreviousAuditorReference
           auditType={submission.auditType}
           history={submission.versionHistory || []}
+          auditorAssignments={submission.auditorAssignments || []}
           sections={sections}
         />
       )}
@@ -4697,6 +4933,11 @@ function FullFormReview({
         onFieldChange={handleAuditorFieldChange}
         onFileUpload={handleAuditorFileUpload}
         onFileDelete={handleAuditorFileDelete}
+        onTableChange={handleAuditorTableChange}
+        onAddRow={handleAuditorAddRow}
+        onDeleteLastRow={handleAuditorDeleteLastRow}
+        onUploadAttachment={handleAuditorTableCellUpload}
+        onDeleteAttachment={handleAuditorTableCellDelete}
         auditorAssignments={submission.auditorAssignments || []}
         currentAuditorAssignments={currentUserAssignments}
         previousInternalPartEValues={previousInternalPartE?.values}
@@ -4707,6 +4948,111 @@ function FullFormReview({
             : ""
         }
       />
+
+      {/* Review Remarks: ONLY present in Auditor part section */}
+      {activeSectionIsAuditorOwned && (
+        <div style={{ marginTop: 24, marginBottom: 16 }}>
+          {submission.status === "approved" ? (
+            <>
+              {auditorRemarksForDisplay && (
+                <div style={{ marginBottom: 16 }}>
+                  <label style={styles.remarksLabel}>Auditor Review Remarks / Observations</label>
+                  <div
+                    style={{
+                      padding: "14px 16px",
+                      background: "#f8fafc",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: 8,
+                      fontSize: 14,
+                      lineHeight: 1.6,
+                      color: "#0f172a",
+                      fontWeight: 500,
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {auditorRemarksForDisplay}
+                  </div>
+                </div>
+              )}
+              {reviewRemarksForDisplay(submission) ? (
+                <div>
+                  <label style={styles.remarksLabel}>IQAC Review Remarks</label>
+                  <div
+                    style={{
+                      padding: "14px 16px",
+                      background: "#f8fafc",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: 8,
+                      fontSize: 14,
+                      lineHeight: 1.6,
+                      color: "#0f172a",
+                      fontWeight: 500,
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {reviewRemarksForDisplay(submission)}
+                  </div>
+                </div>
+              ) : null}
+            </>
+          ) : !canEditAuditorSection ? (
+            <>
+              {auditorRemarksForDisplay && (
+                <div style={{ marginBottom: 16 }}>
+                  <label style={styles.remarksLabel}>Auditor Review Remarks / Observations</label>
+                  <div
+                    style={{
+                      padding: "14px 16px",
+                      background: "#f8fafc",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: 8,
+                      fontSize: 14,
+                      lineHeight: 1.6,
+                      color: "#0f172a",
+                      fontWeight: 500,
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {auditorRemarksForDisplay}
+                  </div>
+                </div>
+              )}
+              {canApprove && (
+                <label style={styles.remarksLabel}>
+                  IQAC Review Remarks
+                  <textarea
+                    className="audit-control"
+                    value={reviewRemarks}
+                    onChange={(event) => {
+                      setReviewRemarks(event.target.value);
+                      onRemarksChange(event.target.value);
+                    }}
+                    placeholder="Write final approval remarks"
+                    style={{ ...styles.remarksInput, minHeight: 120 }}
+                  />
+                </label>
+              )}
+            </>
+          ) : (
+            <label style={styles.remarksLabel}>
+              Review Remarks
+              <textarea
+                className="audit-control"
+                value={reviewRemarks}
+                onChange={(event) => {
+                  setReviewRemarks(event.target.value);
+                  onRemarksChange(event.target.value);
+                }}
+                placeholder="Write auditor review remarks / observations"
+                style={{ ...styles.remarksInput, minHeight: 120 }}
+              />
+            </label>
+          )}
+        </div>
+      )}
 
       <div style={styles.fullReviewActions}>
         {auditorReviewReadOnly ? (
@@ -4723,11 +5069,21 @@ function FullFormReview({
         ) : canEditAuditorSection && activeSectionIsAuditorOwned ? (
           <div style={styles.finalReviewPanel}>
             <div style={styles.finalActionRow}>
+              {activeSectionIndex > 0 && (
+                <button type="button" className="btn btn-secondary" onClick={goToPreviousSection}>
+                  Previous
+                </button>
+              )}
               <span style={styles.reviewHint}>Complete your assigned auditor observations and submit them for this assignment.</span>
-              <button type="button" className="btn btn-primary" onClick={() => onCompleteAuditorReview(draftValues, draftAttachments)} disabled={Boolean(reviewingStatus)} aria-busy={reviewingStatus === "auditor-submit"}>
+              <button type="button" className="btn btn-primary" onClick={() => onCompleteAuditorReview(draftValues, draftAttachments, draftTables, reviewRemarks)} disabled={Boolean(reviewingStatus)} aria-busy={reviewingStatus === "auditor-submit"}>
                 {reviewingStatus === "auditor-submit" && <InlineSpinner label="Submitting auditor review" />}
                 {reviewingStatus === "auditor-submit" ? "Submitting..." : "Submit My Auditor Review"}
               </button>
+              {!isLastSection && (
+                <button type="button" className="btn btn-secondary" onClick={goToNextSection}>
+                  Next
+                </button>
+              )}
             </div>
           </div>
         ) : !isLastSection ? (
@@ -4746,28 +5102,12 @@ function FullFormReview({
                 <div style={styles.readOnlyReviewNotice}>
                   This approved report is an immutable historical Version {submission.version}.
                 </div>
-                {reviewRemarksForDisplay(submission) && (
-                  <div style={{ marginTop: 16, marginBottom: 16 }}>
-                    <label style={styles.remarksLabel}>IQAC Review Remarks</label>
-                    <div
-                      style={{
-                        padding: "14px 16px",
-                        background: "#f8fafc",
-                        border: "1px solid #cbd5e1",
-                        borderRadius: 8,
-                        fontSize: 14,
-                        lineHeight: 1.6,
-                        color: "#0f172a",
-                        fontWeight: 500,
-                        whiteSpace: "pre-wrap",
-                        wordBreak: "break-word",
-                      }}
-                    >
-                      {reviewRemarksForDisplay(submission)}
-                    </div>
-                  </div>
-                )}
                 <div style={styles.finalActionRow}>
+                  <div style={styles.reviewPager}>
+                    <button type="button" className="btn btn-secondary" onClick={goToPreviousSection} disabled={activeSectionIndex === 0}>
+                      Previous
+                    </button>
+                  </div>
                   <span style={styles.reviewHint}>
                     {titleCase(submission.reportCategory || "unclassified")} Audit · {submission.auditCycle}
                   </span>
@@ -4777,50 +5117,40 @@ function FullFormReview({
                 </div>
               </>
             ) : (
-              <>
-                <label style={styles.remarksLabel}>
-                  Review Remarks
-                  <textarea
-                    className="audit-control"
-                    value={reviewRemarks}
-                    onChange={(event) => {
-                      setReviewRemarks(event.target.value);
-                      onRemarksChange(event.target.value);
-                    }}
-                    placeholder="Write final approval remarks"
-                    style={{ ...styles.remarksInput, minHeight: 120 }}
-                  />
-                </label>
-                <div style={styles.finalActionRow}>
-                  <span style={styles.reviewHint}>
-                    {canApprove
-                      ? "Approval is enabled after final remarks are written."
-                      : "Auditor remarks are required before final review actions are available."}
-                  </span>
-                  <div style={styles.cardActions}>
-                    {canReturnToAuditor && (
-                      <button
-                        type="button"
-                        style={{
-                          ...styles.returnToggleButton,
-                          ...(reviewingStatus === "auditor-correction" ? styles.activeReturnToggleButton : {}),
-                        }}
-                        onClick={onReturnToAuditor}
-                        disabled={Boolean(reviewingStatus)}
-                        aria-pressed={reviewingStatus === "auditor-correction"}
-                        aria-busy={reviewingStatus === "auditor-correction"}
-                      >
-                        {reviewingStatus === "auditor-correction" && <InlineSpinner label="Returning to auditor" />}
-                        {reviewingStatus === "auditor-correction" ? "Returning..." : "Return to Auditor"}
-                      </button>
-                    )}
-                    <button type="button" className="btn btn-primary" onClick={onApprove} disabled={!canApprove || !hasRemarks || Boolean(reviewingStatus)} aria-busy={reviewingStatus === "approved"}>
-                      {reviewingStatus === "approved" && <InlineSpinner label="Approving form" />}
-                      {reviewingStatus === "approved" ? "Approving..." : "Approve"}
-                    </button>
-                  </div>
+              <div style={styles.finalActionRow}>
+                <div style={styles.reviewPager}>
+                  <button type="button" className="btn btn-secondary" onClick={goToPreviousSection} disabled={activeSectionIndex === 0}>
+                    Previous
+                  </button>
                 </div>
-              </>
+                <span style={styles.reviewHint}>
+                  {canApprove
+                    ? "Approval is enabled after final remarks are written."
+                    : "Auditor remarks are required before final review actions are available."}
+                </span>
+                <div style={styles.cardActions}>
+                  {canReturnToAuditor && (
+                    <button
+                      type="button"
+                      style={{
+                        ...styles.returnToggleButton,
+                        ...(reviewingStatus === "auditor-correction" ? styles.activeReturnToggleButton : {}),
+                      }}
+                      onClick={onReturnToAuditor}
+                      disabled={Boolean(reviewingStatus)}
+                      aria-pressed={reviewingStatus === "auditor-correction"}
+                      aria-busy={reviewingStatus === "auditor-correction"}
+                    >
+                      {reviewingStatus === "auditor-correction" && <InlineSpinner label="Returning to auditor" />}
+                      {reviewingStatus === "auditor-correction" ? "Returning..." : "Return to Auditor"}
+                    </button>
+                  )}
+                  <button type="button" className="btn btn-primary" onClick={onApprove} disabled={!canApprove || !hasRemarks || Boolean(reviewingStatus)} aria-busy={reviewingStatus === "approved"}>
+                    {reviewingStatus === "approved" && <InlineSpinner label="Approving form" />}
+                    {reviewingStatus === "approved" ? "Approving..." : "Approve"}
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         )}
@@ -4829,10 +5159,12 @@ function FullFormReview({
   );
 }
 
-function PreviousAuditorReference({ auditType, history, sections: customSections }) {
+function PreviousAuditorReference({ auditType, history = [], auditorAssignments = [], sections: customSections }) {
   const previousReview = [...history]
     .reverse()
-    .find((entry) => isAuditorCompleted(entry) || getAuditorSignOff(entry.values).name);
+    .find((entry) => isAuditorCompleted(entry) || getAuditorSignOff(entry.values).name || (entry.auditorAssignments && entry.auditorAssignments.length > 0)) || (
+      auditorAssignments.find((a) => normalizeUserRole(a.auditorType || a.type || "").includes("internal") && auditorAssignmentSubmitted(a))
+    );
   if (!previousReview) return null;
 
   const sections = (Array.isArray(customSections) && customSections.length && typeof customSections[0] === "object")
@@ -4845,25 +5177,25 @@ function PreviousAuditorReference({ auditType, history, sections: customSections
       <summary style={styles.historyReferenceSummary}>
         Previous Auditor Observations
         <span style={styles.historyReferenceMeta}>
-          {titleCase(previousReview.reportCategory || "internal")} Audit · {previousReview.auditCycle} · V{previousReview.version}
+          {titleCase(previousReview.reportCategory || "internal")} Audit · {previousReview.auditCycle || ""} · V{previousReview.version || 1}
         </span>
       </summary>
       <div style={styles.historyReferenceBody}>
         <p style={styles.progressIntro}>
-          Read-only reference from {previousReview.auditorReviewedBy || "the previous auditor"}.
+          Read-only reference from {previousReview.auditorReviewedBy || previousReview.auditorName || "the previous auditor"}.
           Current-cycle observations are stored separately.
         </p>
-        {previousReview.remarks && (
+        {(previousReview.remarks || previousReview.auditObservations) && (
           <div style={styles.partEReferenceBlock}>
-            <h4 style={styles.partEReferenceTitle}>IQAC Internal Audit Review Remarks</h4>
-            <p style={styles.reviewText}>{previousReview.remarks}</p>
+            <h4 style={styles.partEReferenceTitle}>Internal Auditor Review Remarks / Observations</h4>
+            <p style={styles.reviewText}>{previousReview.remarks || previousReview.auditObservations}</p>
           </div>
         )}
         <SubmittedFormViewer
           sections={sections}
           formData={{
-            values: previousReview.values || {},
-            tables: previousReview.tables || {},
+            values: previousReview.values || (previousReview.valuesData ? safeJsonParse(previousReview.valuesData, {}) : {}),
+            tables: previousReview.tables || (previousReview.tablesData ? safeJsonParse(previousReview.tablesData, {}) : {}),
             hasSavedData: true,
           }}
           auditType={auditType}
@@ -4905,6 +5237,11 @@ function SubmittedFormViewer({
   onFieldChange,
   onFileUpload,
   onFileDelete,
+  onTableChange,
+  onAddRow,
+  onDeleteLastRow,
+  onUploadAttachment,
+  onDeleteAttachment,
   auditorAssignments = [],
   currentAuditorAssignments = [],
   previousInternalPartEValues,
@@ -4928,9 +5265,13 @@ function SubmittedFormViewer({
     return !(assignmentEmail && currentAssignmentEmails.has(assignmentEmail));
   });
   const showPreviousInternalPartE =
-    auditType === "academic" &&
-    activeSection?.id === ACADEMIC_PART_E_SECTION_ID &&
-    hasAcademicPartEValues(previousInternalPartEValues);
+    activeSectionIsAuditorOwned &&
+    (
+      hasAcademicPartEValues(previousInternalPartEValues) ||
+      (previousInternalPartEValues && Object.keys(previousInternalPartEValues).length > 0) ||
+      (Boolean(previousInternalPartEMeta) && previousInternalPartEValues !== undefined) ||
+      submittedAuditorAssignments.some((a) => normalizeUserRole(a.auditorType || a.type || "").includes("internal"))
+    );
   const showPreviousInternalPartF =
     auditType === "administrative" &&
     activeSection?.id === "section-f-observations-recommendations" &&
@@ -5084,13 +5425,39 @@ function SubmittedFormViewer({
               return null;
             }
 
+            if (editableSection) {
+              return (
+                <div key={`${activeSection.id}-tables-${blockIndex}`} style={styles.reviewTables}>
+                  {block.tables.map((table) => {
+                    const tableKey = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
+                    const rows = getTableRows(formData.tables, table);
+                    return (
+                      <AuditTable
+                        key={table.id || tableKey || table.tableKey || table.idString}
+                        table={table}
+                        rows={rows}
+                        values={formData.values}
+                        onFieldChange={onFieldChange}
+                        onChange={(rowIndex, column, value) => onTableChange?.(tableKey || table.id, rowIndex, column, value)}
+                        onAddRow={onAddRow}
+                        onDeleteLastRow={onDeleteLastRow}
+                        onUploadAttachment={onUploadAttachment}
+                        onDeleteAttachment={onDeleteAttachment}
+                        readOnly={false}
+                      />
+                    );
+                  })}
+                </div>
+              );
+            }
+
             return (
               <div key={`${activeSection.id}-tables-${blockIndex}`} style={styles.reviewTables}>
                 {block.tables.map((table) => (
                   <ReadOnlyTable
-                    key={table.id}
+                    key={table.id || table.tableKey || table.idString}
                     table={table}
-                    rows={formData.tables[table.id] || []}
+                    rows={getTableRows(formData.tables, table)}
                     values={formData.values}
                   />
                 ))}
@@ -5224,12 +5591,29 @@ function EditableFieldGrid({ fields, values, onFieldChange, onFileUpload, onFile
 }
 
 function sectionLabelFor(section, index) {
-  if (section.number) return `Part ${section.number}`;
+  if (!section) return `Part ${index + 1}`;
 
-  const partMatch = section.title.match(/^Part\s+[A-Z]/i);
-  if (partMatch) return partMatch[0];
+  if (section.number && String(section.number).trim()) {
+    const rawNum = String(section.number).trim();
+    if (/^[A-Za-z0-9]+$/.test(rawNum) && rawNum.length <= 4) {
+      return `Part ${rawNum.toUpperCase()}`;
+    }
+    if (/^part\s+/i.test(rawNum)) {
+      return rawNum.replace(/^part\s+/i, "Part ");
+    }
+  }
 
-  return index === 0 ? "Info" : String(index + 1);
+  const title = String(section.title || "").trim();
+  const partMatch = title.match(/^Part\s*([A-Za-z0-9]+)/i);
+  if (partMatch) {
+    return `Part ${partMatch[1].toUpperCase()}`;
+  }
+
+  if (title && title.length <= 16 && !title.toLowerCase().startsWith("section")) {
+    return title;
+  }
+
+  return `Part ${String.fromCharCode(65 + index)}`;
 }
 
 function ReadOnlyFieldGrid({ fields, values }) {
@@ -5292,6 +5676,14 @@ function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType 
                   </div>
                 </div>
               ))}
+              {(assignment.remarks || values.remarks || values.auditObservations) && !visibleFields.some((f) => f.id === "remarks" || f.id === "auditObservations") && (
+                <div style={styles.auditorReviewField}>
+                  <div style={styles.readOnlyLabel}>Review Remarks / Observations</div>
+                  <div style={styles.auditorReviewValue}>
+                    {renderValue(assignment.remarks || values.remarks || values.auditObservations)}
+                  </div>
+                </div>
+              )}
             </div>
           </section>
         );
@@ -5300,9 +5692,17 @@ function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType 
   );
 }
 
-function ReadOnlyTable({ table, rows, values }) {
-  const columns = columnsWithSerial(table.columns);
-  const visibleRows = rows.length ? rows : [columns.reduce((row, column) => ({ ...row, [column]: "" }), {})];
+function ReadOnlyTable({ table, rows = [], values = {} }) {
+  const columns = resolveTableColumns(table);
+  const visibleRows = (Array.isArray(rows) && rows.length > 0)
+    ? rows
+    : [columns.reduce((row, column) => ({ ...row, [column]: "" }), {})];
+
+  const standaloneFields = (Array.isArray(table.fields) ? table.fields : []).filter((field) => {
+    const fieldIdentifier = String(field.label || field.fieldKey || field.id || "").toLowerCase().trim();
+    const isCol = columns.some((c) => String(c).toLowerCase().trim() === fieldIdentifier);
+    return !isCol && values && values[field.id] !== undefined && String(values[field.id]).trim() !== "";
+  });
 
   return (
     <div style={styles.readOnlyTableBlock}>
@@ -5316,9 +5716,9 @@ function ReadOnlyTable({ table, rows, values }) {
         </div>
       )}
 
-      {!!table.fields?.length && (
+      {standaloneFields.length > 0 && (
         <div style={styles.readOnlyFieldGrid}>
-          {table.fields.map((field) => (
+          {standaloneFields.map((field) => (
             <div key={field.id} style={styles.readOnlyField}>
               <div style={styles.readOnlyLabel}>{field.label}</div>
               <div style={styles.readOnlyValue}>{renderValue(values[field.id])}</div>
@@ -5331,19 +5731,39 @@ function ReadOnlyTable({ table, rows, values }) {
         <table className="audit-data-table" style={styles.readOnlyTable}>
           <thead>
             <tr>
-              {columns.map((column) => (
-                <th key={column} style={styles.readOnlyTh}>{column}</th>
-              ))}
+              {columns.map((column) => {
+                const isSerial = Boolean(serialColumnFor([column]));
+                return (
+                  <th
+                    key={column}
+                    style={{
+                      ...styles.readOnlyTh,
+                      ...(isSerial ? { width: "65px", maxWidth: "70px", textAlign: "center" } : {}),
+                    }}
+                  >
+                    {column}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
             {visibleRows.map((row, rowIndex) => (
-              <tr key={`${table.id}-readonly-${rowIndex}`}>
-                {columns.map((column) => (
-                  <td key={column} style={styles.readOnlyTd}>
-                    {renderValue(row[column])}
-                  </td>
-                ))}
+              <tr key={`${table.id || table.tableKey || "tbl"}-readonly-${rowIndex}`}>
+                {columns.map((column) => {
+                  const isSerial = Boolean(serialColumnFor([column]));
+                  return (
+                    <td
+                      key={column}
+                      style={{
+                        ...styles.readOnlyTd,
+                        ...(isSerial ? { width: "65px", maxWidth: "70px", textAlign: "center" } : {}),
+                      }}
+                    >
+                      {renderValue(getCellValue(row, column, table))}
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>
@@ -5353,7 +5773,9 @@ function ReadOnlyTable({ table, rows, values }) {
   );
 }
 
-function renderValue(value) {
+function renderValue(rawValue) {
+  const value = parseIfJson(rawValue);
+
   if (Array.isArray(value)) {
     return value.length ? (
       <div style={styles.attachmentList}>
@@ -5408,7 +5830,7 @@ function renderValue(value) {
     );
   }
 
-  return String(value || "").trim() || "-";
+  return value !== undefined && value !== null && String(value).trim() !== "" ? String(value).trim() : "-";
 }
 
 function MetricCard({ label, value, hint, tone }) {

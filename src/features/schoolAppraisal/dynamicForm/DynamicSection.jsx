@@ -20,19 +20,40 @@ export const DynamicSection = ({
     title,
     number,
     description,
+    ownerRole,
+    isAuditorSection,
     fields = [],
     tables = [],
   } = section;
 
+  const isAuditorDesignated = ownerRole === 'auditor' || isAuditorSection === true;
+  const effectiveReadOnly = readOnly || isAuditorDesignated;
+
   return (
     <div className="dynamic-section mb-5">
-      <div className="section-header bg-primary text-white p-3 rounded mb-4 shadow-sm">
-        <h4 className="mb-0 fw-bold">
-          {number ? `Section ${number}: ` : ''}
-          {title}
-        </h4>
-        {description && <p className="mb-0 mt-1 small opacity-75">{description}</p>}
+      <div className="section-header bg-primary text-white p-3 rounded mb-4 shadow-sm d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h4 className="mb-0 fw-bold">
+            {number ? `Section ${number}: ` : ''}
+            {title}
+          </h4>
+          {description && <p className="mb-0 mt-1 small opacity-75">{description}</p>}
+        </div>
+        {isAuditorDesignated && (
+          <span className="badge bg-warning text-dark px-3 py-2 fw-bold">
+            🔒 Auditor Section
+          </span>
+        )}
       </div>
+
+      {isAuditorDesignated && (
+        <div className="alert alert-warning d-flex align-items-center gap-2 mb-4">
+          <span className="fs-5">🔒</span>
+          <div>
+            <strong>Auditor Section:</strong> This section is designated to be filled exclusively by the Auditor during the audit review stage. Submitter inputs are locked.
+          </div>
+        </div>
+      )}
 
       {/* Top-level fields */}
       {fields && fields.length > 0 && (
@@ -47,7 +68,7 @@ export const DynamicSection = ({
                       field={field}
                       value={valuesData[key]}
                       onChange={onValueChange}
-                      readOnly={readOnly}
+                      readOnly={effectiveReadOnly}
                       error={errors[key]}
                     />
                   </div>
@@ -69,7 +90,7 @@ export const DynamicSection = ({
                 table={table}
                 data={tablesData[tKey] || []}
                 onChange={onTableChange}
-                readOnly={readOnly}
+                readOnly={effectiveReadOnly}
                 onUploadAttachment={onUploadAttachment}
               />
             );

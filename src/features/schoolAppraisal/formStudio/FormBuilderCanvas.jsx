@@ -114,6 +114,24 @@ export const FormBuilderCanvas = ({
   const isAdministrative = tree?.auditType === 'administrative';
 
   // Section Handlers
+  const handleToggleAuditorSection = async (sec, isAuditor) => {
+    try {
+      const defaultRole = isAdministrative
+        ? (universityPosts[0]?.code?.toLowerCase() || 'registrar')
+        : 'director-schools';
+      const targetRole = isAuditor ? 'auditor' : defaultRole;
+      await updateSection(sec.id, {
+        title: sec.title,
+        sectionNumber: sec.number || '',
+        ownerRole: targetRole,
+        description: sec.description || '',
+      });
+      await loadTree();
+    } catch (err) {
+      alert('Error updating auditor designation: ' + err.message);
+    }
+  };
+
   const handleOpenAddSection = () => {
     const defaultRole = isAdministrative
       ? (universityPosts[0]?.code?.toLowerCase() || 'registrar')
@@ -408,6 +426,7 @@ export const FormBuilderCanvas = ({
 
   const getPostLabel = (roleKey) => {
     if (!roleKey) return '-';
+    if (roleKey === 'auditor') return '🔒 Designated for Auditor (Auditor Only)';
     const match = universityPosts.find((p) => p.code?.toLowerCase() === roleKey.toLowerCase() || p.name?.toLowerCase() === roleKey.toLowerCase());
     if (match) return `${match.name} (${match.code})`;
     if (roleKey === 'director-schools') return 'Director / Dean';
@@ -483,6 +502,7 @@ export const FormBuilderCanvas = ({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {tree.sections?.map((sec, idx) => {
               const isSelected = sec.id === currentSection?.id;
+              const isAuditor = sec.ownerRole === 'auditor';
               return (
                 <div
                   key={sec.id}
@@ -502,15 +522,22 @@ export const FormBuilderCanvas = ({
                   }}
                   onClick={() => setActiveSectionId(sec.id)}
                 >
-                  <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '180px' }}>
+                  <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '170px' }}>
                     <span style={{ display: 'inline-block', minWidth: '18px', padding: '1px 5px', background: '#e2e8f0', borderRadius: '4px', fontSize: '10.5px', marginRight: '6px', textAlign: 'center' }}>
                       {sec.number || idx + 1}
                     </span>
                     {sec.title}
                   </div>
-                  <span style={{ fontSize: '11px', color: '#64748b', background: '#f1f5f9', padding: '2px 6px', borderRadius: '999px' }}>
-                    {sec.tables?.length || 0}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    {isAuditor && (
+                      <span style={{ fontSize: '10px', fontWeight: 700, padding: '1px 5px', borderRadius: '4px', background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }} title="Auditor Section">
+                        🔒 Auditor
+                      </span>
+                    )}
+                    <span style={{ fontSize: '11px', color: '#64748b', background: '#f1f5f9', padding: '2px 6px', borderRadius: '999px' }}>
+                      {sec.tables?.length || 0}
+                    </span>
+                  </div>
                 </div>
               );
             })}
@@ -525,9 +552,16 @@ export const FormBuilderCanvas = ({
               <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px', marginBottom: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
                   <div>
-                    <span style={{ fontSize: '11px', fontWeight: 800, padding: '3px 8px', borderRadius: '5px', background: '#dbeafe', color: '#1e40af', display: 'inline-block', marginBottom: '8px' }}>
-                      Section {currentSection.number || 'A'}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 800, padding: '3px 8px', borderRadius: '5px', background: '#dbeafe', color: '#1e40af' }}>
+                        Section {currentSection.number || 'A'}
+                      </span>
+                      {currentSection.ownerRole === 'auditor' && (
+                        <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '5px', background: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d' }}>
+                          🔒 Designated for Auditor
+                        </span>
+                      )}
+                    </div>
                     <h3 style={{ margin: '0 0 4px', fontWeight: 800, color: '#0f172a', fontSize: '18px' }}>{currentSection.title}</h3>
                     <p style={{ margin: 0, color: '#64748b', fontSize: '12.5px' }}>
                       {isAdministrative ? (
@@ -536,12 +570,37 @@ export const FormBuilderCanvas = ({
                         </span>
                       ) : (
                         <span>
-                          Owner Role: <strong>{currentSection.ownerRole || 'director-schools'}</strong>
+                          Owner Role: <strong>{currentSection.ownerRole === 'auditor' ? '🔒 Auditor (Exclusive)' : (currentSection.ownerRole || 'director-schools')}</strong>
                         </span>
                       )}
                     </p>
                   </div>
-                  <div style={{ display: 'flex', gap: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <label
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '12.5px',
+                        fontWeight: 650,
+                        color: currentSection.ownerRole === 'auditor' ? '#92400e' : '#475569',
+                        background: currentSection.ownerRole === 'auditor' ? '#fef3c7' : '#f1f5f9',
+                        border: currentSection.ownerRole === 'auditor' ? '1px solid #fcd34d' : '1px solid #cbd5e1',
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        userSelect: 'none',
+                      }}
+                      title="Mark this section to be filled exclusively by the Auditor during the review stage"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={currentSection.ownerRole === 'auditor'}
+                        onChange={(e) => handleToggleAuditorSection(currentSection, e.target.checked)}
+                        style={{ cursor: 'pointer' }}
+                      />
+                      <span>To be filled by Auditor</span>
+                    </label>
                     <button
                       type="button"
                       style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#fff', color: '#334155', fontWeight: 600, fontSize: '12.5px', cursor: 'pointer' }}
@@ -794,7 +853,11 @@ export const FormBuilderCanvas = ({
                     <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>
                       {isAdministrative ? 'Assigned Post / Office*' : 'Owner Role'}
                     </label>
-                    {isAdministrative ? (
+                    {sectionModal.data.ownerRole === 'auditor' ? (
+                      <div style={{ padding: '8px 12px', background: '#fef3c7', border: '1px solid #fcd34d', borderRadius: '7px', fontSize: '12px', fontWeight: 700, color: '#92400e' }}>
+                        🔒 Auditor Section (Exclusive)
+                      </div>
+                    ) : isAdministrative ? (
                       <select
                         style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
                         value={sectionModal.data.ownerRole}
@@ -836,6 +899,48 @@ export const FormBuilderCanvas = ({
                       </select>
                     )}
                   </div>
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontSize: '13px',
+                      fontWeight: 650,
+                      color: sectionModal.data.ownerRole === 'auditor' ? '#92400e' : '#334155',
+                      background: sectionModal.data.ownerRole === 'auditor' ? '#fef3c7' : '#f8fafc',
+                      border: sectionModal.data.ownerRole === 'auditor' ? '1px solid #fcd34d' : '1px solid #e2e8f0',
+                      padding: '10px 12px',
+                      borderRadius: '7px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={sectionModal.data.ownerRole === 'auditor'}
+                      onChange={(e) => {
+                        const isChecked = e.target.checked;
+                        const defaultRole = isAdministrative
+                          ? (universityPosts[0]?.code?.toLowerCase() || 'registrar')
+                          : 'director-schools';
+                        setSectionModal({
+                          ...sectionModal,
+                          data: {
+                            ...sectionModal.data,
+                            ownerRole: isChecked ? 'auditor' : defaultRole,
+                          },
+                        });
+                      }}
+                    />
+                    <span>To be filled by Auditor (Editable ONLY by Auditor)</span>
+                  </label>
+                  {sectionModal.data.ownerRole === 'auditor' && (
+                    <small style={{ color: '#b45309', fontSize: '11.5px', marginTop: '4px', display: 'block' }}>
+                      ℹ️ When checked, submitters (Directors, Faculty, Administrative post users) cannot edit this section. It will be editable exclusively by the Auditor during the review stage.
+                    </small>
+                  )}
                 </div>
                 <div>
                   <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>Description</label>
