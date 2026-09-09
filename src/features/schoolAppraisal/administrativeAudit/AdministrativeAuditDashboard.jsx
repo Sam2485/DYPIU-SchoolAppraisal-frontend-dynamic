@@ -34,7 +34,7 @@ const normalizePost = (value = "") => {
   const normalized = String(value).trim().toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
   if (normalized === "hr" || normalized.includes("human resource")) return "hr";
   if (normalized === "dsw" || normalized.includes("student welfare")) return "dean-student-welfare";
-  if (normalized.includes("dean placement") || normalized === "placement") return "dean-placement";
+  if (normalized === "dp" || normalized.includes("dean placement") || normalized === "placement") return "dean-placement";
   if (normalized.includes("registrar")) return "registrar";
   return normalized.replaceAll(" ", "-");
 };
@@ -46,9 +46,17 @@ const ADMIN_STATUS_ROLES = [
   { key: "hr", label: "HR", post: "hr" },
   { key: "deanStudentWelfare", label: "Dean Student Welfare", post: "dean-student-welfare" },
   { key: "deanPlacement", label: "Dean Placement", post: "dean-placement" },
+  { key: "dp", label: "Dean Placement", post: "dp" },
 ];
 
-const statusRoleForPost = (post) => ADMIN_STATUS_ROLES.find((role) => role.post === post);
+const statusRoleForPost = (post) => {
+  const norm = normalizePost(post);
+  return ADMIN_STATUS_ROLES.find((role) => role.post === post || role.post === norm) || {
+    key: norm,
+    label: titleCase(post),
+    post: norm,
+  };
+};
 const titleCase = (value = "") => String(value).replaceAll("-", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 const compactAcademicYear = (value = "") => String(value || "")
   .replace(/\s+/g, "")

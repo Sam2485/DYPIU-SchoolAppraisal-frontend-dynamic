@@ -111,14 +111,15 @@ const hasAcademicPartEValues = (values = {}) => {
 };
 
 const getAuditorSignOff = (entry = {}) => {
-  const signOff = entry.values?.__auditSignOff || {};
+  const e = entry || {};
+  const signOff = e.values?.__auditSignOff || {};
   const auditedBy = signOff.auditedBy || signOff.auditorBy || {};
   return {
-    name: auditedBy.name || entry.auditorReviewedBy || "",
-    designation: auditedBy.designation || entry.auditorReviewedByDesignation || "",
-    role: auditedBy.role || entry.auditorReviewedByRole || "",
-    email: auditedBy.email || entry.auditorReviewedByEmail || "",
-    date: auditedBy.date || entry.auditorReviewedOn || "",
+    name: auditedBy.name || e.auditorReviewedBy || "",
+    designation: auditedBy.designation || e.auditorReviewedByDesignation || "",
+    role: auditedBy.role || e.auditorReviewedByRole || "",
+    email: auditedBy.email || e.auditorReviewedByEmail || "",
+    date: auditedBy.date || e.auditorReviewedOn || "",
   };
 };
 
