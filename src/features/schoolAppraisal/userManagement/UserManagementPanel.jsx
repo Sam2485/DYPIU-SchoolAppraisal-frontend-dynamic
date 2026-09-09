@@ -124,13 +124,27 @@ const normalizeUser = (user = {}, index = 0) => {
       ? (academicSchools.length ? academicSchools.join(", ") : (user.school || user.schoolName || "-"))
       : resolvedAdministrativePosts.length
         ? resolvedAdministrativePosts.map(postLabelFor).join(", ")
-        : (designation || "-"),
+        : (postLabelFor(user.post) || designation || "-"),
     deleted: Boolean(user.deleted),
     status: String(user.status || (user.deleted ? "deleted" : user.active === false ? "inactive" : "active")).toLowerCase(),
   };
 };
 
-const postLabelFor = (value) => ADMINISTRATIVE_POSTS.find((post) => post.value === value)?.label || value;
+let dynamicPostRegistry = [];
+
+export const updateDynamicPostRegistry = (postsList) => {
+  if (Array.isArray(postsList)) {
+    dynamicPostRegistry = postsList;
+  }
+};
+
+const postLabelFor = (value) => {
+  if (!value) return "";
+  const match = dynamicPostRegistry.find((p) => p.value === value || p.value?.toLowerCase() === value?.toLowerCase() || p.label?.toLowerCase() === value?.toLowerCase())
+    || ADMINISTRATIVE_POSTS.find((post) => post.value === value || post.value?.toLowerCase() === value?.toLowerCase());
+  return match?.label || titleCase(value);
+};
+
 const titleCase = (value = "") => String(value).replaceAll("-", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 const auditorRoleForForm = (form) => `${form.category}-${form.auditorType}-auditor`;
 const roleForForm = (form) => form.accountType === "auditor"
@@ -138,9 +152,12 @@ const roleForForm = (form) => form.accountType === "auditor"
   : form.category === "academic"
     ? "director"
     : "administrative";
-const designationForForm = (form) => {
+const designationForForm = (form, postsList = []) => {
   if (form.accountType === "auditor") return `${titleCase(form.auditorType)} ${titleCase(form.category)} Auditor`;
-  return form.category === "academic" ? "Director" : postLabelFor(form.post);
+  if (form.category === "academic") return "Director";
+  const found = (postsList && postsList.length ? postsList : dynamicPostRegistry)
+    .find((p) => p.value === form.post || p.value?.toLowerCase() === form.post?.toLowerCase());
+  return found?.label || postLabelFor(form.post);
 };
 const academicAssignmentPayload = (schools = [], isAuditor = false) => {
   const academicSchools = normalizeSchoolList(schools);
@@ -263,7 +280,9 @@ export default function UserManagementPanel({ currentUser }) {
       ]);
       setSchools(schoolData || []);
       if (postData && postData.length > 0) {
-        setPosts(postData.map((p) => ({ value: p.code.toLowerCase(), label: p.name })));
+        const mapped = postData.map((p) => ({ value: p.code.toLowerCase(), label: p.name }));
+        setPosts(mapped);
+        updateDynamicPostRegistry(mapped);
       }
     } catch (err) {
       console.error("Failed to load university metadata:", err);
@@ -405,7 +424,7 @@ export default function UserManagementPanel({ currentUser }) {
       auditorRole: form.accountType === "auditor" ? auditorRoleForForm(form) : null,
       role: roleForForm(form),
       ...assignmentPayload,
-      designation: designationForForm(form),
+      designation: designationForForm(form, posts),
       post: isAcademic
         ? null
         : form.accountType === "auditor"
@@ -542,7 +561,7 @@ export default function UserManagementPanel({ currentUser }) {
       auditorRole: editForm.accountType === "auditor" ? auditorRoleForForm(editForm) : null,
       role: roleForForm(editForm),
       ...assignmentPayload,
-      designation: designationForForm(editForm),
+      designation: designationForForm(editForm, posts),
       post: isAcademic
         ? null
         : editForm.accountType === "auditor"

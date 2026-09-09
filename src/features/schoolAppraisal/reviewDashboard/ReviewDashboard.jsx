@@ -450,43 +450,66 @@ const comparablePartEValue = (value) => {
   if (value && typeof value === "object") return JSON.stringify(value);
   return String(value || "").trim();
 };
-const academicPartEValuesMatch = (firstValues = {}, secondValues = {}) =>
-  ACADEMIC_PART_E_FIELD_IDS.every((fieldId) =>
-    comparablePartEValue(firstValues[fieldId]) === comparablePartEValue(secondValues[fieldId])
+const academicPartEValuesMatch = (firstValues = {}, secondValues = {}) => {
+  const first = firstValues || {};
+  const second = secondValues || {};
+  return ACADEMIC_PART_E_FIELD_IDS.every((fieldId) =>
+    comparablePartEValue(first[fieldId]) === comparablePartEValue(second[fieldId])
   );
+};
 const clearAcademicPartEValues = (values = {}) => ({
-  ...values,
+  ...(values || {}),
   auditObservations: "",
   auditRecommendations: "",
   auditDocumentation: [],
 });
 const hidePendingAuditorReviewValues = clearAcademicPartEValues;
 const removeMatchingPartEAttachments = (attachments = [], previousValues = {}) => {
+  const prev = previousValues || {};
   const previousAttachmentKeys = new Set(
-    valueList(previousValues.auditDocumentation)
+    valueList(prev.auditDocumentation)
       .filter(isAttachmentValue)
       .map(attachmentKeyFor)
       .filter(Boolean)
   );
-  if (!previousAttachmentKeys.size) return attachments;
-  return attachments.filter((attachment) => !previousAttachmentKeys.has(attachmentKeyFor(attachment)));
+  if (!previousAttachmentKeys.size) return attachments || [];
+  return (attachments || []).filter((attachment) => !previousAttachmentKeys.has(attachmentKeyFor(attachment)));
 };
-const withAuditorSignOff = (values = {}, profile = {}, auditedAt = new Date().toISOString()) => ({
-  ...values,
-  [SIGN_OFF_FIELD]: {
-    ...(values[SIGN_OFF_FIELD] || {}),
-    auditedBy: {
-      name: profile.name,
-      designation: profile.designation,
-      role: profile.role,
-      email: profile.email,
-      date: auditedAt,
+const withAuditorSignOff = (values = {}, profile = {}, auditedAt = new Date().toISOString()) => {
+  const v = values || {};
+  const p = profile || {};
+  return {
+    ...v,
+    [SIGN_OFF_FIELD]: {
+      ...(v[SIGN_OFF_FIELD] || {}),
+      auditedBy: {
+        name: p.name,
+        designation: p.designation,
+        role: p.role,
+        email: p.email,
+        date: auditedAt,
+      },
     },
-  },
-});
-const getAuditorSignOff = (values = {}) => values[SIGN_OFF_FIELD]?.auditedBy || values[SIGN_OFF_FIELD]?.auditorBy || {};
-const getSubmitterSignOff = (values = {}) => values[SIGN_OFF_FIELD]?.submittedBy || {};
+  };
+};
+const getAuditorSignOff = (values = {}) => {
+  const v = values || {};
+  return v[SIGN_OFF_FIELD]?.auditedBy || v[SIGN_OFF_FIELD]?.auditorBy || {};
+};
+const getSubmitterSignOff = (values = {}) => {
+  const v = values || {};
+  return v[SIGN_OFF_FIELD]?.submittedBy || {};
+};
 const getSubmissionAuditorSignOff = (submission = {}) => {
+  if (!submission || typeof submission !== "object") {
+    return {
+      name: "",
+      designation: "",
+      role: "",
+      email: "",
+      date: "",
+    };
+  }
   const storedSignOff = getAuditorSignOff(submission.values);
   return {
     name: storedSignOff.name || submission.auditorReviewedBy || "",
@@ -496,30 +519,35 @@ const getSubmissionAuditorSignOff = (submission = {}) => {
     date: storedSignOff.date || submission.auditorReviewedOn || "",
   };
 };
-const isApprovedReport = (submission = {}) => submission.status === "approved";
-const isAuditorCorrectionRequested = (submission = {}) =>
-  Boolean(
-    submission.auditorCorrectionRequested ||
-    submission.correctionRequestedForAuditor ||
-    submission.requiresAuditorResubmission
+const isApprovedReport = (submission = {}) => (submission || {}).status === "approved";
+const isAuditorCorrectionRequested = (submission = {}) => {
+  const s = submission || {};
+  return Boolean(
+    s.auditorCorrectionRequested ||
+    s.correctionRequestedForAuditor ||
+    s.requiresAuditorResubmission
   );
+};
 const DEFAULT_AUDITOR_CORRECTION_MESSAGE = "Please rectify the auditor observations/recommendations and submit the review again.";
 const reviewRemarksForDisplay = (submission = {}) => {
-  const remarks = submission.remarks || "";
-  const correctionMessage = submission.auditorCorrectionMessage || "";
+  const s = submission || {};
+  const remarks = s.remarks || "";
+  const correctionMessage = s.auditorCorrectionMessage || "";
   if (remarks && (remarks === DEFAULT_AUDITOR_CORRECTION_MESSAGE || remarks === correctionMessage)) return "";
   return remarks;
 };
 function submittedAuditorAssignmentsForSubmission(submission = {}) {
-  return (submission.auditorAssignments || []).filter((assignment) =>
-    auditorAssignmentBelongsToSubmission(assignment, submission)
+  const s = submission || {};
+  return (s.auditorAssignments || []).filter((assignment) =>
+    auditorAssignmentBelongsToSubmission(assignment, s)
   );
 }
 function auditorAssignmentsForCorrection(submission = {}) {
-  const assignments = submittedAuditorAssignmentsForSubmission(submission);
+  const s = submission || {};
+  const assignments = submittedAuditorAssignmentsForSubmission(s);
   const targetType = normalizeUserRole(
-    submission.forwardedAuditorType ||
-    auditorTypeForReportCategory(submission.reportCategory) ||
+    s.forwardedAuditorType ||
+    auditorTypeForReportCategory(s.reportCategory) ||
     ""
   );
   const matchingTypeAssignments = targetType
@@ -538,48 +566,54 @@ const allAuditorAssignmentsSubmitted = (submission = {}) => {
 // recorded in its own values), don't let those inherited fields count as proof that THIS cycle
 // was touched — otherwise a freshly started external cycle looks submitted/completed before the
 // director has even opened the form.
-const isFreshCycleSuccessor = (submission = {}) =>
-  Boolean(submission.previousApprovedSubmissionId) &&
-  submittedAuditorAssignmentsForSubmission(submission).length === 0 &&
-  !Number(submission.auditorProgress?.total || 0);
+const isFreshCycleSuccessor = (submission = {}) => {
+  const s = submission || {};
+  return (
+    Boolean(s.previousApprovedSubmissionId) &&
+    submittedAuditorAssignmentsForSubmission(s).length === 0 &&
+    !Number(s.auditorProgress?.total || 0)
+  );
+};
 const isAuditorCompleted = (submission = {}) => {
-  if (submission.status === "submitted" || isAuditorCorrectionRequested(submission)) return false;
+  const s = submission || {};
+  if (!s.id && !s.status) return false;
+  if (s.status === "submitted" || isAuditorCorrectionRequested(s)) return false;
 
-  const freshSuccessor = isFreshCycleSuccessor(submission);
-  const ownSignOffDate = getAuditorSignOff(submission.values).date;
+  const freshSuccessor = isFreshCycleSuccessor(s);
+  const ownSignOffDate = getAuditorSignOff(s.values)?.date;
 
-  if (["auditor-completed", "external_auditor_completed", "external-auditor-completed", "approved"].includes(submission.status)) {
+  if (["auditor-completed", "external_auditor_completed", "external-auditor-completed", "approved"].includes(s.status)) {
     return freshSuccessor ? Boolean(ownSignOffDate) : true;
   }
 
-  if (submission.auditType === "administrative") {
-    const progress = submission.auditorProgress || {};
+  if (s.auditType === "administrative") {
+    const progress = s.auditorProgress || {};
     return Boolean(
-      submission.allAssignedAuditorsSubmitted ||
-      submission.allAuditorsSubmitted ||
+      s.allAssignedAuditorsSubmitted ||
+      s.allAuditorsSubmitted ||
       progress.allSubmitted ||
-      allAuditorAssignmentsSubmitted(submission)
+      allAuditorAssignmentsSubmitted(s)
     );
   }
 
-  const progress = submission.auditorProgress || {};
-  const assignments = submittedAuditorAssignmentsForSubmission(submission);
+  const progress = s.auditorProgress || {};
+  const assignments = submittedAuditorAssignmentsForSubmission(s);
   const hasAssignmentProgress = assignments.length > 0 || Number(progress.total || 0) > 0;
   if (hasAssignmentProgress) {
     return Boolean(
-      submission.allAssignedAuditorsSubmitted ||
-      submission.allAuditorsSubmitted ||
+      s.allAssignedAuditorsSubmitted ||
+      s.allAuditorsSubmitted ||
       progress.allSubmitted ||
-      allAuditorAssignmentsSubmitted(submission)
+      allAuditorAssignmentsSubmitted(s)
     );
   }
 
   return Boolean(
     (!freshSuccessor && (
-      submission.allAuditorsSubmitted ||
+      s.allAuditorsSubmitted ||
       progress.allSubmitted ||
-      submission.auditorReviewedOn ||
-      submission.auditorReviewedBy
+      s.auditorReviewedOn ||
+      s.auditorReviewedBy
     )) ||
     ownSignOffDate
   );
@@ -4443,7 +4477,7 @@ function PreviousReportOnlyView({ submission, onBack, onDownload, downloadingAtt
           Number(entry.version || 0) < Number(submission.version || 0)
         )
       ) &&
-      (getSubmissionAuditorSignOff(entry).name || hasAcademicPartEValues(entry.values))
+      (getSubmissionAuditorSignOff(entry).name || hasAcademicPartEValues(entry?.values))
     )
     .sort((first, second) => Number(second.version || 0) - Number(first.version || 0))[0];
   const previousInternalAuditor = getSubmissionAuditorSignOff(previousInternalReport);
@@ -4586,7 +4620,7 @@ function FullFormReview({
           Number(entry.version || 0) < Number(submission.version || 0)
         )
       ) &&
-      (getSubmissionAuditorSignOff(entry).name || hasAcademicPartEValues(entry.values) || (entry.auditorAssignments && entry.auditorAssignments.length > 0))
+      (getSubmissionAuditorSignOff(entry).name || hasAcademicPartEValues(entry?.values) || (entry.auditorAssignments && entry.auditorAssignments.length > 0))
     )
     .sort((first, second) => Number(second.version || 0) - Number(first.version || 0))[0] || (
       internalAssignmentsFromSubmission.length > 0
@@ -4613,7 +4647,7 @@ function FullFormReview({
     canEditAuditorSection &&
     !auditorReviewReadOnly &&
     hasAcademicPartEValues(previousInternalReport?.values) &&
-    academicPartEValuesMatch(submission.values, previousInternalReport.values);
+    academicPartEValuesMatch(submission?.values, previousInternalReport?.values);
   const currentUserAssignments = auditorAssignmentsForCurrentUser(submission, currentProfile);
   const isAdministrative = submission.auditType === "administrative";
   let currentAssignmentValues;
@@ -4656,7 +4690,7 @@ function FullFormReview({
   const initialDraftAttachments = currentAssignmentValues
     ? currentAssignmentAttachments
     : shouldClearCopiedExternalPartE
-      ? removeMatchingPartEAttachments(submission.attachments || [], previousInternalReport.values)
+      ? removeMatchingPartEAttachments(submission?.attachments || [], previousInternalReport?.values)
       : shouldClearFreshAuditorDraft
         ? []
         : submission.attachments || [];
