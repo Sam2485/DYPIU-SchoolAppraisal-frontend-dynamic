@@ -184,7 +184,13 @@ const groupAuditorAssignmentsForDisplay = (assignments = []) => {
   return [...groups.values()];
 };
 const isAuditorModule = (module = {}) =>
-  module.number === "F" || /^Part\s+F\b/i.test(module.title || "") || String(module.id || "").includes("observations-recommendations");
+  Boolean(
+    module.isAuditorSection ||
+    module.ownerRole === "auditor" ||
+    module.number === "F" ||
+    /^Part\s+F\b/i.test(module.title || "") ||
+    String(module.id || "").includes("observations-recommendations")
+  );
 
 export default function AdministrativeReportPanel({
   meta,
@@ -465,16 +471,22 @@ function ReportFieldsTable({ fields, values }) {
   return (
     <table className="generated-report__detail-table" style={styles.detailsTable}>
       <tbody>
-        {fields.filter((field) => !isOmittedReportText(field.label) && !isOmittedReportText(values[field.id])).map((field) => field.kind === "heading" ? (
-          <tr key={field.id}>
-            <th className="generated-report__detail-heading" colSpan="2" style={styles.detailHeading}>{field.label}</th>
-          </tr>
-        ) : (
-          <tr key={field.id}>
-            <th scope="row" style={styles.detailLabel}>{field.label}</th>
-            <td style={styles.detailValue}><ReportCellValue value={values[field.id]} /></td>
-          </tr>
-        ))}
+        {fields.filter((field) => {
+          const val = values[field.id] ?? (field.fieldKey ? values[field.fieldKey] : undefined);
+          return !isOmittedReportText(field.label) && !isOmittedReportText(val);
+        }).map((field) => {
+          const val = values[field.id] ?? (field.fieldKey ? values[field.fieldKey] : undefined);
+          return field.kind === "heading" ? (
+            <tr key={field.id}>
+              <th className="generated-report__detail-heading" colSpan="2" style={styles.detailHeading}>{field.label}</th>
+            </tr>
+          ) : (
+            <tr key={field.id}>
+              <th scope="row" style={styles.detailLabel}>{field.label}</th>
+              <td style={styles.detailValue}><ReportCellValue value={val} /></td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { clearAuthState, getApiErrorMessage } from "../../../api/client";
-import { SIGN_OFF_FIELD, buildSubmissionPayload, deleteAttachment, fetchMyDraft, normalizeDraft, saveDraft, uploadAttachments, fetchAdministrativeStatus, submitAdministrativePart, fetchCurrentAuditCycle } from "../../../api/submissions";
+import { SIGN_OFF_FIELD, buildSubmissionPayload, deleteAttachment, fetchMyDraft, normalizeDraft, saveDraft, uploadAttachments, fetchAdministrativeStatus, submitAdministrativePart, fetchCurrentAuditCycle, fetchSubmissionSnapshots } from "../../../api/submissions";
 import { fetchCurrentUser } from "../../../api/users";
 import universityLogo from "../../../assets/images/image.png";
 import iqacLogo from "../../../assets/images/IQAS.png";
@@ -15,10 +15,28 @@ import AdministrativeReportPanel from "./AdministrativeReportPanel";
 import AdministrativePartE from "./AdministrativePartE";
 import AppSidebar from "../components/AppSidebar";
 import UserProfileModal from "../components/UserProfileModal";
+import { AuditorSectionReviewPanel, buildAuditorSectionReview, isAuditorSection } from "../components/AuditSection";
 import { administrativeAuditMeta, administrativeAuditModules } from "./administrativeAuditConfig";
 import { getAttachmentUrl } from "../../../utils/attachment";
 import { scrollPageToTop } from "../../../utils/scrollToTop";
 import { fetchActiveSchema, fetchUniversityBranding } from "../../../api/config";
+
+const snapshotPayload = (entry = {}) => entry.submission || entry.snapshot || entry.data || entry;
+const responseList = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.items)) return payload.items;
+  return [];
+};
+const normalizeHistoryDraft = (entry = {}, fallbackValues = {}, fallbackTables = {}) => {
+  const normalized = normalizeDraft(snapshotPayload(entry), fallbackValues, fallbackTables);
+  return {
+    ...normalized,
+    version: Number(entry.version || entry.snapshotVersion || entry.reportVersion || normalized.version || 0),
+    reportCategory: String(entry.reportCategory || entry.approvedReportCategory || entry.category || normalized.reportCategory || "").toLowerCase().trim(),
+    auditCycle: entry.auditCycle || entry.cycleLabel || normalized.auditCycle,
+  };
+};
 
 const administrativeUserModules = [
   ...administrativeAuditModules.filter((module) => module.id !== "section-f-observations-recommendations"),
@@ -395,6 +413,8 @@ export default function AdministrativeAuditDashboard() {
   const [workflow, setWorkflow] = useState(workflowFromDraft());
   const [administrativeProgress, setAdministrativeProgress] = useState({});
   const [data, setData] = useState(() => buildInitialData(dynamicModules));
+  const [auditorSectionReview, setAuditorSectionReview] = useState(null);
+  const [activeDraftData, setActiveDraftData] = useState(null);
 
   const activeModule = useMemo(
     () => dynamicModules.find((module) => module.id === activeModuleId) || dynamicModules[0],
@@ -447,6 +467,26 @@ export default function AdministrativeAuditDashboard() {
           ? draft
           : normalizeDraft({}, initial.fields, initial.tables);
 
+        let historyEntries = responseList(activeDraft.versionHistory).map((entry, index) =>
+          normalizeHistoryDraft(entry, initial.fields, initial.tables)
+        );
+
+        if (activeDraft.id) {
+          try {
+            const { data: snapshotsData } = await fetchSubmissionSnapshots(activeDraft.id);
+            historyEntries = [
+              ...historyEntries,
+              ...responseList(snapshotsData).map((entry) =>
+                normalizeHistoryDraft(entry, initial.fields, initial.tables)
+              ),
+            ];
+          } catch {
+            // snapshots optional
+          }
+        }
+
+        const review = buildAuditorSectionReview(activeDraft, historyEntries);
+
         if (!isActive) return;
         setData({
           fields: activeDraft.values,
@@ -458,6 +498,8 @@ export default function AdministrativeAuditDashboard() {
         setIsSubmitted(activeDraft.isSubmitted);
         setWorkflow(workflowFromDraft(activeDraft));
         setAdministrativeProgress(activeDraft.administrativeProgress || {});
+        setActiveDraftData(activeDraft);
+        setAuditorSectionReview(review);
         const contributionStatus = String(
           activeDraft.administrativeProgress?.[currentStatusRole?.key] ||
           activeDraft.administrativeProgress?.[userPost] ||
@@ -782,6 +824,9 @@ export default function AdministrativeAuditDashboard() {
               meta={{ ...administrativeAuditMeta, academicYear }}
               modules={dynamicModules}
               data={data}
+              reportCategory={activeDraftData?.reportCategory || ""}
+              auditorAssignments={activeDraftData?.auditorAssignments || []}
+              iqacRemarks={activeDraftData?.remarks || ""}
               onClose={() => setReportMode(false)}
             />
           </main>
@@ -922,25 +967,16 @@ export default function AdministrativeAuditDashboard() {
                 {activeModule.note && <p style={styles.moduleNote}>{activeModule.note}</p>}
               </div>
               {activeModuleId !== "submission-status" && (
-                <span style={canWorkOnOwnedModule ? styles.badge : styles.readOnlyBadge}>
-                  {canWorkOnOwnedModule ? "Editable" : "Read only"}
+                <span style={activeModule?.isAuditorSection ? { fontSize: "11px", fontWeight: 700, padding: "4px 10px", borderRadius: "6px", background: "#fef3c7", color: "#92400e", border: "1px solid #fcd34d" } : (canWorkOnOwnedModule ? styles.badge : styles.readOnlyBadge)}>
+                  {activeModule?.isAuditorSection ? "🔒 Auditor Section" : (canWorkOnOwnedModule ? "Editable" : "Read only")}
                 </span>
               )}
             </div>
 
-            {!canEditActiveModule && activeModuleId !== "submission-status" && (
-              activeModule?.isAuditorSection ? (
-                <div style={{ padding: "14px 18px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "10px", color: "#92400e", fontSize: "13px", fontWeight: 600, display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
-                  <span style={{ fontSize: "18px" }}>🔒</span>
-                  <div>
-                    <strong>Auditor Section:</strong> This section is designated to be filled exclusively by the Auditor during the audit review stage.
-                  </div>
-                </div>
-              ) : (
-                <div style={styles.ownershipNotice}>
-                  This section can only be edited by {activeModule.owner}.
-                </div>
-              )
+            {!canEditActiveModule && activeModuleId !== "submission-status" && !activeModule?.isAuditorSection && (
+              <div style={styles.ownershipNotice}>
+                This section can only be edited by {activeModule.owner}.
+              </div>
             )}
 
             {activeModuleId === "submission-status" ? (
@@ -948,6 +984,13 @@ export default function AdministrativeAuditDashboard() {
                 cycleId={workflow.cycleId || academicYear}
                 storedSubmissionStatus={storedAdministrativeStatusFor(data.fields)}
                 administrativeProgress={administrativeProgress}
+              />
+            ) : activeModule?.isAuditorSection ? (
+              <AuditorSectionReviewPanel
+                section={activeModule}
+                review={auditorSectionReview}
+                tables={data.tables}
+                values={data.fields}
               />
             ) : (
               moduleBlocksFor(activeModule).map((block, index) => {

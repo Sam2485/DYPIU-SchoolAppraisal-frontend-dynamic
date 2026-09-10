@@ -3,6 +3,9 @@ import AuditTable from "./AuditTable";
 import DateInput from "./DateInput";
 import { columnsWithSerial, serialColumnFor } from "./tableHelpers";
 import { getAttachmentUrl } from "../../../utils/attachment";
+import { formatDateDDMMYYYY } from "../../../utils/dateFormat";
+import { uploadAttachments } from "../../../api/submissions";
+import { resolveFieldValue } from "../../../utils/fieldResolver";
 
 const ACADEMIC_PART_E_SECTION_ID = "part-e-observations";
 
@@ -97,6 +100,222 @@ const getTableRows = (tables = {}, table = {}) => {
     if (found && Array.isArray(found[1])) return found[1];
   }
   return [];
+};
+
+const rowHasData = (row) => {
+  if (!row || typeof row !== "object") return false;
+  return Object.entries(row).some(([k, v]) => {
+    const keyClean = String(k).toLowerCase().replace(/[\s_-]/g, "");
+    if (keyClean === "srno" || keyClean === "sno" || keyClean === "id" || keyClean === "_id") return false;
+    if (v && typeof v === "object") return isAttachmentValue(v);
+    return String(v || "").trim() !== "";
+  });
+};
+
+export const isAuditorSection = (section) =>
+  Boolean(
+    section &&
+    (
+      section.ownerRole === "auditor" ||
+      section.isAuditorSection === true ||
+      section.auditorSection === true ||
+      section.id === ACADEMIC_PART_E_SECTION_ID ||
+      (typeof section.id === "string" && (
+        section.id.toLowerCase().includes("part-e") ||
+        section.id.toLowerCase().includes("part_e")
+      )) ||
+      (typeof section.title === "string" && (
+        section.title.toLowerCase().includes("part e - observations") ||
+        section.title.toLowerCase().includes("observations & recommendations of the audit")
+      ))
+    )
+  );
+
+const safeJsonParse = (value, fallback = {}) => {
+  if (value && typeof value === "object") return value;
+  if (typeof value === "string") {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return fallback;
+    }
+  }
+  return fallback;
+};
+
+const titleCase = (value = "") =>
+  String(value || "")
+    .replace(/[_-]+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+
+const formatDate = (value) => {
+  if (!value) return "";
+  try {
+    return formatDateDDMMYYYY(value);
+  } catch {
+    return String(value);
+  }
+};
+
+const normalizeCategory = (value = "") => String(value || "").toLowerCase().trim();
+const normalizeStatus = (value = "") => String(value || "").toLowerCase().trim();
+
+const normalizeAuditCycleCategory = (value = "") => {
+  const v = String(value || "").toLowerCase().trim();
+  if (v.includes("external")) return "external";
+  return "internal";
+};
+
+const assignmentsForType = (assignments = [], auditorType = "") =>
+  (Array.isArray(assignments) ? assignments : []).filter((assignment) =>
+    normalizeCategory(assignment.auditorType || assignment.forwardedAuditorType || assignment.type || "").includes(auditorType) &&
+    (
+      assignment.status === "submitted" ||
+      assignment.reviewStatus === "submitted" ||
+      assignment.status === "completed" ||
+      hasPartEValues(assignmentPartEValues(assignment)) ||
+      Boolean(assignment.submittedAt || assignment.auditorReviewedOn)
+    )
+  );
+
+const latestSubmittedAssignment = (assignments = []) =>
+  [...assignments].sort((first, second) =>
+    new Date(second.submittedAt || second.auditorReviewedOn || 0) -
+    new Date(first.submittedAt || first.auditorReviewedOn || 0)
+  )[0];
+
+const getAuditorSignOff = (entry = {}) => {
+  const e = entry || {};
+  const signOff = e.values?.__auditSignOff || {};
+  const auditedBy = signOff.auditedBy || signOff.auditorBy || {};
+  return {
+    name: auditedBy.name || e.auditorReviewedBy || "",
+    designation: auditedBy.designation || e.auditorReviewedByDesignation || "",
+    role: auditedBy.role || e.auditorReviewedByRole || "",
+    email: auditedBy.email || e.auditorReviewedByEmail || "",
+    date: auditedBy.date || e.auditorReviewedOn || "",
+  };
+};
+
+export const buildAuditorSectionReview = (draft = {}, history = []) => {
+  const status = normalizeStatus(draft.overallStatus || draft.status);
+  const reportCategory = normalizeAuditCycleCategory(draft.reportCategory || draft.cycleType);
+
+  const sortedHistory = [...history].sort((first, second) => Number(second.version || 0) - Number(first.version || 0));
+  const previousInternal = sortedHistory.find((entry) =>
+    (
+      normalizeAuditCycleCategory(entry.reportCategory || entry.cycleType) === "internal" ||
+      (reportCategory === "external" && Number(entry.version || 0) < Number(draft.version || 0))
+    ) &&
+    (hasPartEValues(entry.values) || (entry.tables && Object.keys(entry.tables).length > 0) || (entry.auditorAssignments && entry.auditorAssignments.length > 0))
+  );
+
+  const currentHasPartE = hasPartEValues(draft.values);
+  const assignments = Array.isArray(draft.auditorAssignments) ? draft.auditorAssignments : [];
+
+  if (reportCategory === "internal") {
+    const rawInternalAssignments = assignmentsForType(assignments, "internal");
+    const internalAssignments = [...rawInternalAssignments];
+
+    if (internalAssignments.length === 0 && (status === "approved" || status === "auditor-completed") && (currentHasPartE || Boolean(draft.remarks))) {
+      internalAssignments.push({
+        auditorName: draft.auditorName || "Internal Auditor",
+        auditorEmail: draft.auditorEmail || "",
+        auditorType: "internal",
+        school: draft.school || draft.schoolName || "",
+        status: "submitted",
+        submittedAt: draft.submittedAt || draft.auditorReviewedOn || "",
+        values: draft.values || {},
+        tables: draft.tables || safeJsonParse(draft.tablesData, {}),
+        remarks: draft.remarks || "",
+      });
+    }
+
+    const hasAnyInternalData = internalAssignments.length > 0;
+    const firstAssignment = internalAssignments[0];
+
+    return {
+      isApproved: hasAnyInternalData || status === "approved" || status === "auditor-completed",
+      reportCategory: "internal",
+      internalAssignments,
+      externalAssignments: [],
+      internalValues: firstAssignment ? (firstAssignment.values || assignmentPartEValues(firstAssignment)) : {},
+      internalTables: firstAssignment ? (firstAssignment.tables || safeJsonParse(firstAssignment.tablesData, {})) : {},
+      internalRemarks: firstAssignment?.remarks || firstAssignment?.auditObservations || "",
+      externalValues: {},
+      externalTables: {},
+      externalRemarks: "",
+      iqacRemarks: (status === "approved" || status === "auditor-completed") ? (draft.remarks || "") : "",
+      previousIqacRemarks: "",
+      internalAuditor: firstAssignment ? assignmentAuditor(firstAssignment) : (status === "approved" ? getAuditorSignOff(draft) : null),
+      externalAuditor: null,
+      auditorAssignments: internalAssignments,
+    };
+  }
+
+  // External cycle:
+  const previousInternalAssignments = Array.isArray(previousInternal?.auditorAssignments)
+    ? assignmentsForType(previousInternal.auditorAssignments, "internal")
+    : [];
+
+  if (
+    previousInternalAssignments.length === 0 &&
+    previousInternal &&
+    (hasPartEValues(previousInternal.values) || (previousInternal.tables && Object.keys(previousInternal.tables).length > 0) || Boolean(previousInternal.remarks))
+  ) {
+    previousInternalAssignments.push({
+      auditorName: previousInternal.auditorName || "Internal Auditor",
+      auditorEmail: previousInternal.auditorEmail || "",
+      auditorType: "internal",
+      school: previousInternal.school || previousInternal.schoolName || "",
+      status: "submitted",
+      submittedAt: previousInternal.submittedAt || previousInternal.auditorReviewedOn || "",
+      values: previousInternal.values || {},
+      tables: previousInternal.tables || safeJsonParse(previousInternal.tablesData, {}),
+      remarks: previousInternal.remarks || "",
+    });
+  }
+
+  const rawExternalAssignments = assignmentsForType(assignments, "external");
+  const externalAssignments = [...rawExternalAssignments];
+
+  if (externalAssignments.length === 0 && (status === "approved" || status === "auditor-completed") && (currentHasPartE || Boolean(draft.remarks))) {
+    externalAssignments.push({
+      auditorName: draft.auditorName || "External Auditor",
+      auditorEmail: draft.auditorEmail || "",
+      auditorType: "external",
+      school: draft.school || draft.schoolName || "",
+      status: "submitted",
+      submittedAt: draft.submittedAt || draft.auditorReviewedOn || "",
+      values: draft.values || {},
+      tables: draft.tables || safeJsonParse(draft.tablesData, {}),
+      remarks: draft.remarks || "",
+    });
+  }
+
+  const firstInternal = previousInternalAssignments[0];
+  const firstExternal = externalAssignments[0];
+  const hasAnyData = previousInternalAssignments.length > 0 || externalAssignments.length > 0;
+
+  return {
+    isApproved: hasAnyData || status === "approved" || status === "auditor-completed",
+    reportCategory: "external",
+    internalAssignments: previousInternalAssignments,
+    externalAssignments,
+    internalValues: firstInternal ? (firstInternal.values || assignmentPartEValues(firstInternal)) : {},
+    internalTables: firstInternal ? (firstInternal.tables || safeJsonParse(firstInternal.tablesData, {})) : {},
+    internalRemarks: firstInternal?.remarks || firstInternal?.auditObservations || previousInternal?.remarks || "",
+    externalValues: firstExternal ? (firstExternal.values || assignmentPartEValues(firstExternal)) : {},
+    externalTables: firstExternal ? (firstExternal.tables || safeJsonParse(firstExternal.tablesData, {})) : {},
+    externalRemarks: firstExternal?.remarks || firstExternal?.auditObservations || "",
+    iqacRemarks: (status === "approved" || status === "auditor-completed") ? (draft.remarks || "") : "",
+    previousIqacRemarks: previousInternal?.remarks || "",
+    internalAuditor: firstInternal ? assignmentAuditor(firstInternal) : getAuditorSignOff(previousInternal),
+    externalAuditor: firstExternal ? assignmentAuditor(firstExternal) : (status === "approved" ? getAuditorSignOff(draft) : null),
+    auditorAssignments: externalAssignments,
+    previousInternalAssignments,
+  };
 };
 
 const getCellValue = (row = {}, column = "", table = {}) => {
@@ -224,7 +443,7 @@ function ReadOnlyTable({ table, rows = [], values = {} }) {
   );
 }
 
-function FieldGrid({ fields, values, onFieldChange, readOnly = false }) {
+function FieldGrid({ fields, values, onFieldChange, readOnly = false, onUploadAttachment }) {
   return (
     <div className="audit-field-grid" style={styles.fieldGrid}>
       {fields.map((field) => {
@@ -236,12 +455,77 @@ function FieldGrid({ fields, values, onFieldChange, readOnly = false }) {
           );
         }
 
+        const rawType = String(field.fieldType || field.type || "text").trim().toLowerCase();
+        const isFile = rawType === "file" || rawType === "attachment" || rawType === "document";
+        const val = resolveFieldValue(field, values);
+
+        if (isFile) {
+          const rawAttachments = resolveFieldValue(field, values);
+          const attachments = Array.isArray(rawAttachments) ? rawAttachments : (rawAttachments ? [rawAttachments] : []);
+          return (
+            <div className="audit-field" key={field.id} style={styles.wideField}>
+              <span style={styles.label}>{field.label}</span>
+              {!readOnly && (
+                <div style={{ marginBottom: 8 }}>
+                  <input
+                    type="file"
+                    multiple
+                    className="audit-control"
+                    style={styles.input}
+                    onChange={async (e) => {
+                      const files = Array.from(e.target.files || []);
+                      if (!files.length) return;
+                      try {
+                        if (onUploadAttachment) {
+                          const uploaded = await onUploadAttachment(files);
+                          onFieldChange(field.id, [...attachments, ...(Array.isArray(uploaded) ? uploaded : [uploaded])]);
+                        } else {
+                          const uploaded = await uploadAttachments(files);
+                          onFieldChange(field.id, [...attachments, ...uploaded]);
+                        }
+                      } catch (err) {
+                        console.error("Upload failed", err);
+                      }
+                      e.target.value = "";
+                    }}
+                  />
+                </div>
+              )}
+              {attachments.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {attachments.map((file, idx) => {
+                    const name = typeof file === "object" ? (file.name || file.fileName || "File") : String(file);
+                    const url = typeof file === "object" ? (file.url || file.publicUrl || file.downloadUrl) : (String(file).startsWith("http") ? String(file) : null);
+                    return (
+                      <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 13 }}>
+                        <span>📎 {url ? <a href={getAttachmentUrl(url)} target="_blank" rel="noreferrer">{name}</a> : name}</span>
+                        {!readOnly && (
+                          <button
+                            type="button"
+                            style={{ border: "none", background: "transparent", color: "#ef4444", cursor: "pointer", fontWeight: 700 }}
+                            onClick={() => {
+                              const updated = attachments.filter((_, i) => i !== idx);
+                              onFieldChange(field.id, updated.length ? updated : "");
+                            }}
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        }
+
         return (
           <label className="audit-field" key={field.id} style={field.type === "textarea" ? styles.wideField : styles.field}>
             <span style={styles.label}>{field.label}</span>
             {field.type === "textarea" ? (
               <textarea
-                value={values[field.id] ?? ""}
+                value={val}
                 onChange={(event) => onFieldChange(field.id, event.target.value)}
                 className="audit-control"
                 style={styles.textarea}
@@ -250,14 +534,14 @@ function FieldGrid({ fields, values, onFieldChange, readOnly = false }) {
               />
             ) : field.type === "select" ? (
               <select
-                value={values[field.id] ?? ""}
+                value={val}
                 onChange={(event) => onFieldChange(field.id, event.target.value)}
                 className="audit-control"
                 style={styles.input}
                 disabled={readOnly}
               >
                 <option value="">Select</option>
-                {field.options.map((option) => (
+                {(field.options || []).map((option) => (
                   <option key={option} value={option}>
                     {option}
                   </option>
@@ -265,7 +549,7 @@ function FieldGrid({ fields, values, onFieldChange, readOnly = false }) {
               </select>
             ) : field.type === "date" ? (
               <DateInput
-                value={values[field.id] ?? ""}
+                value={val}
                 onChange={(value) => onFieldChange(field.id, value)}
                 className="audit-control"
                 style={styles.input}
@@ -273,7 +557,7 @@ function FieldGrid({ fields, values, onFieldChange, readOnly = false }) {
               />
             ) : (
               <input
-                value={values[field.id] ?? ""}
+                value={val}
                 onChange={(event) => onFieldChange(field.id, event.target.value)}
                 className="audit-control"
                 style={styles.input}
@@ -354,50 +638,154 @@ function ReadOnlyPartEValue({ value }) {
   return text ? <span style={styles.readOnlyText}>{text}</span> : <span style={styles.emptyText}>-</span>;
 }
 
-function AuditorSectionReviewPanel({ section, review, tables = {}, values = {} }) {
-  const tableDefinitions = (section.tables || []).concat(
-    (section.blocks || []).flatMap((b) => (b.type === "tables" && Array.isArray(b.tables) ? b.tables : []))
-  );
-  const fieldDefinitions = (section.fields || []).concat(
-    (section.blocks || []).flatMap((b) => (b.type === "fields" && Array.isArray(b.fields) ? b.fields : []))
-  );
+function AuditorCard({ assignment, index, fieldDefinitions, tableDefinitions, fallbackAuditorType }) {
+  const values = safeObjectValue(assignment.values || assignmentPartEValues(assignment));
+  const assignmentTables = safeObjectValue(assignment.tables || safeJsonParse(assignment.tablesData, {}));
+  const remarks = assignment.remarks || assignment.auditObservations || values.remarks || values.auditObservations || "";
+  const displayPost = assignment.school || assignment.post || "-";
+  const visibleFields = (fieldDefinitions || []).filter((f) => f.kind !== "heading");
 
-  const internalValues = review?.internalValues || {};
-  const internalTables = review?.internalTables || {};
-  const internalRemarks = review?.internalRemarks || internalValues.remarks || internalValues.auditObservations || "";
-  const externalValues = review?.externalValues || {};
-  const externalTables = review?.externalTables || tables || {};
-  const externalRemarks = review?.externalRemarks || externalValues.remarks || externalValues.auditObservations || "";
-
-  const hasInternalTables = tableDefinitions.some((t) => {
-    const rows = getTableRows(internalTables, t);
-    return Array.isArray(rows) && rows.length > 0 && rows.some((r) => Object.values(r).some((v) => String(v || "").trim() !== ""));
-  });
-  const hasInternalFields = hasPartEValues(internalValues);
-  const hasInternalData = hasInternalTables || hasInternalFields || Boolean(internalRemarks);
-
-  const hasExternalTables = tableDefinitions.some((t) => {
-    const rows = getTableRows(externalTables, t);
-    return Array.isArray(rows) && rows.length > 0 && rows.some((r) => Object.values(r).some((v) => String(v || "").trim() !== ""));
-  });
-  const hasExternalFields = hasPartEValues(externalValues);
-  const hasExternalData = (hasExternalTables || hasExternalFields || Boolean(externalRemarks));
-
-  if (!hasInternalData && !hasExternalData) {
-    return (
-      <div style={styles.partEReviewPanel}>
-        <div style={{ padding: "14px 18px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "10px", color: "#92400e", fontSize: "13px", fontWeight: 600, display: "flex", alignItems: "center", gap: "10px" }}>
-          <span style={{ fontSize: "18px" }}>🔒</span>
-          <div>
-            <strong>Designated for Auditor:</strong> This section is designated to be filled exclusively by the Auditor during the audit review stage. Submitter inputs are locked.
+  return (
+    <section key={assignment.key || index} style={styles.auditorReviewCard}>
+      <div style={styles.auditorReviewCardHeader}>
+        <div style={styles.auditorReviewIdentity}>
+          <span style={styles.auditorReviewNumber}>Auditor {index + 1}</span>
+          <div style={styles.auditorReviewNameBlock}>
+            <h4 style={styles.auditorReviewTitle}>{assignment.auditorName || "Auditor Review"}</h4>
+            {assignment.auditorEmail && <p style={styles.auditorReviewEmail}>{assignment.auditorEmail}</p>}
           </div>
         </div>
-        {fieldDefinitions.length > 0 && (
-          <FieldGrid fields={fieldDefinitions} values={values} onFieldChange={() => {}} readOnly={true} />
-        )}
-        {tableDefinitions.map((table) => (
-          <ReadOnlyTable key={table.id || table.tableKey || table.idString} table={table} rows={getTableRows(tables, table)} values={values} />
+        <div style={styles.auditorReviewChips}>
+          <span style={styles.auditorReviewChip}>{titleCase(assignment.auditorType || fallbackAuditorType || "auditor")}</span>
+          <span style={styles.auditorReviewChip}>{displayPost}</span>
+          <span style={styles.auditorProgressDone}>
+            {assignment.submittedAt ? `Submitted ${formatDate(assignment.submittedAt)}` : "Submitted"}
+          </span>
+        </div>
+      </div>
+
+      <div className="review-auditor-review-fields" style={styles.auditorReviewFieldGrid}>
+        {visibleFields.map((field) => (
+          <div key={field.id} style={field.type === "file" ? styles.auditorReviewDocsField : styles.auditorReviewField}>
+            <div style={styles.readOnlyLabel}>{field.label}</div>
+            <div style={field.type === "file" ? styles.auditorReviewDocsValue : styles.auditorReviewValue}>
+              <ReadOnlyPartEValue value={resolveFieldValue(field, values)} />
+            </div>
+          </div>
         ))}
+        {remarks && !visibleFields.some((f) => f.id === "remarks" || f.id === "auditObservations") && (
+          <div style={styles.auditorReviewDocsField}>
+            <div style={styles.readOnlyLabel}>Review Remarks / Observations</div>
+            <div style={styles.auditorReviewValue}>
+              <ReadOnlyPartEValue value={remarks} />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {Array.isArray(tableDefinitions) && tableDefinitions.length > 0 && (
+        <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 14, width: "100%" }}>
+          {tableDefinitions.map((table) => {
+            const tableKey = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
+            const rows = (assignmentTables && (assignmentTables[table.id] || assignmentTables[tableKey])) ||
+              getTableRows(assignmentTables, table) ||
+              [];
+            return (
+              <ReadOnlyTable
+                key={`auditor-${index}-${table.id || tableKey || table.tableKey || table.idString}`}
+                table={table}
+                rows={rows}
+                values={values}
+              />
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
+export function AuditorSectionReviewPanel({ section, review, tables = {}, values = {} }) {
+  const rawTableDefinitions = (section.tables || []).concat(
+    (section.blocks || []).flatMap((b) => (b.type === "tables" && Array.isArray(b.tables) ? b.tables : []))
+  );
+  const seenTables = new Set();
+  const tableDefinitions = rawTableDefinitions.filter((t) => {
+    const key = String(t?.id || t?.tableKey || t?.idString || t?.title || "").trim();
+    if (!key || seenTables.has(key)) return false;
+    seenTables.add(key);
+    return true;
+  });
+
+  const rawFieldDefinitions = (section.fields || []).concat(
+    (section.blocks || []).flatMap((b) => (b.type === "fields" && Array.isArray(b.fields) ? b.fields : []))
+  );
+  const seenFields = new Set();
+  const fieldDefinitions = rawFieldDefinitions.filter((f) => {
+    const key = String(f?.id || f?.name || f?.label || "").trim();
+    if (!key || seenFields.has(key)) return false;
+    seenFields.add(key);
+    return true;
+  });
+
+  const internalAssignments = Array.isArray(review?.internalAssignments)
+    ? review.internalAssignments
+    : (review?.auditorAssignments || []).filter((a) => normalizeCategory(a.auditorType || a.type || "").includes("internal"));
+
+  if (
+    internalAssignments.length === 0 &&
+    (review?.internalAuditor?.name || review?.internalRemarks || (review?.internalValues && hasPartEValues(review.internalValues)))
+  ) {
+    internalAssignments.push({
+      auditorName: review.internalAuditor?.name || "Internal Auditor",
+      auditorEmail: review.internalAuditor?.email || "",
+      auditorType: "internal",
+      school: review.internalAuditor?.school || "",
+      status: "submitted",
+      submittedAt: review.internalAuditor?.submittedAt || "",
+      values: review.internalValues || {},
+      tables: (review.internalTables && Object.keys(review.internalTables).length > 0) ? review.internalTables : {},
+      remarks: review.internalRemarks || "",
+    });
+  }
+
+  const externalAssignments = Array.isArray(review?.externalAssignments)
+    ? review.externalAssignments
+    : (review?.auditorAssignments || []).filter((a) => normalizeCategory(a.auditorType || a.type || "").includes("external"));
+
+  if (
+    externalAssignments.length === 0 &&
+    (review?.externalAuditor?.name || review?.externalRemarks || (review?.externalValues && hasPartEValues(review.externalValues)))
+  ) {
+    externalAssignments.push({
+      auditorName: review.externalAuditor?.name || "External Auditor",
+      auditorEmail: review.externalAuditor?.email || "",
+      auditorType: "external",
+      school: review.externalAuditor?.school || "",
+      status: "submitted",
+      submittedAt: review.externalAuditor?.submittedAt || "",
+      values: review.externalValues || {},
+      tables: (review.externalTables && Object.keys(review.externalTables).length > 0) ? review.externalTables : {},
+      remarks: review.externalRemarks || "",
+    });
+  }
+
+  const hasInternalData = internalAssignments.length > 0;
+  const hasExternalData = externalAssignments.length > 0;
+  const isExternalCycle = review?.reportCategory === "external";
+
+  if (!hasInternalData && !hasExternalData) {
+    const isPartE =
+      section.id === ACADEMIC_PART_E_SECTION_ID ||
+      String(section.title || "").toLowerCase().includes("part e");
+    const pendingText = isPartE
+      ? "IQAC has not approved your form yet. Part E audit observations, recommendations, and IQAC review remarks will be displayed here once your form is reviewed and approved by IQAC."
+      : `IQAC has not approved your form yet. ${section.title ? `${section.title} audit` : "Auditor"} observations, recommendations, and IQAC review remarks will be displayed here once your form is reviewed and approved by IQAC.`;
+
+    return (
+      <div style={styles.pendingIqacCard}>
+        <div style={styles.pendingIqacTitle}>IQAC Approval Pending</div>
+        <div style={styles.pendingIqacMessage}>{pendingText}</div>
       </div>
     );
   }
@@ -405,102 +793,52 @@ function AuditorSectionReviewPanel({ section, review, tables = {}, values = {} }
   return (
     <div style={styles.partEReviewPanel}>
       {hasInternalData && (
-        <details open style={styles.historyReference}>
-          <summary style={styles.historyReferenceSummary}>
-            Internal Auditor Review
-            <span style={styles.historyReferenceMeta}>
-              {review?.internalAuditor?.name ? `${review.internalAuditor.name} · ` : ""}Internal Audit V1
-            </span>
-          </summary>
-          <div style={styles.historyReferenceBody}>
-            {internalRemarks && (
-              <div style={styles.partEReviewBlock}>
-                <h4 style={styles.partEReviewTitle}>Internal Auditor Review Remarks / Observations</h4>
-                <p style={styles.readOnlyText}>{internalRemarks}</p>
-              </div>
-            )}
-            {fieldDefinitions.length > 0 && hasInternalFields && (
-              <div style={styles.partEReviewBlock}>
-                <h4 style={styles.partEReviewTitle}>Internal Auditor Observations</h4>
-                <FieldGrid fields={fieldDefinitions} values={internalValues} onFieldChange={() => {}} readOnly={true} />
-              </div>
-            )}
-            {tableDefinitions.map((table) => {
-              const rows = getTableRows(internalTables, table);
-              return (
-                <div key={`internal-${table.id || table.tableKey || table.idString}`} style={{ marginBottom: 16 }}>
-                  <div style={{ marginBottom: 8 }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: "#1e40af", background: "#dbeafe", padding: "4px 10px", borderRadius: 6, border: "1px solid #bfdbfe" }}>
-                      Internal Auditor Reference Table (Read-Only)
-                    </span>
-                  </div>
-                  <ReadOnlyTable table={table} rows={rows} values={internalValues} />
-                </div>
-              );
-            })}
-            {review?.previousIqacRemarks && (
-              <div style={styles.partEReviewBlock}>
-                <h4 style={styles.partEReviewTitle}>IQAC Internal Audit Review Remarks</h4>
-                <p style={styles.readOnlyText}>{review.previousIqacRemarks}</p>
-              </div>
-            )}
-          </div>
-        </details>
-      )}
-
-      {(review?.reportCategory === "external" || hasExternalData) && (
-        <div style={{ ...styles.partEReviewBlock, background: "#fff", border: "1px solid #e2e8f0" }}>
-          <div style={styles.partEReviewHeader}>
-            <h3 style={styles.partEReviewTitle}>External Auditor Review</h3>
-            {review?.externalAuditor?.name && (
-              <span style={styles.partEReviewMeta}>{review.externalAuditor.name} · External Audit</span>
-            )}
-          </div>
-          {hasExternalData ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {tableDefinitions.map((table) => {
-                const rows = getTableRows(externalTables, table);
-                return (
-                  <div key={`external-${table.id || table.tableKey || table.idString}`} style={{ marginBottom: 16 }}>
-                    {hasInternalData && (
-                      <div style={{ marginBottom: 8 }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: "#166534", background: "#dcfce7", padding: "4px 10px", borderRadius: 6, border: "1px solid #bbf7d0" }}>
-                          External Auditor Table (Read-Only)
-                        </span>
-                      </div>
-                    )}
-                    <ReadOnlyTable table={table} rows={rows} values={externalValues} />
-                  </div>
-                );
-              })}
-              {fieldDefinitions.length > 0 && hasExternalFields && (
-                <FieldGrid fields={fieldDefinitions} values={externalValues} onFieldChange={() => {}} readOnly={true} />
-              )}
-              {externalRemarks && (
-                <div style={styles.partEReviewField}>
-                  <span style={styles.partEReviewLabel}>Auditor Review Remarks / Observations</span>
-                  <p style={styles.readOnlyText}>{externalRemarks}</p>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div style={styles.pendingIqacCard}>
-              <div style={styles.pendingIqacMessage}>
-                Your form has not been reviewed by external auditor yet.
-              </div>
-            </div>
-          )}
+        <div className="review-auditor-review-stack" style={styles.auditorReviewStack}>
+          {internalAssignments.map((assignment, index) => (
+            <AuditorCard
+              key={assignment.key || `internal-${index}`}
+              assignment={assignment}
+              index={index}
+              fieldDefinitions={fieldDefinitions}
+              tableDefinitions={tableDefinitions}
+              fallbackAuditorType="internal"
+            />
+          ))}
         </div>
       )}
 
-      {review?.iqacRemarks && (
+      {isExternalCycle && !hasExternalData && (
+        <div style={styles.pendingIqacCard}>
+          <div style={styles.pendingIqacTitle}>External Auditor Review Pending</div>
+          <div style={styles.pendingIqacMessage}>
+            Your form is currently in the external audit cycle and awaiting external auditor review submission.
+          </div>
+        </div>
+      )}
+
+      {hasExternalData && (
+        <div className="review-auditor-review-stack" style={styles.auditorReviewStack}>
+          {externalAssignments.map((assignment, index) => (
+            <AuditorCard
+              key={assignment.key || `external-${index}`}
+              assignment={assignment}
+              index={index}
+              fieldDefinitions={fieldDefinitions}
+              tableDefinitions={tableDefinitions}
+              fallbackAuditorType="external"
+            />
+          ))}
+        </div>
+      )}
+
+      {(review?.iqacRemarks || review?.previousIqacRemarks) && (
         <div style={styles.partEReviewBlock}>
           <div style={styles.partEReviewHeader}>
             <h3 style={styles.partEReviewTitle}>
-              {review?.reportCategory === "external" ? "IQAC External Audit Review Remarks" : "IQAC Review Remarks"}
+              {isExternalCycle && review?.iqacRemarks ? "IQAC External Audit Review Remarks" : "IQAC Review Remarks"}
             </h3>
           </div>
-          <p style={styles.readOnlyText}>{review.iqacRemarks}</p>
+          <p style={styles.readOnlyText}>{review?.iqacRemarks || review?.previousIqacRemarks}</p>
         </div>
       )}
     </div>
@@ -512,8 +850,7 @@ export default function AuditSection({ section, values, tables, onFieldChange, o
     ...(section.fields?.length ? [{ type: "fields", fields: section.fields }] : []),
     ...(section.tables?.length ? [{ type: "tables", tables: section.tables }] : []),
   ];
-  const isAuditorDesignated = section.ownerRole === "auditor" || section.isAuditorSection === true;
-  const isPartESection = section.id === ACADEMIC_PART_E_SECTION_ID || isAuditorDesignated;
+  const isAuditorDesignated = isAuditorSection(section);
   const effectiveReadOnly = readOnly || isAuditorDesignated;
 
   return (
@@ -521,7 +858,7 @@ export default function AuditSection({ section, values, tables, onFieldChange, o
       <div style={styles.headingRow}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px" }}>
           <h2 style={styles.heading}>{section.title}</h2>
-          {isAuditorDesignated && (
+          {Boolean(section.ownerRole === "auditor" || section.isAuditorSection === true || section.auditorSection === true) && (
             <span style={{ fontSize: "11px", fontWeight: 700, padding: "3px 8px", borderRadius: "5px", background: "#fef3c7", color: "#92400e", border: "1px solid #fcd34d" }}>
               🔒 Auditor Section
             </span>
@@ -534,7 +871,7 @@ export default function AuditSection({ section, values, tables, onFieldChange, o
       ) : (
         blocks.map((block, index) => {
           if (block.type === "fields") {
-            return <FieldGrid key={`fields-${index}`} fields={block.fields} values={values} onFieldChange={onFieldChange} readOnly={effectiveReadOnly} />;
+            return <FieldGrid key={`fields-${index}`} fields={block.fields} values={values} onFieldChange={onFieldChange} readOnly={effectiveReadOnly} onUploadAttachment={onUploadAttachment} />;
           }
 
           return (
@@ -661,6 +998,141 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     gap: 14,
+  },
+  auditorReviewStack: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 16,
+    width: "100%",
+  },
+  auditorReviewCard: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 12,
+    width: "100%",
+    border: "1px solid #dbe3ef",
+    borderRadius: 8,
+    background: "#fff",
+    padding: 16,
+    boxShadow: "0 8px 20px rgba(15, 23, 42, .045)",
+    marginBottom: 16,
+  },
+  auditorReviewCardHeader: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
+    justifyContent: "flex-start",
+    gap: 9,
+    minHeight: 76,
+    borderBottom: "1px solid #eef2f7",
+    paddingBottom: 10,
+  },
+  auditorReviewIdentity: {
+    minWidth: 0,
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+  },
+  auditorReviewNumber: {
+    flexShrink: 0,
+    border: "1px solid #bfdbfe",
+    borderRadius: 8,
+    background: "#eff6ff",
+    color: "#1d4ed8",
+    padding: "7px 9px",
+    fontSize: 11,
+    fontWeight: 900,
+  },
+  auditorReviewNameBlock: {
+    minWidth: 0,
+  },
+  auditorReviewChips: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  auditorReviewChip: {
+    border: "1px solid #e2e8f0",
+    borderRadius: 999,
+    background: "#f8fafc",
+    color: "#334155",
+    padding: "5px 8px",
+    fontSize: 10.5,
+    fontWeight: 800,
+  },
+  auditorProgressDone: {
+    border: "1px solid #bbf7d0",
+    borderRadius: 999,
+    background: "#dcfce7",
+    color: "#15803d",
+    padding: "5px 8px",
+    fontSize: 10.5,
+    fontWeight: 800,
+  },
+  auditorReviewTitle: {
+    margin: 0,
+    color: "#0f172a",
+    fontSize: 14,
+    fontWeight: 850,
+    lineHeight: 1.25,
+  },
+  auditorReviewEmail: {
+    margin: "2px 0 0",
+    color: "#64748b",
+    fontSize: 11.5,
+    fontWeight: 700,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  auditorReviewFieldGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 12,
+    alignContent: "start",
+  },
+  auditorReviewField: {
+    minWidth: 0,
+    display: "flex",
+    flexDirection: "column",
+    gap: 5,
+  },
+  auditorReviewDocsField: {
+    minWidth: 0,
+    display: "flex",
+    flexDirection: "column",
+    gap: 5,
+    gridColumn: "1 / -1",
+  },
+  auditorReviewValue: {
+    width: "100%",
+    minHeight: 78,
+    maxHeight: 132,
+    overflow: "auto",
+    border: "1px solid #d7dee9",
+    borderRadius: 8,
+    padding: "9px 10px",
+    color: "#0f172a",
+    background: "#fbfcfe",
+    fontSize: 12.5,
+    whiteSpace: "pre-wrap",
+    overflowWrap: "anywhere",
+    lineHeight: 1.45,
+  },
+  auditorReviewDocsValue: {
+    width: "100%",
+    minHeight: 44,
+    border: "1px solid #d7dee9",
+    borderRadius: 8,
+    padding: 8,
+    background: "#fbfcfe",
+  },
+  readOnlyLabel: {
+    color: "#475569",
+    fontSize: 12,
+    fontWeight: 750,
   },
   partEReviewBlock: {
     padding: 16,

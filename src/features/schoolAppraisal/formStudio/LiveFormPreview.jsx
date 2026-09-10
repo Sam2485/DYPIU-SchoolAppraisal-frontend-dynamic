@@ -219,6 +219,11 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                               </option>
                             ))}
                         </select>
+                      ) : f.fieldType === 'FILE' || f.fieldType === 'ATTACHMENT' ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', border: '1px dashed #cbd5e1', borderRadius: '7px', background: '#f8fafc', color: '#64748b', fontSize: '13px' }}>
+                          <span>📎</span>
+                          <span>Upload Documentation (Files / PDFs / Docs)</span>
+                        </div>
                       ) : (
                         <input
                           type={f.fieldType === 'NUMBER' ? 'number' : f.fieldType === 'DATE' ? 'date' : 'text'}

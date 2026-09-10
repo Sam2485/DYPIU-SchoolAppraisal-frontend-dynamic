@@ -44,6 +44,16 @@ const withSerialNumbers = (columns, rows) => {
 
 const ACADEMIC_PART_E_FIELD_IDS = ["auditObservations", "auditRecommendations", "auditDocumentation"];
 
+const rowHasData = (row) => {
+  if (!row || typeof row !== "object") return false;
+  return Object.entries(row).some(([k, v]) => {
+    const keyClean = String(k).toLowerCase().replace(/[\s_-]/g, "");
+    if (keyClean === "srno" || keyClean === "sno" || keyClean === "id" || keyClean === "_id") return false;
+    if (v && typeof v === "object") return Boolean(v.url || v.publicUrl || v.downloadUrl || v.name || v.fileName);
+    return String(v || "").trim() !== "";
+  });
+};
+
 const safeJsonParse = (value, fallback) => {
   if (value == null || value === "") return fallback;
   if (typeof value !== "string") return value;
@@ -175,35 +185,37 @@ const buildAcademicPartEReview = (draft = {}, history = []) => {
   );
 
   const currentHasPartE = hasAcademicPartEValues(draft.values);
-  const currentTables = draft.tables || safeJsonParse(draft.tablesData, {});
 
   if (reportCategory === "internal") {
     const assignments = Array.isArray(draft.auditorAssignments) ? draft.auditorAssignments : [];
     const internalAssignments = assignmentsForType(assignments, "internal");
     const internalAssignment = latestSubmittedAssignment(internalAssignments);
+    const hasInternalAssignment = Boolean(internalAssignment);
+
     const internalValues =
       internalAssignment ? normalizedAssignmentValues(internalAssignment) :
-      currentHasPartE ? draft.values :
+      (status === "approved" && currentHasPartE) ? draft.values :
       {};
     const internalTables =
       (internalAssignment && internalAssignment.tables && Object.keys(internalAssignment.tables).length > 0) ? internalAssignment.tables :
       (internalAssignment && internalAssignment.tablesData) ? safeJsonParse(internalAssignment.tablesData, {}) :
-      currentTables;
+      (hasInternalAssignment || status === "approved" || status === "auditor-completed") ? (draft.tables || safeJsonParse(draft.tablesData, {})) :
+      {};
     const internalRemarks =
       internalAssignment?.remarks ||
       internalAssignment?.auditObservations ||
-      internalValues?.remarks ||
-      internalValues?.auditObservations ||
-      draft.remarks ||
-      "";
+      ((hasInternalAssignment || status === "approved") ? (draft.remarks || "") : "");
 
     const hasAnyInternalData =
-      hasAcademicPartEValues(internalValues) ||
-      Object.values(internalTables).some((rows) => Array.isArray(rows) && rows.length > 0 && rows.some((r) => Object.values(r).some((v) => String(v || "").trim() !== ""))) ||
-      Boolean(internalRemarks);
+      Boolean(hasInternalAssignment || (status === "approved" && (hasAcademicPartEValues(internalValues) || Boolean(internalRemarks)))) &&
+      (
+        hasAcademicPartEValues(internalValues) ||
+        Object.keys(internalTables).length > 0 ||
+        Boolean(String(internalRemarks).trim())
+      );
 
     return {
-      isApproved: hasAnyInternalData || status === "approved" || status === "under-review" || status === "auditor-completed",
+      isApproved: hasAnyInternalData || status === "approved" || status === "auditor-completed",
       reportCategory: "internal",
       internalValues,
       internalTables,
@@ -211,9 +223,9 @@ const buildAcademicPartEReview = (draft = {}, history = []) => {
       externalValues: {},
       externalTables: {},
       externalRemarks: "",
-      iqacRemarks: draft.remarks || "",
+      iqacRemarks: (status === "approved" || status === "auditor-completed") ? (draft.remarks || "") : "",
       previousIqacRemarks: "",
-      internalAuditor: internalAssignment ? assignmentAuditor(internalAssignment) : getAuditorSignOff(draft),
+      internalAuditor: internalAssignment ? assignmentAuditor(internalAssignment) : (status === "approved" ? getAuditorSignOff(draft) : null),
       externalAuditor: null,
       auditorAssignments: internalAssignments,
     };
@@ -246,33 +258,39 @@ const buildAcademicPartEReview = (draft = {}, history = []) => {
   const assignments = Array.isArray(draft.auditorAssignments) ? draft.auditorAssignments : [];
   const externalAssignments = assignmentsForType(assignments, "external");
   const externalAssignment = latestSubmittedAssignment(externalAssignments);
+  const hasExternalAssignment = Boolean(externalAssignment);
 
   const externalValues =
     externalAssignment ? normalizedAssignmentValues(externalAssignment) :
-    currentHasPartE ? draft.values :
+    (status === "approved" && currentHasPartE) ? draft.values :
     {};
   const externalTables =
     (externalAssignment && externalAssignment.tables && Object.keys(externalAssignment.tables).length > 0) ? externalAssignment.tables :
     (externalAssignment && externalAssignment.tablesData) ? safeJsonParse(externalAssignment.tablesData, {}) :
-    currentTables;
+    (hasExternalAssignment || status === "approved" || status === "auditor-completed") ? (draft.tables || safeJsonParse(draft.tablesData, {})) :
+    {};
   const externalRemarks =
     externalAssignment?.remarks ||
     externalAssignment?.auditObservations ||
-    externalValues?.remarks ||
-    externalValues?.auditObservations ||
-    draft.remarks ||
-    "";
+    ((hasExternalAssignment || status === "approved") ? (draft.remarks || "") : "");
+
+  const hasAnyExternalData =
+    Boolean(hasExternalAssignment || (status === "approved" && (hasAcademicPartEValues(externalValues) || Boolean(externalRemarks)))) &&
+    (
+      hasAcademicPartEValues(externalValues) ||
+      Object.keys(externalTables).length > 0 ||
+      Boolean(String(externalRemarks).trim())
+    );
 
   const hasAnyData =
     hasAcademicPartEValues(internalValues) ||
     Object.keys(internalTables || {}).length > 0 ||
-    hasAcademicPartEValues(externalValues) ||
-    Object.keys(externalTables || {}).length > 0 ||
+    hasAnyExternalData ||
     Boolean(internalRemarks) ||
     Boolean(externalRemarks);
 
   return {
-    isApproved: hasAnyData || status === "approved" || status === "under-review" || status === "auditor-completed",
+    isApproved: hasAnyData || status === "approved" || status === "auditor-completed",
     reportCategory: "external",
     internalValues,
     internalTables,
@@ -280,10 +298,10 @@ const buildAcademicPartEReview = (draft = {}, history = []) => {
     externalValues,
     externalTables,
     externalRemarks,
-    iqacRemarks: draft.remarks || "",
+    iqacRemarks: (status === "approved" || status === "auditor-completed") ? (draft.remarks || "") : "",
     previousIqacRemarks,
     internalAuditor,
-    externalAuditor: externalAssignment ? assignmentAuditor(externalAssignment) : getAuditorSignOff(draft),
+    externalAuditor: externalAssignment ? assignmentAuditor(externalAssignment) : (status === "approved" ? getAuditorSignOff(draft) : null),
     auditorAssignments: externalAssignments,
     previousInternalAssignments: submittedPreviousInternalAssignments,
   };
@@ -427,7 +445,7 @@ export default function AuditForm({
         setAttachments(activeDraft.attachments);
         setHasExistingSubmission(activeDraft.exists);
         setIsSubmitted(activeDraft.isSubmitted);
-        setAcademicPartEReview(auditType === "academic" ? buildAcademicPartEReview(activeDraft, historyEntries) : null);
+        setAcademicPartEReview(buildAcademicPartEReview(activeDraft, historyEntries));
       } catch (error) {
         if (isActive) setStatus(getApiErrorMessage(error, "Could not load your draft from the server."));
       } finally {
@@ -730,7 +748,7 @@ export default function AuditForm({
                 setAttachments((current) => current.filter((file) => file.url !== attachment.url));
               }}
               readOnly={readOnly}
-              academicPartEReview={auditType === "academic" ? academicPartEReview : null}
+              academicPartEReview={academicPartEReview}
             />
           ))}
       </div>
