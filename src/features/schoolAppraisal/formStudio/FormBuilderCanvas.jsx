@@ -11,10 +11,15 @@ import {
   createField,
   updateField,
   deleteField,
+  reorderSections,
+  reorderTables,
+  reorderFields,
   copyTable,
   getAvailableTables,
   getUniversityPosts,
 } from './formStudioApi';
+import { ExcelTableImportModal } from './ExcelTableImportModal';
+import { ExcelFullSchemaImportModal } from './ExcelFullSchemaImportModal';
 
 export const FormBuilderCanvas = ({
   versionId,
@@ -28,6 +33,12 @@ export const FormBuilderCanvas = ({
   const [error, setError] = useState(null);
   const [publishing, setPublishing] = useState(false);
   const [publishMessage, setPublishMessage] = useState(null);
+
+  // Excel Table Import Modal State (Single Section)
+  const [excelImportModal, setExcelImportModal] = useState({ show: false, section: null });
+
+  // Full Form Schema Import Modal State (Multi-Section / Entire Form)
+  const [fullSchemaImportModal, setFullSchemaImportModal] = useState(false);
 
   // University Posts for Administrative Assignment
   const [universityPosts, setUniversityPosts] = useState([]);
@@ -194,6 +205,28 @@ export const FormBuilderCanvas = ({
     }
   };
 
+  const handleMoveSection = async (idx, direction) => {
+    if (!tree?.sections) return;
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= tree.sections.length) return;
+
+    const sectionsCopy = [...tree.sections];
+    const [moved] = sectionsCopy.splice(idx, 1);
+    sectionsCopy.splice(targetIdx, 0, moved);
+
+    const orderedIds = sectionsCopy.map((s) => s.id);
+    setTree({ ...tree, sections: sectionsCopy });
+
+    try {
+      await reorderSections(versionId, orderedIds);
+      await loadTree();
+    } catch (err) {
+      console.error('Failed to reorder sections:', err);
+      alert('Failed to save section order: ' + err.message);
+      await loadTree();
+    }
+  };
+
   // Table Handlers
   const handleOpenAddTable = (secId) => {
     setTableModal({
@@ -222,18 +255,51 @@ export const FormBuilderCanvas = ({
   const handleSaveTable = async (e) => {
     e.preventDefault();
     try {
+      const sec = tree?.sections?.find((s) => s.id === tableModal.sectionId);
+      const secKey = sec?.sectionKey || sec?.title || 'sec';
+
+      // Collect all other table keys in the schema version tree
+      const otherKeys = new Set();
+      (tree?.sections || []).forEach((s) => {
+        (s.tables || []).forEach((t) => {
+          if (!tableModal.isEdit || t.id !== tableModal.data.id) {
+            if (t.tableKey) otherKeys.add(t.tableKey.toLowerCase());
+          }
+        });
+      });
+
+      const title = (tableModal.data.title || '').trim();
+      let key = (tableModal.data.tableKey || '').trim();
+      if (!key) {
+        key = title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+      } else {
+        key = key.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+      }
+      if (!key) key = 'table_' + Date.now();
+
+      // If key is already used by another table in this schema version, auto-disambiguate
+      let candidateKey = key;
+      if (otherKeys.has(candidateKey.toLowerCase())) {
+        const prefix = secKey.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+        candidateKey = `${prefix}_${key}`;
+      }
+      let suffix = 1;
+      while (otherKeys.has(candidateKey.toLowerCase())) {
+        candidateKey = `${key}_${++suffix}`;
+      }
+
       if (tableModal.isEdit) {
         await updateTable(tableModal.data.id, {
-          title: tableModal.data.title,
-          tableKey: tableModal.data.tableKey,
+          title: title,
+          tableKey: candidateKey,
           isRepeatable: tableModal.data.isRepeatable,
           showTitle: tableModal.data.showTitle,
         });
       } else {
         await createTable(tableModal.sectionId, {
           sectionId: tableModal.sectionId,
-          title: tableModal.data.title,
-          tableKey: tableModal.data.tableKey,
+          title: title,
+          tableKey: candidateKey,
           isRepeatable: tableModal.data.isRepeatable,
           showTitle: tableModal.data.showTitle,
         });
@@ -252,6 +318,31 @@ export const FormBuilderCanvas = ({
       await loadTree();
     } catch (err) {
       alert('Error deleting table: ' + err.message);
+    }
+  };
+
+  const handleMoveTable = async (tbl, tIdx, direction) => {
+    if (!currentSection?.tables) return;
+    const targetIdx = direction === 'up' ? tIdx - 1 : tIdx + 1;
+    if (targetIdx < 0 || targetIdx >= currentSection.tables.length) return;
+
+    const tablesCopy = [...currentSection.tables];
+    const [moved] = tablesCopy.splice(tIdx, 1);
+    tablesCopy.splice(targetIdx, 0, moved);
+
+    const orderedIds = tablesCopy.map((t) => t.id);
+    const updatedSections = tree.sections.map((s) =>
+      s.id === currentSection.id ? { ...s, tables: tablesCopy } : s
+    );
+    setTree({ ...tree, sections: updatedSections });
+
+    try {
+      await reorderTables(currentSection.id, orderedIds);
+      await loadTree();
+    } catch (err) {
+      console.error('Failed to reorder tables:', err);
+      alert('Failed to save table order: ' + err.message);
+      await loadTree();
     }
   };
 
@@ -377,6 +468,27 @@ export const FormBuilderCanvas = ({
     }
   };
 
+  const handleMoveField = async (tbl, cIdx, direction) => {
+    if (!tbl?.fields) return;
+    const targetIdx = direction === 'left' ? cIdx - 1 : cIdx + 1;
+    if (targetIdx < 0 || targetIdx >= tbl.fields.length) return;
+
+    const fieldsCopy = [...tbl.fields];
+    const [moved] = fieldsCopy.splice(cIdx, 1);
+    fieldsCopy.splice(targetIdx, 0, moved);
+
+    const orderedIds = fieldsCopy.map((f) => f.id);
+
+    try {
+      await reorderFields(tbl.id, orderedIds);
+      await loadTree();
+    } catch (err) {
+      console.error('Failed to reorder fields:', err);
+      alert('Failed to save column order: ' + err.message);
+      await loadTree();
+    }
+  };
+
   // Publish
   const handlePublish = async () => {
     if (!window.confirm('Publishing will freeze this schema version and activate it immediately for all contributors. Continue?')) {
@@ -466,6 +578,27 @@ export const FormBuilderCanvas = ({
           {publishMessage && <span style={{ color: '#059669', fontWeight: 600, fontSize: '13px' }}>{publishMessage}</span>}
           <button
             type="button"
+            style={{
+              padding: '7px 14px',
+              borderRadius: '7px',
+              border: '1px solid #c7d2fe',
+              background: '#eef2ff',
+              color: '#4338ca',
+              fontWeight: 700,
+              fontSize: '13px',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+            onClick={() => setFullSchemaImportModal(true)}
+            title="Upload a multi-sheet Excel file to create all Parts/Sections with their tables and columns at once"
+          >
+            <span>📑</span>
+            <span>Import Full Form from Excel</span>
+          </button>
+          <button
+            type="button"
             style={{ padding: '7px 14px', borderRadius: '7px', border: '1px solid #93c5fd', background: '#eff6ff', color: '#1d4ed8', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}
             onClick={() => onOpenPreview(versionId)}
           >
@@ -507,11 +640,11 @@ export const FormBuilderCanvas = ({
                 <div
                   key={sec.id}
                   style={{
-                    padding: '10px 12px',
+                    padding: '8px 10px',
                     borderRadius: '8px',
                     cursor: 'pointer',
                     background: isSelected ? '#eff6ff' : '#fff',
-                    border: isSelected ? '1px solid #bfdbfe' : '1px solid transparent',
+                    border: isSelected ? '1.5px solid #93c5fd' : '1px solid #e2e8f0',
                     color: isSelected ? '#1d4ed8' : '#0f172a',
                     fontWeight: isSelected ? 700 : 500,
                     display: 'flex',
@@ -519,22 +652,72 @@ export const FormBuilderCanvas = ({
                     alignItems: 'center',
                     fontSize: '13px',
                     transition: 'all 0.15s ease',
+                    boxShadow: isSelected ? '0 1px 2px rgba(37,99,235,0.08)' : 'none',
                   }}
                   onClick={() => setActiveSectionId(sec.id)}
                 >
-                  <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '170px' }}>
-                    <span style={{ display: 'inline-block', minWidth: '18px', padding: '1px 5px', background: '#e2e8f0', borderRadius: '4px', fontSize: '10.5px', marginRight: '6px', textAlign: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', minWidth: 0, flex: 1 }}>
+                    {/* Section Sequence Up/Down Arrows */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        disabled={idx === 0}
+                        style={{
+                          border: 'none',
+                          background: 'transparent',
+                          color: idx === 0 ? '#cbd5e1' : '#64748b',
+                          cursor: idx === 0 ? 'not-allowed' : 'pointer',
+                          fontSize: '9px',
+                          lineHeight: '1',
+                          padding: '1px 3px',
+                          borderRadius: '3px',
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMoveSection(idx, 'up');
+                        }}
+                        title="Move Section Up"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        type="button"
+                        disabled={idx === tree.sections.length - 1}
+                        style={{
+                          border: 'none',
+                          background: 'transparent',
+                          color: idx === tree.sections.length - 1 ? '#cbd5e1' : '#64748b',
+                          cursor: idx === tree.sections.length - 1 ? 'not-allowed' : 'pointer',
+                          fontSize: '9px',
+                          lineHeight: '1',
+                          padding: '1px 3px',
+                          borderRadius: '3px',
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMoveSection(idx, 'down');
+                        }}
+                        title="Move Section Down"
+                      >
+                        ▼
+                      </button>
+                    </div>
+
+                    <span style={{ display: 'inline-block', minWidth: '18px', padding: '1px 5px', background: isSelected ? '#dbeafe' : '#f1f5f9', color: isSelected ? '#1e40af' : '#475569', borderRadius: '4px', fontSize: '10.5px', fontWeight: 800, textAlign: 'center', flexShrink: 0 }}>
                       {sec.number || idx + 1}
                     </span>
-                    {sec.title}
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '12.5px' }}>
+                      {sec.title}
+                    </span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
                     {isAuditor && (
-                      <span style={{ fontSize: '10px', fontWeight: 700, padding: '1px 5px', borderRadius: '4px', background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }} title="Auditor Section">
+                      <span style={{ fontSize: '9.5px', fontWeight: 700, padding: '1px 4px', borderRadius: '4px', background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }} title="Auditor Section">
                         🔒 Auditor
                       </span>
                     )}
-                    <span style={{ fontSize: '11px', color: '#64748b', background: '#f1f5f9', padding: '2px 6px', borderRadius: '999px' }}>
+                    <span style={{ fontSize: '10.5px', color: '#64748b', background: '#f1f5f9', padding: '1px 5px', borderRadius: '999px', fontWeight: 600 }}>
                       {sec.tables?.length || 0}
                     </span>
                   </div>
@@ -671,6 +854,29 @@ export const FormBuilderCanvas = ({
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
                 <h4 style={{ margin: 0, fontWeight: 800, color: '#0f172a', fontSize: '16px' }}>📊 Tables in Section</h4>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {/* Excel Import button */}
+                  <button
+                    type="button"
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: '7px',
+                      border: '1px solid #86efac',
+                      background: '#f0fdf4',
+                      color: '#15803d',
+                      fontWeight: 700,
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                    onClick={() => setExcelImportModal({ show: true, section: currentSection })}
+                    title="Upload an Excel sheet to automatically create tables with column headers"
+                  >
+                    <span>📥</span>
+                    <span>Import Tables from Excel</span>
+                  </button>
+
                   {/* Copy Table button ONLY appears in Academic Flow (not in Administrative flow) */}
                   {!isAdministrative && (
                     <button
@@ -703,7 +909,48 @@ export const FormBuilderCanvas = ({
                           Key: <code>{tbl.tableKey}</code> | {tbl.isRepeatable ? 'Dynamic Rows' : 'Fixed Form'}
                         </small>
                       </div>
-                      <div style={{ display: 'flex', gap: '6px' }}>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                        {/* Table Sequence Reordering */}
+                        {currentSection.tables.length > 1 && (
+                          <div style={{ display: 'inline-flex', border: '1px solid #cbd5e1', borderRadius: '6px', overflow: 'hidden', background: '#fff' }}>
+                            <button
+                              type="button"
+                              disabled={tIdx === 0}
+                              style={{
+                                border: 'none',
+                                background: tIdx === 0 ? '#f8fafc' : '#fff',
+                                color: tIdx === 0 ? '#cbd5e1' : '#334155',
+                                cursor: tIdx === 0 ? 'not-allowed' : 'pointer',
+                                padding: '4px 8px',
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                borderRight: '1px solid #e2e8f0',
+                              }}
+                              onClick={() => handleMoveTable(tbl, tIdx, 'up')}
+                              title="Move Table Up"
+                            >
+                              ▲ Up
+                            </button>
+                            <button
+                              type="button"
+                              disabled={tIdx === currentSection.tables.length - 1}
+                              style={{
+                                border: 'none',
+                                background: tIdx === currentSection.tables.length - 1 ? '#f8fafc' : '#fff',
+                                color: tIdx === currentSection.tables.length - 1 ? '#cbd5e1' : '#334155',
+                                cursor: tIdx === currentSection.tables.length - 1 ? 'not-allowed' : 'pointer',
+                                padding: '4px 8px',
+                                fontSize: '11px',
+                                fontWeight: 700,
+                              }}
+                              onClick={() => handleMoveTable(tbl, tIdx, 'down')}
+                              title="Move Table Down"
+                            >
+                              ▼ Down
+                            </button>
+                          </div>
+                        )}
+
                         <button
                           type="button"
                           style={{ padding: '5px 11px', borderRadius: '6px', border: '1px solid #93c5fd', background: '#eff6ff', color: '#1d4ed8', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}
@@ -733,24 +980,63 @@ export const FormBuilderCanvas = ({
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
                         <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', marginRight: '4px' }}>Columns:</span>
                         {tbl.fields && tbl.fields.length > 0 ? (
-                          tbl.fields.map((col) => (
+                          tbl.fields.map((col, cIdx) => (
                             <span
                               key={col.id}
                               style={{
                                 background: '#fff',
                                 border: '1px solid #cbd5e1',
                                 borderRadius: '6px',
-                                padding: '5px 10px',
+                                padding: '4px 8px',
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                gap: '6px',
-                                fontSize: '12.5px',
+                                gap: '5px',
+                                fontSize: '12px',
                                 fontWeight: 600,
                                 color: '#0f172a',
                               }}
                             >
+                              {/* Column Sequence Left/Right */}
+                              {tbl.fields.length > 1 && (
+                                <span style={{ display: 'inline-flex', gap: '1px', marginRight: '2px' }}>
+                                  <button
+                                    type="button"
+                                    disabled={cIdx === 0}
+                                    style={{
+                                      border: 'none',
+                                      background: 'transparent',
+                                      color: cIdx === 0 ? '#cbd5e1' : '#64748b',
+                                      cursor: cIdx === 0 ? 'not-allowed' : 'pointer',
+                                      fontSize: '9px',
+                                      padding: '0 2px',
+                                      lineHeight: '1',
+                                    }}
+                                    onClick={() => handleMoveField(tbl, cIdx, 'left')}
+                                    title="Move Column Left"
+                                  >
+                                    ◀
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={cIdx === tbl.fields.length - 1}
+                                    style={{
+                                      border: 'none',
+                                      background: 'transparent',
+                                      color: cIdx === tbl.fields.length - 1 ? '#cbd5e1' : '#64748b',
+                                      cursor: cIdx === tbl.fields.length - 1 ? 'not-allowed' : 'pointer',
+                                      fontSize: '9px',
+                                      padding: '0 2px',
+                                      lineHeight: '1',
+                                    }}
+                                    onClick={() => handleMoveField(tbl, cIdx, 'right')}
+                                    title="Move Column Right"
+                                  >
+                                    ▶
+                                  </button>
+                                </span>
+                              )}
                               <span>{col.label || col.fieldKey}</span>
-                              <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 5px', background: '#dbeafe', color: '#1e40af', borderRadius: '4px' }}>
+                              <span style={{ fontSize: '9.5px', fontWeight: 700, padding: '2px 5px', background: '#dbeafe', color: '#1e40af', borderRadius: '4px' }}>
                                 {col.fieldType}
                               </span>
                               <button
@@ -1277,6 +1563,32 @@ export const FormBuilderCanvas = ({
             </form>
           </div>
         </div>
+      )}
+
+      {/* Excel Table Import Modal (Single Section) */}
+      {excelImportModal.show && (
+        <ExcelTableImportModal
+          show={excelImportModal.show}
+          section={excelImportModal.section}
+          onClose={() => setExcelImportModal({ show: false, section: null })}
+          onImportSuccess={async () => {
+            await loadTree();
+          }}
+        />
+      )}
+
+      {/* Excel Full Schema Import Modal (Multi-Section / Entire Form) */}
+      {fullSchemaImportModal && (
+        <ExcelFullSchemaImportModal
+          show={fullSchemaImportModal}
+          versionId={versionId}
+          isAdministrative={isAdministrative}
+          universityPosts={universityPosts}
+          onClose={() => setFullSchemaImportModal(false)}
+          onImportSuccess={async () => {
+            await loadTree();
+          }}
+        />
       )}
     </div>
   );

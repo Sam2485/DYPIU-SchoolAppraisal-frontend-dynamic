@@ -321,6 +321,7 @@ const getTableRows = (tables = {}, table = {}) => {
     table.id != null ? String(table.id) : null,
     table.id,
     table.title,
+    table.name,
   ].filter((k) => k !== undefined && k !== null && k !== "");
 
   for (const k of keysToTry) {
@@ -332,7 +333,16 @@ const getTableRows = (tables = {}, table = {}) => {
   const tableEntries = Object.entries(tables);
   for (const k of keysToTry) {
     const kLower = String(k).toLowerCase().trim();
-    const found = tableEntries.find(([entryKey]) => String(entryKey).toLowerCase().trim() === kLower);
+    const kSlug = kLower.replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+    const kNoSpace = kLower.replace(/[^a-z0-9]+/g, "");
+
+    const found = tableEntries.find(([entryKey]) => {
+      const eLower = String(entryKey).toLowerCase().trim();
+      const eSlug = eLower.replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+      const eNoSpace = eLower.replace(/[^a-z0-9]+/g, "");
+      return eLower === kLower || eSlug === kSlug || eNoSpace === kNoSpace;
+    });
+    if (found && Array.isArray(found[1]) && found[1].length > 0) return found[1];
     if (found && Array.isArray(found[1])) return found[1];
   }
   return [];
@@ -340,24 +350,80 @@ const getTableRows = (tables = {}, table = {}) => {
 
 const getCellValue = (row = {}, column = "", table = {}) => {
   if (!row || typeof row !== "object") return "";
-  if (row[column] !== undefined) return row[column];
+  if (row[column] !== undefined && row[column] !== null && String(row[column]).trim() !== "") return row[column];
 
   const colLower = String(column).toLowerCase().trim();
-  const rowEntries = Object.entries(row);
-  const found = rowEntries.find(([k]) => String(k).toLowerCase().trim() === colLower);
-  if (found && found[1] !== undefined) return found[1];
+  const colSlug = colLower.replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  const colNoSpace = colLower.replace(/[^a-z0-9]+/g, "");
 
-  if (Array.isArray(table?.fields)) {
-    const field = table.fields.find((f) =>
-      String(f.label || "").toLowerCase().trim() === colLower ||
-      String(f.fieldKey || "").toLowerCase().trim() === colLower ||
-      String(f.id || "").toLowerCase().trim() === colLower
-    );
-    if (field) {
-      if (field.fieldKey && row[field.fieldKey] !== undefined) return row[field.fieldKey];
-      if (field.label && row[field.label] !== undefined) return row[field.label];
-      if (field.id && row[field.id] !== undefined) return row[field.id];
+  // 1. Direct case-insensitive or slugified match on row keys
+  const rowEntries = Object.entries(row);
+  for (const [k, v] of rowEntries) {
+    if (v !== undefined && v !== null && (Array.isArray(v) ? v.length > 0 : String(v).trim() !== "")) {
+      const kLower = String(k).toLowerCase().trim();
+      const kSlug = kLower.replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+      const kNoSpace = kLower.replace(/[^a-z0-9]+/g, "");
+      if (kLower === colLower || kSlug === colSlug || kNoSpace === colNoSpace) {
+        return v;
+      }
     }
+  }
+
+  // 2. Check table.fields definitions for label, fieldKey, id
+  if (Array.isArray(table?.fields)) {
+    const field = table.fields.find((f) => {
+      if (!f) return false;
+      const fLabel = String(f.label || "").toLowerCase().trim();
+      const fKey = String(f.fieldKey || f.key || "").toLowerCase().trim();
+      const fId = String(f.id || "").toLowerCase().trim();
+      const fIdString = String(f.idString || "").toLowerCase().trim();
+      return (
+        fLabel === colLower ||
+        fKey === colLower ||
+        fKey === colSlug ||
+        fId === colLower ||
+        fIdString === colLower ||
+        fLabel.replace(/[^a-z0-9]+/g, "") === colNoSpace
+      );
+    });
+    if (field) {
+      const candidateKeys = [field.fieldKey, field.key, field.label, field.idString, field.id];
+      for (const ck of candidateKeys) {
+        if (ck && row[ck] !== undefined && row[ck] !== null && (Array.isArray(row[ck]) ? row[ck].length > 0 : String(row[ck]).trim() !== "")) {
+          return row[ck];
+        }
+      }
+      for (const ck of candidateKeys) {
+        if (!ck) continue;
+        const ckLower = String(ck).toLowerCase().trim();
+        const ckNoSpace = ckLower.replace(/[^a-z0-9]+/g, "");
+        for (const [k, v] of rowEntries) {
+          if (v !== undefined && v !== null && (Array.isArray(v) ? v.length > 0 : String(v).trim() !== "")) {
+            const kLower = String(k).toLowerCase().trim();
+            const kNoSpace = kLower.replace(/[^a-z0-9]+/g, "");
+            if (kLower === ckLower || kNoSpace === ckNoSpace) return v;
+          }
+        }
+      }
+    }
+  }
+
+  // 3. Serial column fallback
+  const isSerial = Boolean(serialColumnFor([column]));
+  if (isSerial) {
+    for (const [k, v] of rowEntries) {
+      const kClean = String(k).toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (["srno", "sno", "sn", "id", "serialno", "serialnumber"].includes(kClean)) {
+        if (v !== undefined && v !== null && String(v).trim() !== "") return v;
+      }
+    }
+  }
+
+  // 4. Default return
+  if (row[column] !== undefined) return row[column];
+  for (const [k, v] of rowEntries) {
+    const kLower = String(k).toLowerCase().trim();
+    if (kLower === colLower) return v;
   }
   return "";
 };
@@ -1732,17 +1798,19 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
 
   useEffect(() => {
     let isActive = true;
-    fetchUsers()
-      .then(({ data }) => {
-        if (isActive) setDirectoryUsers(userList(data).map(normalizeAuditor));
-      })
-      .catch(() => {
-        if (isActive) setDirectoryUsers([]);
-      });
+    if (canManageUsers) {
+      fetchUsers()
+        .then(({ data }) => {
+          if (isActive) setDirectoryUsers(userList(data).map(normalizeAuditor));
+        })
+        .catch(() => {
+          if (isActive) setDirectoryUsers([]);
+        });
+    }
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [canManageUsers]);
 
   const directorsBySchoolForAvatars = useMemo(
     () => mapUsersBySchool(usersForCategory(directoryUsers, "academic")),
@@ -1848,15 +1916,9 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
     let isActive = true;
     const loadAuditorProfile = async () => {
       try {
-        const { data } = await fetchUsers();
-        const sessionId = String(sessionProfile.id || "");
-        const sessionEmail = normalizeAuditAssignment(sessionProfile.email || "");
-        const matchedUser = userList(data)
-          .map(normalizeAuditor)
-          .find((user) =>
-            (sessionId && String(user.id) === sessionId) ||
-            (sessionEmail && normalizeAuditAssignment(user.email) === sessionEmail)
-          );
+        const { data } = await fetchCurrentUser();
+        const user = data?.data || data || {};
+        const matchedUser = normalizeAuditor(user);
 
         if (isActive && matchedUser) {
           setAuditorProfile({
@@ -1875,7 +1937,7 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
     return () => {
       isActive = false;
     };
-  }, [isAuditor, role, sessionProfile.auditorRole, sessionProfile.email, sessionProfile.id]);
+  }, [isAuditor, role, sessionProfile.auditorRole]);
 
   // sessionStorage never carries the avatar, and profileOverrides is only populated for the
   // rest of this session after a save in UserProfileModal — so without this, the sidebar
@@ -4773,9 +4835,7 @@ function FullFormReview({
     ? currentAssignmentAttachments
     : shouldClearCopiedExternalPartE
       ? removeMatchingPartEAttachments(submission?.attachments || [], previousInternalReport?.values)
-      : shouldClearFreshAuditorDraft
-        ? []
-        : submission.attachments || [];
+      : submission.attachments || [];
   const auditorTableKeys = useMemo(() => {
     const keys = new Set();
     sections.forEach((sec) => {
@@ -4806,16 +4866,6 @@ function FullFormReview({
     .find((tables) => Object.keys(tables).length > 0);
 
   const baseTables = { ...(submission.tables || {}) };
-  if (!currentAssignmentTables && canEditAuditorSection) {
-    auditorTableKeys.forEach((key) => {
-      delete baseTables[key];
-    });
-    Object.keys(baseTables).forEach((k) => {
-      if (Array.from(auditorTableKeys).some((ak) => String(ak).toLowerCase().trim() === String(k).toLowerCase().trim())) {
-        delete baseTables[k];
-      }
-    });
-  }
   const initialDraftTables = currentAssignmentTables
     ? { ...baseTables, ...currentAssignmentTables }
     : baseTables;
@@ -4831,15 +4881,36 @@ function FullFormReview({
   const [reviewRemarks, setReviewRemarks] = useState(reviewRemarksForDisplay(submission));
   const [activeSectionIndex, setActiveSectionIndex] = useState(0);
   const [reportMode, setReportMode] = useState(false);
+
   const activeSection = sections[activeSectionIndex] || sections[0];
   const activeSectionIsAuditorOwned = activeSection ? isAuditorSection(activeSection, submission.auditType) : false;
   const canShowAuditorReviewValues = canEditAuditorSection || auditorReviewReadOnly || isAuditorCompleted(submission);
   const shouldHidePendingAuditorValues = activeSectionIsAuditorOwned && !canShowAuditorReviewValues;
-  const submittedForm = {
-    values: shouldHidePendingAuditorValues ? hidePendingAuditorReviewValues(draftValues) : draftValues,
-    tables: draftTables,
-    hasSavedData: submission.hasSavedData,
-  };
+  const submittedForm = useMemo(() => {
+    const mergedTables = {
+      ...(submission.tables || {}),
+      ...(draftTables || {}),
+    };
+    Object.entries(submission.tables || {}).forEach(([k, rows]) => {
+      if (Array.isArray(rows) && rows.length > 0) {
+        if (!mergedTables[k] || !mergedTables[k].length) {
+          mergedTables[k] = rows;
+        }
+      }
+    });
+
+    const mergedValues = {
+      ...(submission.values || {}),
+      ...(draftValues || {}),
+    };
+
+    return {
+      values: shouldHidePendingAuditorValues ? hidePendingAuditorReviewValues(mergedValues) : mergedValues,
+      tables: mergedTables,
+      attachments: uniqueAttachments([...(submission.attachments || []), ...(draftAttachments || [])]),
+      hasSavedData: Boolean(submission.hasSavedData || Object.keys(submission.tables || {}).length > 0 || Object.keys(submission.values || {}).length > 0),
+    };
+  }, [submission, draftTables, draftValues, draftAttachments, shouldHidePendingAuditorValues]);
   const isLastSection = activeSectionIndex === sections.length - 1;
   const hasRemarks = Boolean(reviewRemarks.trim());
 
@@ -6210,6 +6281,18 @@ function renderValue(rawValue) {
         ))}
       </div>
     ) : "-";
+  }
+
+  if (typeof value === "string" && (value.includes("/api/attachments/") || /\.(pdf|docx?|xlsx?|png|jpe?g)$/i.test(value.trim()))) {
+    const rawStr = value.trim();
+    const fileNameMatch = rawStr.match(/fileName=([^&]+)/i);
+    const fileName = fileNameMatch ? decodeURIComponent(fileNameMatch[1]) : rawStr.split("/").pop() || "Document";
+    const attachmentObj = {
+      name: fileName,
+      fileName: fileName,
+      url: rawStr,
+    };
+    return renderValue(attachmentObj);
   }
 
   if (isAttachmentValue(value)) {

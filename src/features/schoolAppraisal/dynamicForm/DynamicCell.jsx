@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import { getAttachmentUrl } from '../../../utils/attachment';
 
 export const DynamicCell = ({
   column,
@@ -56,7 +57,7 @@ export const DynamicCell = ({
         {hasAttachment ? (
           <div className="d-flex align-items-center gap-1">
             <a
-              href={value}
+              href={getAttachmentUrl(value)}
               target="_blank"
               rel="noopener noreferrer"
               className="btn btn-sm btn-outline-primary text-truncate"

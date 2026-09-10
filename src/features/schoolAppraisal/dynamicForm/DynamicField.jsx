@@ -1,5 +1,6 @@
 import React from 'react';
 import { uploadAttachments } from '../../../api/submissions';
+import { getAttachmentUrl } from '../../../utils/attachment';
 
 export const DynamicField = ({ field, value, onChange, readOnly = false, error = null }) => {
   if (!field) return null;
@@ -73,7 +74,7 @@ export const DynamicField = ({ field, value, onChange, readOnly = false, error =
                   <div key={idx} className="d-flex align-items-center justify-content-between p-1 px-2 border rounded bg-light" style={{ fontSize: '12.5px' }}>
                     <span className="text-truncate" style={{ maxWidth: '80%' }}>
                       📎 {url ? (
-                        <a href={url} target="_blank" rel="noopener noreferrer" className="text-decoration-none">
+                        <a href={getAttachmentUrl(url, name)} target="_blank" rel="noopener noreferrer" className="text-decoration-none">
                           {name}
                         </a>
                       ) : (

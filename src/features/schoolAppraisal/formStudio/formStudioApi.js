@@ -73,6 +73,11 @@ export const deleteSection = async (sectionId) => {
   return res.data;
 };
 
+export const reorderSections = async (versionId, sectionIds) => {
+  const res = await apiClient.put(`/api/admin/config/versions/${versionId}/reorder-sections`, sectionIds);
+  return res.data;
+};
+
 export const createTable = async (sectionId, payload) => {
   const res = await apiClient.post(`/api/admin/config/sections/${sectionId}/tables`, payload);
   return res.data;
@@ -88,6 +93,11 @@ export const deleteTable = async (tableId) => {
   return res.data;
 };
 
+export const reorderTables = async (sectionId, tableIds) => {
+  const res = await apiClient.put(`/api/admin/config/sections/${sectionId}/reorder-tables`, tableIds);
+  return res.data;
+};
+
 export const createField = async (sectionId, payload) => {
   const res = await apiClient.post(`/api/admin/config/sections/${sectionId}/fields`, payload);
   return res.data;
@@ -100,6 +110,11 @@ export const updateField = async (fieldId, payload) => {
 
 export const deleteField = async (fieldId) => {
   const res = await apiClient.delete(`/api/admin/config/fields/${fieldId}`);
+  return res.data;
+};
+
+export const reorderFields = async (tableId, fieldIds) => {
+  const res = await apiClient.put(`/api/admin/config/tables/${tableId}/reorder-fields`, fieldIds);
   return res.data;
 };
 
@@ -173,5 +188,19 @@ export const deleteUniversityPost = async (universityId, postId) => {
   const res = await apiClient.delete(`/api/admin/config/universities/${universityId}/posts/${postId}`);
   return res.data;
 };
+
+// Batch Import Tables from Excel (Single Section)
+export const importBatchTables = async (sectionId, payload) => {
+  const res = await apiClient.post(`/api/admin/config/sections/${sectionId}/batch-tables`, payload);
+  return res.data;
+};
+
+// Full Form Schema Import from Excel (Multiple Sections / Whole Schema)
+export const importFullSchema = async (versionId, payload) => {
+  const res = await apiClient.post(`/api/admin/config/versions/${versionId}/import-full-schema`, payload);
+  return res.data;
+};
+
+
 
 

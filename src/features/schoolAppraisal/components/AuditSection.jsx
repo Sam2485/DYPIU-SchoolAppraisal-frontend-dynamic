@@ -85,6 +85,7 @@ const getTableRows = (tables = {}, table = {}) => {
     table.id != null ? String(table.id) : null,
     table.id,
     table.title,
+    table.name,
   ].filter((k) => k !== undefined && k !== null && k !== "");
 
   for (const k of keysToTry) {
@@ -96,7 +97,16 @@ const getTableRows = (tables = {}, table = {}) => {
   const tableEntries = Object.entries(tables);
   for (const k of keysToTry) {
     const kLower = String(k).toLowerCase().trim();
-    const found = tableEntries.find(([entryKey]) => String(entryKey).toLowerCase().trim() === kLower);
+    const kSlug = kLower.replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+    const kNoSpace = kLower.replace(/[^a-z0-9]+/g, "");
+
+    const found = tableEntries.find(([entryKey]) => {
+      const eLower = String(entryKey).toLowerCase().trim();
+      const eSlug = eLower.replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+      const eNoSpace = eLower.replace(/[^a-z0-9]+/g, "");
+      return eLower === kLower || eSlug === kSlug || eNoSpace === kNoSpace;
+    });
+    if (found && Array.isArray(found[1]) && found[1].length > 0) return found[1];
     if (found && Array.isArray(found[1])) return found[1];
   }
   return [];

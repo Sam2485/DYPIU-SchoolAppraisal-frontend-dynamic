@@ -24,6 +24,7 @@ const getTableRows = (tables = {}, table = {}) => {
     table.id != null ? String(table.id) : null,
     table.id,
     table.title,
+    table.name,
   ].filter((k) => k !== undefined && k !== null && k !== "");
 
   for (const k of keysToTry) {
@@ -35,7 +36,16 @@ const getTableRows = (tables = {}, table = {}) => {
   const tableEntries = Object.entries(tables);
   for (const k of keysToTry) {
     const kLower = String(k).toLowerCase().trim();
-    const found = tableEntries.find(([entryKey]) => String(entryKey).toLowerCase().trim() === kLower);
+    const kSlug = kLower.replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+    const kNoSpace = kLower.replace(/[^a-z0-9]+/g, "");
+
+    const found = tableEntries.find(([entryKey]) => {
+      const eLower = String(entryKey).toLowerCase().trim();
+      const eSlug = eLower.replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+      const eNoSpace = eLower.replace(/[^a-z0-9]+/g, "");
+      return eLower === kLower || eSlug === kSlug || eNoSpace === kNoSpace;
+    });
+    if (found && Array.isArray(found[1]) && found[1].length > 0) return found[1];
     if (found && Array.isArray(found[1])) return found[1];
   }
   return [];
@@ -43,24 +53,80 @@ const getTableRows = (tables = {}, table = {}) => {
 
 const getCellValue = (row = {}, column = "", table = {}) => {
   if (!row || typeof row !== "object") return "";
-  if (row[column] !== undefined) return row[column];
+  if (row[column] !== undefined && row[column] !== null && String(row[column]).trim() !== "") return row[column];
 
   const colLower = String(column).toLowerCase().trim();
-  const rowEntries = Object.entries(row);
-  const found = rowEntries.find(([k]) => String(k).toLowerCase().trim() === colLower);
-  if (found && found[1] !== undefined) return found[1];
+  const colSlug = colLower.replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  const colNoSpace = colLower.replace(/[^a-z0-9]+/g, "");
 
-  if (Array.isArray(table?.fields)) {
-    const field = table.fields.find((f) =>
-      String(f.label || "").toLowerCase().trim() === colLower ||
-      String(f.fieldKey || "").toLowerCase().trim() === colLower ||
-      String(f.id || "").toLowerCase().trim() === colLower
-    );
-    if (field) {
-      if (field.fieldKey && row[field.fieldKey] !== undefined) return row[field.fieldKey];
-      if (field.label && row[field.label] !== undefined) return row[field.label];
-      if (field.id && row[field.id] !== undefined) return row[field.id];
+  // 1. Direct case-insensitive or slugified match on row keys
+  const rowEntries = Object.entries(row);
+  for (const [k, v] of rowEntries) {
+    if (v !== undefined && v !== null && (Array.isArray(v) ? v.length > 0 : String(v).trim() !== "")) {
+      const kLower = String(k).toLowerCase().trim();
+      const kSlug = kLower.replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+      const kNoSpace = kLower.replace(/[^a-z0-9]+/g, "");
+      if (kLower === colLower || kSlug === colSlug || kNoSpace === colNoSpace) {
+        return v;
+      }
     }
+  }
+
+  // 2. Check table.fields definitions for label, fieldKey, id
+  if (Array.isArray(table?.fields)) {
+    const field = table.fields.find((f) => {
+      if (!f) return false;
+      const fLabel = String(f.label || "").toLowerCase().trim();
+      const fKey = String(f.fieldKey || f.key || "").toLowerCase().trim();
+      const fId = String(f.id || "").toLowerCase().trim();
+      const fIdString = String(f.idString || "").toLowerCase().trim();
+      return (
+        fLabel === colLower ||
+        fKey === colLower ||
+        fKey === colSlug ||
+        fId === colLower ||
+        fIdString === colLower ||
+        fLabel.replace(/[^a-z0-9]+/g, "") === colNoSpace
+      );
+    });
+    if (field) {
+      const candidateKeys = [field.fieldKey, field.key, field.label, field.idString, field.id];
+      for (const ck of candidateKeys) {
+        if (ck && row[ck] !== undefined && row[ck] !== null && (Array.isArray(row[ck]) ? row[ck].length > 0 : String(row[ck]).trim() !== "")) {
+          return row[ck];
+        }
+      }
+      for (const ck of candidateKeys) {
+        if (!ck) continue;
+        const ckLower = String(ck).toLowerCase().trim();
+        const ckNoSpace = ckLower.replace(/[^a-z0-9]+/g, "");
+        for (const [k, v] of rowEntries) {
+          if (v !== undefined && v !== null && (Array.isArray(v) ? v.length > 0 : String(v).trim() !== "")) {
+            const kLower = String(k).toLowerCase().trim();
+            const kNoSpace = kLower.replace(/[^a-z0-9]+/g, "");
+            if (kLower === ckLower || kNoSpace === ckNoSpace) return v;
+          }
+        }
+      }
+    }
+  }
+
+  // 3. Serial column fallback
+  const isSerial = Boolean(serialColumnFor([column]));
+  if (isSerial) {
+    for (const [k, v] of rowEntries) {
+      const kClean = String(k).toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (["srno", "sno", "sn", "id", "serialno", "serialnumber"].includes(kClean)) {
+        if (v !== undefined && v !== null && String(v).trim() !== "") return v;
+      }
+    }
+  }
+
+  // 4. Default return
+  if (row[column] !== undefined) return row[column];
+  for (const [k, v] of rowEntries) {
+    const kLower = String(k).toLowerCase().trim();
+    if (kLower === colLower) return v;
   }
   return "";
 };

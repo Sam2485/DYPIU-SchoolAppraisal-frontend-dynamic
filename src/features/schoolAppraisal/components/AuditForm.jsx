@@ -336,9 +336,8 @@ function buildInitialTables(schema) {
       const formatted = withSerialNumbers(table.columns || [], rows);
       const key = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
       if (key) tables[key] = formatted;
-      if (table.id != null) tables[table.id] = formatted;
-      if (table.tableKey && !tables[table.tableKey]) tables[table.tableKey] = formatted;
-      if (table.idString && !tables[table.idString]) tables[table.idString] = formatted;
+      if (table.tableKey) tables[table.tableKey] = formatted;
+      if (table.idString) tables[table.idString] = formatted;
     });
     return tables;
   }, {});
@@ -465,10 +464,10 @@ export default function AuditForm({
     setStatus("");
   };
 
-  const handleTableChange = (tableId, rowIndex, column, value) => {
+  const handleTableChange = (tableKeyOrId, rowIndex, column, value) => {
     setTables((current) => {
-      const strKey = String(tableId);
-      const existing = current[strKey] || (typeof tableId === "number" ? current[tableId] : []) || [];
+      const strKey = String(tableKeyOrId);
+      const existing = current[strKey] || (typeof tableKeyOrId === "number" ? current[tableKeyOrId] : []) || [];
       let rows = Array.isArray(existing) ? [...existing] : [];
       if (rowIndex >= rows.length) {
         while (rows.length <= rowIndex) {
@@ -479,7 +478,6 @@ export default function AuditForm({
       return {
         ...current,
         [strKey]: rows,
-        ...(typeof tableId === "number" ? { [tableId]: rows } : {}),
       };
     });
     setStatus("");
@@ -488,13 +486,12 @@ export default function AuditForm({
   const handleAddRow = (table) => {
     const key = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
     setTables((current) => {
-      const existing = current[key] || (table.id != null ? current[table.id] : []) || [];
+      const existing = current[key] || (table.tableKey ? current[table.tableKey] : []) || (table.id != null ? current[table.id] : []) || [];
       const rows = Array.isArray(existing) ? existing : [];
       const nextRows = [...rows, numberedRowFor(table.columns || [], rows.length)];
       return {
         ...current,
         ...(key ? { [key]: nextRows } : {}),
-        ...(table.id != null ? { [table.id]: nextRows } : {}),
         ...(table.tableKey ? { [table.tableKey]: nextRows } : {}),
       };
     });
@@ -503,14 +500,13 @@ export default function AuditForm({
   const handleDeleteLastRow = (table) => {
     const key = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
     setTables((current) => {
-      const existing = current[key] || (table.id != null ? current[table.id] : []) || [];
+      const existing = current[key] || (table.tableKey ? current[table.tableKey] : []) || (table.id != null ? current[table.id] : []) || [];
       const rows = Array.isArray(existing) ? existing : [];
       const nextRows = rows.slice(0, -1);
       const formatted = nextRows.length ? withSerialNumbers(table.columns || [], nextRows) : [numberedRowFor(table.columns || [], 0)];
       return {
         ...current,
         ...(key ? { [key]: formatted } : {}),
-        ...(table.id != null ? { [table.id]: formatted } : {}),
         ...(table.tableKey ? { [table.tableKey]: formatted } : {}),
       };
     });

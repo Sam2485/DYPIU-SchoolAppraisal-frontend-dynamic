@@ -395,7 +395,7 @@ export default function AuditTable({
                                   <div style={styles.attachmentItemActions}>
                                     <a
                                       className="audit-attachment-view"
-                                      href={getAttachmentUrl(file.url)}
+                                      href={getAttachmentUrl(file.url, file.name || file.fileName)}
                                       target="_blank"
                                       rel="noreferrer"
                                       style={styles.attachmentLink}
