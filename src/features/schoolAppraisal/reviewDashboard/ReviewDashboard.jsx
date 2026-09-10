@@ -48,6 +48,7 @@ import AppraisalFormStudio from "../formStudio/AppraisalFormStudio";
 import { formatDateDDMMYYYY } from "../../../utils/dateFormat";
 import { getAttachmentUrl } from "../../../utils/attachment";
 import { scrollPageToTop } from "../../../utils/scrollToTop";
+import { resolveFieldValue } from "../../../utils/fieldResolver";
 
 const REVIEW_NAV_ITEMS = [
   { id: "overview", title: "Overview" },
@@ -376,23 +377,92 @@ const blocksFor = (section) =>
     ...(section.tables?.length ? [{ type: "tables", tables: section.tables }] : []),
   ];
 
+const normalizeFieldDefinition = (field) => {
+  if (!field) return field;
+  const rawType = String(field.fieldType || field.type || "text").trim().toLowerCase();
+  const isFile = rawType === "file" || rawType === "attachment" || rawType === "document";
+  const isTextarea = rawType === "textarea" || rawType === "paragraph";
+  const isSelect = rawType === "select" || rawType === "dropdown";
+  const isDate = rawType === "date";
+  const isNumber = rawType === "number" || rawType === "integer" || rawType === "decimal";
+  const isRadio = rawType === "radio";
+  const isCheckbox = rawType === "checkbox";
+
+  const normalizedType = isFile
+    ? "file"
+    : isTextarea
+    ? "textarea"
+    : isSelect
+    ? "select"
+    : isDate
+    ? "date"
+    : isNumber
+    ? "number"
+    : isRadio
+    ? "radio"
+    : isCheckbox
+    ? "checkbox"
+    : "text";
+
+  const fieldKey = field.fieldKey || field.idString || (field.id != null ? String(field.id) : "");
+  const fieldId = fieldKey || String(field.id || "");
+
+  let parsedOptions = [];
+  if (Array.isArray(field.options)) {
+    parsedOptions = field.options;
+  } else if (typeof field.options === "string" && field.options.trim()) {
+    try {
+      parsedOptions = JSON.parse(field.options);
+      if (!Array.isArray(parsedOptions)) parsedOptions = [];
+    } catch {
+      parsedOptions = field.options.split(",").map((s) => s.trim()).filter(Boolean);
+    }
+  }
+
+  return {
+    ...field,
+    rawId: field.id,
+    id: fieldId,
+    fieldKey,
+    idString: field.idString || fieldKey,
+    key: fieldKey,
+    type: normalizedType,
+    fieldType: (field.fieldType || normalizedType).toUpperCase(),
+    options: parsedOptions,
+  };
+};
+
 const normalizeDynamicSchema = (schema) => {
   if (!schema || !Array.isArray(schema.sections) || schema.sections.length === 0) {
     return null;
   }
-  const normalizedSections = schema.sections.map((sec, idx) => ({
-    ...sec,
-    id: sec.idString || sec.id || sec.sectionKey || `section-${idx + 1}`,
-    sectionKey: sec.sectionKey || sec.idString || String(sec.id || `section-${idx + 1}`),
-    number: sec.number || sec.sectionNumber || (sec.sectionKey && sec.sectionKey.length <= 4 ? sec.sectionKey : String(idx + 1)),
-    title: sec.title || sec.sectionTitle || sec.name || `Section ${idx + 1}`,
-    ownerRole: sec.ownerRole || (sec.isAuditorSection ? "auditor" : "director-schools"),
-    isAuditorSection: sec.ownerRole === "auditor" || sec.isAuditorSection === true || sec.auditorSection === true,
-    blocks: sec.blocks || [
-      ...(sec.fields?.length ? [{ type: "fields", fields: sec.fields }] : []),
-      ...(sec.tables?.length ? [{ type: "tables", tables: sec.tables }] : []),
-    ],
-  }));
+  const normalizedSections = schema.sections.map((sec, idx) => {
+    const rawFields = Array.isArray(sec.fields) ? sec.fields : [];
+    const normalizedFields = rawFields.map(normalizeFieldDefinition);
+    const rawBlocks = Array.isArray(sec.blocks) && sec.blocks.length > 0
+      ? sec.blocks.map((b) => {
+          if (b.type === "fields" && Array.isArray(b.fields)) {
+            return { ...b, fields: b.fields.map(normalizeFieldDefinition) };
+          }
+          return b;
+        })
+      : [
+          ...(normalizedFields.length ? [{ type: "fields", fields: normalizedFields }] : []),
+          ...(sec.tables?.length ? [{ type: "tables", tables: sec.tables }] : []),
+        ];
+
+    return {
+      ...sec,
+      id: sec.idString || sec.id || sec.sectionKey || `section-${idx + 1}`,
+      sectionKey: sec.sectionKey || sec.idString || String(sec.id || `section-${idx + 1}`),
+      number: sec.number || sec.sectionNumber || (sec.sectionKey && sec.sectionKey.length <= 4 ? sec.sectionKey : String(idx + 1)),
+      title: sec.title || sec.sectionTitle || sec.name || `Section ${idx + 1}`,
+      ownerRole: sec.ownerRole || (sec.isAuditorSection ? "auditor" : "director-schools"),
+      isAuditorSection: sec.ownerRole === "auditor" || sec.isAuditorSection === true || sec.auditorSection === true,
+      fields: normalizedFields,
+      blocks: rawBlocks,
+    };
+  });
   return {
     ...schema,
     sections: normalizedSections,
@@ -1076,7 +1146,11 @@ const normalizeAuditorAssignments = (submission = {}, values = {}) => {
     values[AUDITOR_ASSIGNMENT_STATUS_FIELD];
   return assignmentSourceList(source)
     .map(normalizeAuditorAssignment)
-    .filter((assignment) => auditorAssignmentBelongsToSubmission(assignment, submission));
+    .filter((assignment) => auditorAssignmentBelongsToSubmission(assignment, submission))
+    .filter((assignment) => {
+      const email = normalizeAuditAssignment(assignment.auditorEmail);
+      return email !== "eaa@gmail.com";
+    });
 };
 const buildAuditorProgress = (assignments = []) => {
   const total = assignments.length;
@@ -1280,6 +1354,7 @@ const matchesAuditorResponsibility = (submission, profile) => {
 const matchesAuditorSession = (submission, profile) => {
   const userId = sessionStorage.getItem("userId") || "";
   const email = normalizeAuditAssignment(profile.email || sessionStorage.getItem("email") || sessionStorage.getItem("username") || "");
+  if (email === "eaa@gmail.com") return false;
   const auditorType = normalizeUserRole(profile.auditorType || auditorTypeFromRole(profile.role));
   const explicitAssignments = submission.auditorAssignments || [];
   if (explicitAssignments.length) {
@@ -1433,7 +1508,7 @@ const normalizeSubmission = (submission = {}) => {
   // all-zero progress object (no live assignments on this submission yet), which must NOT fall
   // through to recomputing from the merged (possibly ancestor-polluted) list.
   const hasBackendAuditorProgress = Object.keys(backendAuditorProgress).length > 0;
-  const auditorProgress = hasBackendAuditorProgress
+  const auditorProgress = (hasBackendAuditorProgress && Number(backendAuditorProgress.total || 0) === auditorAssignments.length)
     ? {
         total: Number(backendAuditorProgress.total || backendAuditorProgress.required || 0),
         submitted: Number(backendAuditorProgress.submitted || backendAuditorProgress.completed || 0),
@@ -2422,6 +2497,12 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
     const ok = window.confirm(`Submit your ${auditLabels[submission.auditType]} auditor review? The form will move to IQAC only after every assigned auditor submits.`);
     if (!ok) return;
 
+    const currentEmail = normalizeAuditAssignment(profile.email || sessionStorage.getItem("email") || "");
+    if (currentEmail === "eaa@gmail.com") {
+      alert("This auditor account (eaa@gmail.com) has been deleted. Please log out and sign in with an active auditor account.");
+      return;
+    }
+
     setReviewingStatus("auditor-submit");
     setError("");
 
@@ -2715,6 +2796,7 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
               showPreviousAuditorReference={false}
               currentProfile={profile}
               submitterAvatarUrl={resolveSubmitterAvatar(selectedSubmission)}
+              directoryUsers={directoryUsers}
             />
           ) : visibleActiveView === "overview" && isIqacDashboard ? (
             <AcademicAdministrativeSubmissionsPanel
@@ -4336,6 +4418,7 @@ function SubmissionCard({
   downloadingAttachments,
   onGenerateReport,
   submitterAvatarUrl,
+  directoryUsers = [],
 }) {
   const forwardedAuditorCount = submission.forwardedToAuditorNames?.length || submission.forwardedToAuditorIds?.length || 0;
   const submitterInitials = submission.submittedBy && submission.submittedBy !== "-"
@@ -4383,7 +4466,7 @@ function SubmissionCard({
         </div>
       )}
 
-      <AuditorProgressPanel submission={submission} compact />
+      <AuditorProgressPanel submission={submission} compact directoryUsers={directoryUsers} />
 
       <div style={styles.cardActions}>
         {onForward && canForwardSubmissionToAuditor(submission) && !isAuditorCompleted(submission) && (
@@ -4427,12 +4510,12 @@ function SubmissionCard({
 }
 
 function PreviousReportOnlyView({ submission, onBack, onDownload, downloadingAttachments }) {
-  const [resolvedSchema, setResolvedSchema] = useState(submission.schema || null);
+  const [resolvedSchema, setResolvedSchema] = useState(submission.schema ? normalizeDynamicSchema(submission.schema) : null);
 
   useEffect(() => {
     let isSubscribed = true;
     if (submission.schema && Array.isArray(submission.schema.sections) && submission.schema.sections.length > 0) {
-      setResolvedSchema(submission.schema);
+      setResolvedSchema(normalizeDynamicSchema(submission.schema) || submission.schema);
       return;
     }
     const loadSchema = async () => {
@@ -4547,8 +4630,9 @@ function FullFormReview({
   showPreviousAuditorReference,
   currentProfile,
   submitterAvatarUrl,
+  directoryUsers = [],
 }) {
-  const [resolvedSchema, setResolvedSchema] = useState(submission.schema || null);
+  const [resolvedSchema, setResolvedSchema] = useState(submission.schema ? normalizeDynamicSchema(submission.schema) : null);
 
   useEffect(() => {
     let isSubscribed = true;
@@ -4584,7 +4668,7 @@ function FullFormReview({
         if (isSubscribed && dynamicSchema && Array.isArray(dynamicSchema.sections) && dynamicSchema.sections.length > 0) {
           setResolvedSchema(dynamicSchema);
         } else if (isSubscribed && submission.schema) {
-          setResolvedSchema(submission.schema);
+          setResolvedSchema(normalizeDynamicSchema(submission.schema) || submission.schema);
         }
       } catch (err) {
         console.warn("Could not dynamically resolve schema in FullFormReview", err);
@@ -4800,28 +4884,39 @@ function FullFormReview({
     setActiveSectionIndex((index) => Math.min(sections.length - 1, index + 1));
     scrollPageToTop();
   };
-  const handleAuditorFieldChange = (fieldId, value) => {
-    setDraftValues((current) => ({ ...current, [fieldId]: value }));
+  const handleAuditorFieldChange = (fieldId, value, fieldKey) => {
+    setDraftValues((current) => {
+      const next = { ...current, [fieldId]: value };
+      if (fieldKey && fieldKey !== fieldId) {
+        next[fieldKey] = value;
+      }
+      return next;
+    });
   };
-  const handleAuditorFileUpload = async (fieldId, files) => {
+  const handleAuditorFileUpload = async (fieldId, files, fieldKey) => {
     const uploaded = await uploadAttachments(files);
-    setDraftValues((current) => ({
-      ...current,
-      [fieldId]: uniqueAttachments([
-        ...valueList(current[fieldId]).filter(isAttachmentValue),
-        ...uploaded,
-      ]),
-    }));
+    setDraftValues((current) => {
+      const existing = valueList(current[fieldId] || (fieldKey ? current[fieldKey] : null)).filter(isAttachmentValue);
+      const combined = uniqueAttachments([...existing, ...uploaded]);
+      const next = { ...current, [fieldId]: combined };
+      if (fieldKey && fieldKey !== fieldId) {
+        next[fieldKey] = combined;
+      }
+      return next;
+    });
     setDraftAttachments((current) => uniqueAttachments([...current, ...uploaded]));
   };
-  const handleAuditorFileDelete = async (fieldId, attachment) => {
+  const handleAuditorFileDelete = async (fieldId, attachment, fieldKey) => {
     if (attachment?.url) await deleteAttachment(attachment);
-    setDraftValues((current) => ({
-      ...current,
-      [fieldId]: valueList(current[fieldId])
-        .filter(isAttachmentValue)
-        .filter((file) => attachmentKeyFor(file) !== attachmentKeyFor(attachment)),
-    }));
+    setDraftValues((current) => {
+      const existing = valueList(current[fieldId] || (fieldKey ? current[fieldKey] : null)).filter(isAttachmentValue);
+      const filtered = existing.filter((file) => attachmentKeyFor(file) !== attachmentKeyFor(attachment));
+      const next = { ...current, [fieldId]: filtered };
+      if (fieldKey && fieldKey !== fieldId) {
+        next[fieldKey] = filtered;
+      }
+      return next;
+    });
     setDraftAttachments((current) =>
       current.filter((file) => attachmentKeyFor(file) !== attachmentKeyFor(attachment))
     );
@@ -4963,7 +5058,7 @@ function FullFormReview({
         <StatusBadge status={submission.status} />
       </div>
 
-      <AuditorProgressPanel submission={submission} />
+      <AuditorProgressPanel submission={submission} directoryUsers={directoryUsers} />
 
       <SectionReviewNav
         sections={sections}
@@ -5104,21 +5199,7 @@ function FullFormReview({
                 </label>
               )}
             </>
-          ) : (
-            <label style={styles.remarksLabel}>
-              Review Remarks
-              <textarea
-                className="audit-control"
-                value={reviewRemarks}
-                onChange={(event) => {
-                  setReviewRemarks(event.target.value);
-                  onRemarksChange(event.target.value);
-                }}
-                placeholder="Write auditor review remarks / observations"
-                style={{ ...styles.remarksInput, minHeight: 120 }}
-              />
-            </label>
-          )}
+          ) : null}
         </div>
       )}
 
@@ -5722,12 +5803,13 @@ function EditableFieldGrid({ fields, values, onFieldChange, onFileUpload, onFile
   const [deletingKey, setDeletingKey] = useState("");
   const [fileError, setFileError] = useState("");
 
-  const handleFilesSelected = async (fieldId, files) => {
+  const handleFilesSelected = async (field, files) => {
     if (!files?.length) return;
+    const fieldId = field.id;
     setUploadingField(fieldId);
     setFileError("");
     try {
-      await onFileUpload(fieldId, files);
+      await onFileUpload(fieldId, files, field.fieldKey);
     } catch (error) {
       setFileError(error?.response?.data?.message || error?.message || "Could not upload documentation.");
     } finally {
@@ -5735,12 +5817,13 @@ function EditableFieldGrid({ fields, values, onFieldChange, onFileUpload, onFile
     }
   };
 
-  const handleFileDelete = async (fieldId, attachment) => {
+  const handleFileDelete = async (field, attachment) => {
+    const fieldId = field.id;
     const key = `${fieldId}-${attachmentKeyFor(attachment)}`;
     setDeletingKey(key);
     setFileError("");
     try {
-      await onFileDelete(fieldId, attachment);
+      await onFileDelete(fieldId, attachment, field.fieldKey);
     } catch (error) {
       setFileError(error?.response?.data?.message || error?.message || "Could not remove documentation.");
     } finally {
@@ -5759,20 +5842,32 @@ function EditableFieldGrid({ fields, values, onFieldChange, onFileUpload, onFile
           );
         }
 
-        if (field.type === "file") {
-          const attachments = valueList(values[field.id]).filter(isAttachmentValue);
+        const rawType = String(field.fieldType || field.type || "text").trim().toLowerCase();
+        const isFile = rawType === "file" || rawType === "attachment" || rawType === "document";
+        const isTextarea = rawType === "textarea" || rawType === "paragraph";
+        const isSelect = rawType === "select" || rawType === "dropdown";
+        const isDate = rawType === "date";
+        const isNumber = rawType === "number" || rawType === "integer" || rawType === "decimal";
+
+        const val = resolveFieldValue(field, values);
+
+        if (isFile) {
+          const rawAttachments = resolveFieldValue(field, values);
+          const attachments = valueList(rawAttachments).filter(isAttachmentValue);
           const isUploading = uploadingField === field.id;
 
           return (
             <div key={field.id} style={styles.readOnlyWideField}>
-              <span style={styles.readOnlyLabel}>{field.label}</span>
+              <span style={styles.readOnlyLabel}>
+                {field.label} {field.isRequired && <span style={{ color: "#ef4444" }}>*</span>}
+              </span>
               <div style={styles.documentationUploader}>
                 <label style={styles.documentationUploadButton}>
                   <input
                     type="file"
                     multiple
                     onChange={(event) => {
-                      handleFilesSelected(field.id, event.target.files);
+                      handleFilesSelected(field, event.target.files);
                       event.target.value = "";
                     }}
                     style={styles.hiddenFileInput}
@@ -5793,7 +5888,7 @@ function EditableFieldGrid({ fields, values, onFieldChange, onFileUpload, onFile
                         <button
                           type="button"
                           style={styles.documentationDeleteButton}
-                          onClick={() => handleFileDelete(field.id, attachment)}
+                          onClick={() => handleFileDelete(field, attachment)}
                           disabled={isDeleting}
                         >
                           {isDeleting ? "Removing..." : "Remove"}
@@ -5808,26 +5903,65 @@ function EditableFieldGrid({ fields, values, onFieldChange, onFileUpload, onFile
           );
         }
 
-        const controlStyle = field.type === "textarea" ? styles.editableTextarea : styles.editableInput;
+        const controlStyle = isTextarea ? styles.editableTextarea : styles.editableInput;
+
+        let options = [];
+        if (Array.isArray(field.options)) {
+          options = field.options;
+        } else if (typeof field.options === "string" && field.options.trim()) {
+          try {
+            options = JSON.parse(field.options);
+            if (!Array.isArray(options)) options = [];
+          } catch {
+            options = field.options.split(",").map((s) => s.trim()).filter(Boolean);
+          }
+        }
+
+        if (isSelect && options.length > 0) {
+          return (
+            <label key={field.id} style={styles.readOnlyField}>
+              <span style={styles.readOnlyLabel}>
+                {field.label} {field.isRequired && <span style={{ color: "#ef4444" }}>*</span>}
+              </span>
+              <select
+                className="audit-control"
+                value={val}
+                onChange={(event) => onFieldChange(field.id, event.target.value, field.fieldKey)}
+                style={controlStyle}
+              >
+                <option value="">Select</option>
+                {options.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+          );
+        }
 
         return (
-          <label key={field.id} style={field.type === "textarea" ? styles.readOnlyWideField : styles.readOnlyField}>
-            <span style={styles.readOnlyLabel}>{field.label}</span>
-            {field.type === "textarea" ? (
+          <label key={field.id} style={isTextarea ? styles.readOnlyWideField : styles.readOnlyField}>
+            <span style={styles.readOnlyLabel}>
+              {field.label} {field.isRequired && <span style={{ color: "#ef4444" }}>*</span>}
+            </span>
+            {isTextarea ? (
               <textarea
                 className="audit-control"
-                value={values[field.id] ?? ""}
-                onChange={(event) => onFieldChange(field.id, event.target.value)}
+                value={val}
+                onChange={(event) => onFieldChange(field.id, event.target.value, field.fieldKey)}
                 style={controlStyle}
                 rows={5}
+                placeholder={field.placeholder || ""}
               />
             ) : (
               <input
                 className="audit-control"
-                type={field.type || "text"}
-                value={values[field.id] ?? ""}
-                onChange={(event) => onFieldChange(field.id, event.target.value)}
+                type={isDate ? "date" : isNumber ? "number" : "text"}
+                value={val}
+                onChange={(event) => onFieldChange(field.id, event.target.value, field.fieldKey)}
                 style={controlStyle}
+                placeholder={field.placeholder || ""}
               />
             )}
           </label>
@@ -5875,10 +6009,14 @@ function ReadOnlyFieldGrid({ fields, values }) {
           );
         }
 
+        const rawType = String(field.fieldType || field.type || "text").trim().toLowerCase();
+        const isWide = rawType === "textarea" || rawType === "paragraph" || rawType === "file" || rawType === "attachment" || rawType === "document";
+        const val = resolveFieldValue(field, values);
+
         return (
-          <div key={field.id} style={["textarea", "file"].includes(field.type) ? styles.readOnlyWideField : styles.readOnlyField}>
+          <div key={field.id} style={isWide ? styles.readOnlyWideField : styles.readOnlyField}>
             <div style={styles.readOnlyLabel}>{field.label}</div>
-            <div style={styles.readOnlyValue}>{renderValue(values[field.id])}</div>
+            <div style={styles.readOnlyValue}>{renderValue(val)}</div>
           </div>
         );
       })}
@@ -5928,14 +6066,19 @@ function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType,
               </div>
             </div>
             <div className="review-auditor-review-fields" style={styles.auditorReviewFieldGrid}>
-              {visibleFields.map((field) => (
-                <div key={field.id} style={field.type === "file" ? styles.auditorReviewDocsField : styles.auditorReviewField}>
-                  <div style={styles.readOnlyLabel}>{field.label}</div>
-                  <div style={field.type === "file" ? styles.auditorReviewDocsValue : styles.auditorReviewValue}>
-                    {renderValue(values[field.id])}
+              {visibleFields.map((field) => {
+                const rawType = String(field.fieldType || field.type || "text").trim().toLowerCase();
+                const isFile = rawType === "file" || rawType === "attachment" || rawType === "document";
+                const val = resolveFieldValue(field, values);
+                return (
+                  <div key={field.id} style={isFile ? styles.auditorReviewDocsField : styles.auditorReviewField}>
+                    <div style={styles.readOnlyLabel}>{field.label}</div>
+                    <div style={isFile ? styles.auditorReviewDocsValue : styles.auditorReviewValue}>
+                      {renderValue(val)}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               {remarks && !visibleFields.some((f) => f.id === "remarks" || f.id === "auditObservations") && (
                 <div style={styles.auditorReviewDocsField}>
                   <div style={styles.readOnlyLabel}>Review Remarks / Observations</div>
@@ -6002,7 +6145,7 @@ function ReadOnlyTable({ table, rows = [], values = {} }) {
           {standaloneFields.map((field) => (
             <div key={field.id} style={styles.readOnlyField}>
               <div style={styles.readOnlyLabel}>{field.label}</div>
-              <div style={styles.readOnlyValue}>{renderValue(values[field.id])}</div>
+              <div style={styles.readOnlyValue}>{renderValue(resolveFieldValue(field, values))}</div>
             </div>
           ))}
         </div>
@@ -6238,15 +6381,30 @@ const groupAuditorAssignmentsForDisplay = (assignments = []) => {
   return [...groups.values()];
 };
 
-function AuditorProgressPanel({ submission, compact = false }) {
-  const visibleAssignments = (submission.auditorAssignments || []).filter((assignment) =>
-    auditorAssignmentBelongsToSubmission(assignment, submission)
-  );
+function AuditorProgressPanel({ submission, compact = false, directoryUsers = [] }) {
+  const visibleAssignments = (submission.auditorAssignments || [])
+    .filter((assignment) => auditorAssignmentBelongsToSubmission(assignment, submission))
+    .filter((assignment) => {
+      const email = normalizeAuditAssignment(assignment.auditorEmail);
+      if (email === "eaa@gmail.com") return false;
+      if (Array.isArray(directoryUsers) && directoryUsers.length > 0) {
+        const activeEmails = new Set(directoryUsers.map((u) => normalizeAuditAssignment(u.email)).filter(Boolean));
+        const activeIds = new Set(directoryUsers.map((u) => String(u.id || "").trim()).filter(Boolean));
+        const id = String(assignment.auditorId || "").trim();
+        const exists = (email && activeEmails.has(email)) || (id && activeIds.has(id));
+        if (!exists && !auditorAssignmentSubmitted(assignment)) {
+          return false;
+        }
+      }
+      return true;
+    });
   // submission.auditorProgress is pre-scoped to this submission's own cycle by normalizeSubmission
   // (see the comment there); prefer it over recomputing from the merged auditorAssignments feed,
   // which can include a prior cycle's already-completed rows.
   const backendProgress = submission.auditorProgress || {};
-  const progress = backendProgress.total ? backendProgress : buildAuditorProgress(visibleAssignments);
+  const progress = (backendProgress.total && backendProgress.total === visibleAssignments.length)
+    ? backendProgress
+    : buildAuditorProgress(visibleAssignments);
   if (!progress.total) return null;
 
   const percentage = Math.round((progress.submitted / progress.total) * 100);

@@ -4,6 +4,8 @@ import DateInput from "./DateInput";
 import { columnsWithSerial, serialColumnFor } from "./tableHelpers";
 import { getAttachmentUrl } from "../../../utils/attachment";
 import { formatDateDDMMYYYY } from "../../../utils/dateFormat";
+import { uploadAttachments } from "../../../api/submissions";
+import { resolveFieldValue } from "../../../utils/fieldResolver";
 
 const ACADEMIC_PART_E_SECTION_ID = "part-e-observations";
 
@@ -441,7 +443,7 @@ function ReadOnlyTable({ table, rows = [], values = {} }) {
   );
 }
 
-function FieldGrid({ fields, values, onFieldChange, readOnly = false }) {
+function FieldGrid({ fields, values, onFieldChange, readOnly = false, onUploadAttachment }) {
   return (
     <div className="audit-field-grid" style={styles.fieldGrid}>
       {fields.map((field) => {
@@ -453,12 +455,77 @@ function FieldGrid({ fields, values, onFieldChange, readOnly = false }) {
           );
         }
 
+        const rawType = String(field.fieldType || field.type || "text").trim().toLowerCase();
+        const isFile = rawType === "file" || rawType === "attachment" || rawType === "document";
+        const val = resolveFieldValue(field, values);
+
+        if (isFile) {
+          const rawAttachments = resolveFieldValue(field, values);
+          const attachments = Array.isArray(rawAttachments) ? rawAttachments : (rawAttachments ? [rawAttachments] : []);
+          return (
+            <div className="audit-field" key={field.id} style={styles.wideField}>
+              <span style={styles.label}>{field.label}</span>
+              {!readOnly && (
+                <div style={{ marginBottom: 8 }}>
+                  <input
+                    type="file"
+                    multiple
+                    className="audit-control"
+                    style={styles.input}
+                    onChange={async (e) => {
+                      const files = Array.from(e.target.files || []);
+                      if (!files.length) return;
+                      try {
+                        if (onUploadAttachment) {
+                          const uploaded = await onUploadAttachment(files);
+                          onFieldChange(field.id, [...attachments, ...(Array.isArray(uploaded) ? uploaded : [uploaded])]);
+                        } else {
+                          const uploaded = await uploadAttachments(files);
+                          onFieldChange(field.id, [...attachments, ...uploaded]);
+                        }
+                      } catch (err) {
+                        console.error("Upload failed", err);
+                      }
+                      e.target.value = "";
+                    }}
+                  />
+                </div>
+              )}
+              {attachments.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {attachments.map((file, idx) => {
+                    const name = typeof file === "object" ? (file.name || file.fileName || "File") : String(file);
+                    const url = typeof file === "object" ? (file.url || file.publicUrl || file.downloadUrl) : (String(file).startsWith("http") ? String(file) : null);
+                    return (
+                      <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 13 }}>
+                        <span>📎 {url ? <a href={getAttachmentUrl(url)} target="_blank" rel="noreferrer">{name}</a> : name}</span>
+                        {!readOnly && (
+                          <button
+                            type="button"
+                            style={{ border: "none", background: "transparent", color: "#ef4444", cursor: "pointer", fontWeight: 700 }}
+                            onClick={() => {
+                              const updated = attachments.filter((_, i) => i !== idx);
+                              onFieldChange(field.id, updated.length ? updated : "");
+                            }}
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        }
+
         return (
           <label className="audit-field" key={field.id} style={field.type === "textarea" ? styles.wideField : styles.field}>
             <span style={styles.label}>{field.label}</span>
             {field.type === "textarea" ? (
               <textarea
-                value={values[field.id] ?? ""}
+                value={val}
                 onChange={(event) => onFieldChange(field.id, event.target.value)}
                 className="audit-control"
                 style={styles.textarea}
@@ -467,14 +534,14 @@ function FieldGrid({ fields, values, onFieldChange, readOnly = false }) {
               />
             ) : field.type === "select" ? (
               <select
-                value={values[field.id] ?? ""}
+                value={val}
                 onChange={(event) => onFieldChange(field.id, event.target.value)}
                 className="audit-control"
                 style={styles.input}
                 disabled={readOnly}
               >
                 <option value="">Select</option>
-                {field.options.map((option) => (
+                {(field.options || []).map((option) => (
                   <option key={option} value={option}>
                     {option}
                   </option>
@@ -482,7 +549,7 @@ function FieldGrid({ fields, values, onFieldChange, readOnly = false }) {
               </select>
             ) : field.type === "date" ? (
               <DateInput
-                value={values[field.id] ?? ""}
+                value={val}
                 onChange={(value) => onFieldChange(field.id, value)}
                 className="audit-control"
                 style={styles.input}
@@ -490,7 +557,7 @@ function FieldGrid({ fields, values, onFieldChange, readOnly = false }) {
               />
             ) : (
               <input
-                value={values[field.id] ?? ""}
+                value={val}
                 onChange={(event) => onFieldChange(field.id, event.target.value)}
                 className="audit-control"
                 style={styles.input}
@@ -602,7 +669,7 @@ function AuditorCard({ assignment, index, fieldDefinitions, tableDefinitions, fa
           <div key={field.id} style={field.type === "file" ? styles.auditorReviewDocsField : styles.auditorReviewField}>
             <div style={styles.readOnlyLabel}>{field.label}</div>
             <div style={field.type === "file" ? styles.auditorReviewDocsValue : styles.auditorReviewValue}>
-              <ReadOnlyPartEValue value={values[field.id]} />
+              <ReadOnlyPartEValue value={resolveFieldValue(field, values)} />
             </div>
           </div>
         ))}
@@ -804,7 +871,7 @@ export default function AuditSection({ section, values, tables, onFieldChange, o
       ) : (
         blocks.map((block, index) => {
           if (block.type === "fields") {
-            return <FieldGrid key={`fields-${index}`} fields={block.fields} values={values} onFieldChange={onFieldChange} readOnly={effectiveReadOnly} />;
+            return <FieldGrid key={`fields-${index}`} fields={block.fields} values={values} onFieldChange={onFieldChange} readOnly={effectiveReadOnly} onUploadAttachment={onUploadAttachment} />;
           }
 
           return (

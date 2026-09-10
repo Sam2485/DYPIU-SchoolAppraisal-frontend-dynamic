@@ -35,8 +35,8 @@ export const DynamicCell = ({
     }
   }
 
-  // 1. ATTACHMENT CELL
-  if (type === 'ATTACHMENT') {
+  // 1. ATTACHMENT / FILE CELL
+  if (type === 'ATTACHMENT' || type === 'FILE') {
     const handleFileChange = async (e) => {
       const files = e.target.files;
       if (!files || files.length === 0) return;
