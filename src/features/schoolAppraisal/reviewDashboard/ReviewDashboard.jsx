@@ -1030,6 +1030,8 @@ const normalizeAuditorAssignment = (assignment = {}, index = 0) => {
     auditorCorrectionRequestedOn: assignment.auditorCorrectionRequestedOn || assignment.correctionRequestedOn || "",
     auditorCorrectionRequestedBy: assignment.auditorCorrectionRequestedBy || assignment.correctionRequestedBy || "",
     values: safeObjectValue(assignment.values || assignment.valuesData || assignment.reviewValues || assignment.reviewValuesData),
+    tables: safeObjectValue(assignment.tables || (assignment.tablesData ? safeJsonParse(assignment.tablesData, {}) : (assignment.reviewTablesData ? safeJsonParse(assignment.reviewTablesData, {}) : assignment.reviewTables))),
+    remarks: assignment.remarks || assignment.auditObservations || assignment.observations || assignment.reviewRemarks || "",
     attachments: arrayValue(assignment.attachments),
   };
 };
@@ -2710,14 +2712,7 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
                 !currentAuditorCorrectionRequested(selectedSubmission, profile)
               }
               auditorCorrectionMode={isAuditor && currentAuditorCorrectionRequested(selectedSubmission, profile)}
-              showPreviousAuditorReference={
-                (isAuditor && profile.auditorType === "external") ||
-                (!isAuditor && Boolean(
-                  (selectedSubmission?.versionHistory && selectedSubmission.versionHistory.length > 0) ||
-                  String(selectedSubmission?.reportCategory || "").toLowerCase() === "external" ||
-                  (selectedSubmission?.auditorAssignments || []).some((a) => normalizeUserRole(a.auditorType || a.type || "").includes("internal"))
-                ))
-              }
+              showPreviousAuditorReference={false}
               currentProfile={profile}
               submitterAvatarUrl={resolveSubmitterAvatar(selectedSubmission)}
             />
@@ -4611,37 +4606,40 @@ function FullFormReview({
   const internalAssignmentsFromSubmission = (submission.auditorAssignments || []).filter(
     (assignment) => normalizeUserRole(assignment.auditorType || assignment.type || "").includes("internal")
   );
-  const previousInternalReport = (submission.versionHistory || [])
-    .filter((entry) =>
-      (
-        String(entry.reportCategory || "").toLowerCase() === "internal" ||
-        (
-          String(submission.reportCategory || "").toLowerCase() === "external" &&
-          Number(entry.version || 0) < Number(submission.version || 0)
+  const isExternalSubmission =
+    String(submission.reportCategory || "").toLowerCase() === "external" ||
+    (submission.auditType === "academic" && String(submission.reportCategory || "").toLowerCase() === "external") ||
+    Number(submission.version || 1) > 1;
+
+  const previousInternalReport = isExternalSubmission
+    ? ((submission.versionHistory || [])
+        .filter((entry) =>
+          (
+            String(entry.reportCategory || "").toLowerCase() === "internal" ||
+            Number(entry.version || 0) < Number(submission.version || 0)
+          ) &&
+          (getSubmissionAuditorSignOff(entry).name || hasAcademicPartEValues(entry?.values) || (entry.auditorAssignments && entry.auditorAssignments.length > 0))
         )
-      ) &&
-      (getSubmissionAuditorSignOff(entry).name || hasAcademicPartEValues(entry?.values) || (entry.auditorAssignments && entry.auditorAssignments.length > 0))
-    )
-    .sort((first, second) => Number(second.version || 0) - Number(first.version || 0))[0] || (
-      internalAssignmentsFromSubmission.length > 0
-        ? {
-            reportCategory: "internal",
-            auditCycle: submission.auditCycle,
-            version: 1,
-            values: internalAssignmentsFromSubmission[0].values || {},
-            tables: internalAssignmentsFromSubmission[0].tables || {},
-            remarks: internalAssignmentsFromSubmission[0].remarks || internalAssignmentsFromSubmission[0].auditObservations || "",
-            auditorReviewedBy: internalAssignmentsFromSubmission[0].auditorName,
-            auditorReviewedByDesignation: internalAssignmentsFromSubmission[0].auditorDesignation,
-            auditorAssignments: internalAssignmentsFromSubmission,
-          }
-        : null
-    );
+        .sort((first, second) => Number(second.version || 0) - Number(first.version || 0))[0] || (
+          internalAssignmentsFromSubmission.length > 0
+            ? {
+                reportCategory: "internal",
+                auditCycle: submission.auditCycle,
+                version: 1,
+                values: internalAssignmentsFromSubmission[0].values || {},
+                tables: internalAssignmentsFromSubmission[0].tables || {},
+                remarks: internalAssignmentsFromSubmission[0].remarks || internalAssignmentsFromSubmission[0].auditObservations || "",
+                auditorReviewedBy: internalAssignmentsFromSubmission[0].auditorName,
+                auditorReviewedByDesignation: internalAssignmentsFromSubmission[0].auditorDesignation,
+                auditorAssignments: internalAssignmentsFromSubmission,
+              }
+            : null
+        ))
+    : null;
   const previousInternalAuditor = getSubmissionAuditorSignOff(previousInternalReport);
   const currentAuditor = getSubmissionAuditorSignOff(submission);
   const isExternalAcademicReport =
-    submission.auditType === "academic" &&
-    String(submission.reportCategory || "").toLowerCase() === "external";
+    submission.auditType === "academic" && isExternalSubmission;
   const shouldClearCopiedExternalPartE =
     isExternalAcademicReport &&
     canEditAuditorSection &&
@@ -4882,8 +4880,7 @@ function FullFormReview({
     if (attachment?.url) await deleteAttachment(attachment);
   };
   const previousInternalPartE =
-    (isExternalAcademicReport || showPreviousAuditorReference || normalizeUserRole(currentProfile?.auditorType || "").includes("external") || !isAuditorRole(currentProfile?.role)) &&
-    previousInternalReport
+    isExternalSubmission && previousInternalReport
       ? previousInternalReport
       : null;
 
@@ -4993,19 +4990,11 @@ function FullFormReview({
         </div>
       )}
 
-      {showPreviousAuditorReference && (
-        <PreviousAuditorReference
-          auditType={submission.auditType}
-          history={submission.versionHistory || []}
-          auditorAssignments={submission.auditorAssignments || []}
-          sections={sections}
-        />
-      )}
-
       <SubmittedFormViewer
         sections={sections}
         formData={submittedForm}
         auditType={submission.auditType}
+        reportCategory={submission.reportCategory || (isExternalSubmission ? "external" : "internal")}
         activeSectionIndex={activeSectionIndex}
         editableSection={canEditAuditorSection && activeSectionIsAuditorOwned}
         onFieldChange={handleAuditorFieldChange}
@@ -5033,7 +5022,7 @@ function FullFormReview({
         <div style={{ marginTop: 24, marginBottom: 16 }}>
           {submission.status === "approved" ? (
             <>
-              {auditorRemarksForDisplay && (
+              {auditorRemarksForDisplay && (!activeSectionIsAuditorOwned || !(submission.auditorAssignments || []).some(auditorAssignmentSubmitted)) && (
                 <div style={{ marginBottom: 16 }}>
                   <label style={styles.remarksLabel}>Auditor Review Remarks / Observations</label>
                   <div
@@ -5078,7 +5067,7 @@ function FullFormReview({
             </>
           ) : !canEditAuditorSection ? (
             <>
-              {auditorRemarksForDisplay && (
+              {auditorRemarksForDisplay && (!activeSectionIsAuditorOwned || !(submission.auditorAssignments || []).some(auditorAssignmentSubmitted)) && (
                 <div style={{ marginBottom: 16 }}>
                   <label style={styles.remarksLabel}>Auditor Review Remarks / Observations</label>
                   <div
@@ -5311,6 +5300,7 @@ function SubmittedFormViewer({
   sections,
   formData,
   auditType,
+  reportCategory,
   activeSectionIndex,
   editableSection,
   onFieldChange,
@@ -5344,7 +5334,70 @@ function SubmittedFormViewer({
     if (assignment.auditorId && currentAssignmentIds.size) return !currentAssignmentIds.has(String(assignment.auditorId));
     return !(assignmentEmail && currentAssignmentEmails.has(assignmentEmail));
   });
+  const sectionTables = useMemo(() => {
+    const rawTables = (activeSection?.tables || []).concat(
+      (activeSection?.blocks || []).flatMap((b) => (b.type === "tables" && Array.isArray(b.tables) ? b.tables : []))
+    );
+    const seen = new Set();
+    return rawTables.filter((table) => {
+      const key = String(table?.id || table?.tableKey || table?.idString || table?.title || "").trim();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [activeSection]);
+
+  const normalizedCategory = String(reportCategory || "").toLowerCase().trim();
+  const isExternalCycle =
+    normalizedCategory === "external" ||
+    (
+      normalizedCategory !== "internal" &&
+      (
+        String(auditType || "").toLowerCase().includes("external") ||
+        String(activeSection?.reportCategory || "").toLowerCase().includes("external")
+      )
+    );
+
+  const internalAssignments = useMemo(() => {
+    const list = submittedAuditorAssignments.filter((a) =>
+      normalizeUserRole(a.auditorType || a.type || "").includes("internal")
+    );
+    if (list.length > 0) return list;
+    if (
+      isExternalCycle &&
+      (
+        hasAcademicPartEValues(previousInternalPartEValues) ||
+        (previousInternalPartEValues && Object.keys(previousInternalPartEValues).length > 0) ||
+        (previousInternalPartETables && Object.keys(previousInternalPartETables).length > 0) ||
+        Boolean(previousInternalIqacRemarks)
+      )
+    ) {
+      return [{
+        key: "previous-internal-part-e",
+        auditorId: "prev-internal",
+        auditorName: previousInternalPartEMeta || "Internal Auditor",
+        auditorEmail: "",
+        auditorType: "internal",
+        status: "submitted",
+        submittedAt: "",
+        values: previousInternalPartEValues || {},
+        tables: previousInternalPartETables || {},
+        remarks: previousInternalIqacRemarks || "",
+      }];
+    }
+    return [];
+  }, [submittedAuditorAssignments, isExternalCycle, previousInternalPartEValues, previousInternalPartETables, previousInternalIqacRemarks, previousInternalPartEMeta]);
+
+  const externalAssignments = useMemo(() => {
+    return submittedAuditorAssignments.filter((a) =>
+      normalizeUserRole(a.auditorType || a.type || "").includes("external")
+    );
+  }, [submittedAuditorAssignments]);
+
+  const hasAnyAuditorData = internalAssignments.length > 0 || externalAssignments.length > 0;
+
   const showPreviousInternalPartE =
+    isExternalCycle &&
     activeSectionIsAuditorOwned &&
     (
       hasAcademicPartEValues(previousInternalPartEValues) ||
@@ -5357,10 +5410,6 @@ function SubmittedFormViewer({
     auditType === "administrative" &&
     activeSection?.id === "section-f-observations-recommendations" &&
     submittedAuditorAssignments.some((a) => a.auditorType === "internal");
-  const showSubmittedAuditorReviews =
-    activeSectionIsAuditorOwned &&
-    !editableSection &&
-    submittedAuditorAssignments.length > 0;
   const showSubmittedPeerAuditorReviews =
     activeSectionIsAuditorOwned &&
     editableSection &&
@@ -5383,14 +5432,49 @@ function SubmittedFormViewer({
 
           {blocksFor(activeSection).map((block, blockIndex) => {
             if (block.type === "fields") {
-              if (showSubmittedAuditorReviews) {
+              if (activeSectionIsAuditorOwned && !editableSection) {
+                if (!hasAnyAuditorData) {
+                  const isPartE = activeSection.id === "part-e-observations" || String(activeSection.title || "").toLowerCase().includes("part e");
+                  const pendingText = isPartE
+                    ? "IQAC has not approved your form yet. Part E audit observations, recommendations, and IQAC review remarks will be displayed here once your form is reviewed and approved by IQAC."
+                    : `IQAC has not approved your form yet. ${activeSection.title ? `${activeSection.title} audit` : "Auditor"} observations, recommendations, and IQAC review remarks will be displayed here once your form is reviewed and approved by IQAC.`;
+                  return (
+                    <div key={`${activeSection.id}-pending-iqac-${blockIndex}`} style={styles.pendingIqacCard}>
+                      <div style={styles.pendingIqacTitle}>IQAC Approval Pending</div>
+                      <div style={styles.pendingIqacMessage}>{pendingText}</div>
+                    </div>
+                  );
+                }
+
                 return (
-                  <AuditorAssignmentReviewGrid
-                    key={`${activeSection.id}-auditor-reviews-${blockIndex}`}
-                    fields={block.fields}
-                    assignments={submittedAuditorAssignments}
-                    fallbackAuditorType={auditType}
-                  />
+                  <div key={`${activeSection.id}-auditor-reviews-${blockIndex}`} style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%" }}>
+                    {internalAssignments.length > 0 && (
+                      <AuditorAssignmentReviewGrid
+                        fields={block.fields}
+                        assignments={internalAssignments}
+                        fallbackAuditorType="internal"
+                        tables={sectionTables}
+                        allFormDataTables={formData.tables}
+                      />
+                    )}
+                    {isExternalCycle && externalAssignments.length === 0 && (
+                      <div style={styles.pendingIqacCard}>
+                        <div style={styles.pendingIqacTitle}>External Auditor Review Pending</div>
+                        <div style={styles.pendingIqacMessage}>
+                          Awaiting external auditor review submission.
+                        </div>
+                      </div>
+                    )}
+                    {externalAssignments.length > 0 && (
+                      <AuditorAssignmentReviewGrid
+                        fields={block.fields}
+                        assignments={externalAssignments}
+                        fallbackAuditorType="external"
+                        tables={sectionTables}
+                        allFormDataTables={formData.tables}
+                      />
+                    )}
+                  </div>
                 );
               }
 
@@ -5419,6 +5503,8 @@ function SubmittedFormViewer({
                         fields={block.fields}
                         assignments={submittedPeerAuditorAssignments}
                         fallbackAuditorType="external"
+                        tables={sectionTables}
+                        allFormDataTables={formData.tables}
                       />
                     </div>
                   )}
@@ -5434,7 +5520,13 @@ function SubmittedFormViewer({
                         <h4 style={styles.partEReferenceTitle}>Internal Auditor Part E - V1</h4>
                         {previousInternalPartEMeta && <span style={styles.partEReferenceMeta}>{previousInternalPartEMeta}</span>}
                       </div>
-                      <ReadOnlyFieldGrid fields={block.fields} values={previousInternalPartEValues} />
+                      <AuditorAssignmentReviewGrid
+                        fields={block.fields}
+                        assignments={internalAssignments}
+                        fallbackAuditorType="internal"
+                        tables={sectionTables}
+                        allFormDataTables={previousInternalPartETables || formData.tables}
+                      />
                       {previousInternalIqacRemarks && (
                         <div>
                           <h4 style={styles.partEReferenceTitle}>IQAC Internal Audit Review Remarks</h4>
@@ -5451,7 +5543,6 @@ function SubmittedFormViewer({
               }
 
               if (showPreviousInternalPartF) {
-                const internalAssignments = submittedAuditorAssignments.filter((a) => a.auditorType === "internal");
                 return (
                   <div key={`${activeSection.id}-part-f-comparison-${blockIndex}`} style={styles.partEComparison}>
                     <div style={styles.partEReferenceBlock}>
@@ -5460,6 +5551,8 @@ function SubmittedFormViewer({
                         fields={block.fields}
                         assignments={internalAssignments}
                         fallbackAuditorType="internal"
+                        tables={sectionTables}
+                        allFormDataTables={formData.tables}
                       />
                     </div>
                     <div style={styles.partECurrentBlock}>
@@ -5559,6 +5652,10 @@ function SubmittedFormViewer({
                   })}
                 </div>
               );
+            }
+
+            if (activeSectionIsAuditorOwned && !editableSection) {
+              return null;
             }
 
             return (
@@ -5789,18 +5886,31 @@ function ReadOnlyFieldGrid({ fields, values }) {
   );
 }
 
-function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType }) {
-  const visibleFields = fields.filter((field) => field.kind !== "heading");
+function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType, tables = [], allFormDataTables = {} }) {
+  const visibleFields = (fields || []).filter((field) => field.kind !== "heading");
   const displayAssignments = groupAuditorAssignmentsForDisplay(assignments);
+  const uniqueTables = useMemo(() => {
+    const seen = new Set();
+    return (tables || []).filter((table) => {
+      const key = String(table?.id || table?.tableKey || table?.idString || table?.title || "").trim();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [tables]);
   return (
     <div className="review-auditor-review-stack" style={styles.auditorReviewStack}>
       {displayAssignments.map((assignment, index) => {
         const values = safeObjectValue(assignment.values);
         const displayPost = (assignment.displayPosts || [assignment.post || assignment.school])
           .map(auditorAssignmentLabel)
-          .join(", ");
+          .filter(Boolean)
+          .join(", ") || "-";
+        const remarks = assignment.remarks || values.remarks || values.auditObservations || "";
+        const assignmentTables = assignment.tables || {};
+
         return (
-          <section key={assignment.key} style={styles.auditorReviewCard}>
+          <section key={assignment.key || index} style={styles.auditorReviewCard}>
             <div style={styles.auditorReviewCardHeader}>
               <div style={styles.auditorReviewIdentity}>
                 <span style={styles.auditorReviewNumber}>Auditor {index + 1}</span>
@@ -5826,15 +5936,36 @@ function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType 
                   </div>
                 </div>
               ))}
-              {(assignment.remarks || values.remarks || values.auditObservations) && !visibleFields.some((f) => f.id === "remarks" || f.id === "auditObservations") && (
-                <div style={styles.auditorReviewField}>
+              {remarks && !visibleFields.some((f) => f.id === "remarks" || f.id === "auditObservations") && (
+                <div style={styles.auditorReviewDocsField}>
                   <div style={styles.readOnlyLabel}>Review Remarks / Observations</div>
                   <div style={styles.auditorReviewValue}>
-                    {renderValue(assignment.remarks || values.remarks || values.auditObservations)}
+                    {renderValue(remarks)}
                   </div>
                 </div>
               )}
             </div>
+
+            {Array.isArray(uniqueTables) && uniqueTables.length > 0 && (
+              <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 14, width: "100%" }}>
+                {uniqueTables.map((table) => {
+                  const tableKey = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
+                  const rows = (assignmentTables && (assignmentTables[table.id] || assignmentTables[tableKey])) ||
+                    (allFormDataTables && (allFormDataTables[table.id] || allFormDataTables[tableKey])) ||
+                    getTableRows(assignmentTables, table) ||
+                    getTableRows(allFormDataTables, table) ||
+                    [];
+                  return (
+                    <ReadOnlyTable
+                      key={table.id || tableKey || table.tableKey || table.idString}
+                      table={table}
+                      rows={rows}
+                      values={values}
+                    />
+                  );
+                })}
+              </div>
+            )}
           </section>
         );
       })}
@@ -6069,6 +6200,8 @@ const groupAuditorAssignmentsForDisplay = (assignments = []) => {
     const key = auditorDisplayKeyFor(assignment, index);
     const existing = groups.get(key);
     const values = safeObjectValue(assignment.values || assignment.valuesData || assignment.reviewValues || assignment.reviewValuesData);
+    const tables = safeObjectValue(assignment.tables || (assignment.tablesData ? safeJsonParse(assignment.tablesData, {}) : (assignment.reviewTablesData ? safeJsonParse(assignment.reviewTablesData, {}) : assignment.reviewTables)));
+    const remarks = assignment.remarks || assignment.auditObservations || assignment.observations || assignment.reviewRemarks || "";
     const posts = uniqueValues(valueList(assignment.post || assignment.school));
 
     if (!existing) {
@@ -6076,6 +6209,8 @@ const groupAuditorAssignmentsForDisplay = (assignments = []) => {
         ...assignment,
         displayPosts: posts,
         values,
+        tables,
+        remarks,
         attachments: auditorReviewDocumentation(assignment),
         groupedAssignments: [assignment],
       });
@@ -6084,6 +6219,8 @@ const groupAuditorAssignmentsForDisplay = (assignments = []) => {
 
     existing.displayPosts = uniqueValues([...existing.displayPosts, ...posts]);
     existing.values = mergeAuditorReviewValues(existing.values, values);
+    existing.tables = { ...(existing.tables || {}), ...(tables || {}) };
+    if (!existing.remarks && remarks) existing.remarks = remarks;
     existing.attachments = uniqueAttachments([
       ...arrayValue(existing.attachments),
       ...auditorReviewDocumentation(assignment),
@@ -7608,22 +7745,44 @@ const styles = {
     fontWeight: 700,
   },
   auditorReviewStack: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
-    gap: 12,
-    alignItems: "stretch",
+    display: "flex",
+    flexDirection: "column",
+    gap: 16,
+    width: "100%",
   },
   auditorReviewCard: {
-    display: "grid",
-    gridTemplateRows: "auto 1fr",
-    gap: 10,
-    alignSelf: "stretch",
-    height: "100%",
+    display: "flex",
+    flexDirection: "column",
+    gap: 12,
+    width: "100%",
     border: "1px solid #dbe3ef",
     borderRadius: 8,
     background: "#fff",
-    padding: 12,
+    padding: 16,
     boxShadow: "0 8px 20px rgba(15, 23, 42, .045)",
+    marginBottom: 16,
+  },
+  pendingIqacCard: {
+    padding: "20px 24px",
+    border: "1px solid #fed7aa",
+    borderRadius: 12,
+    background: "#fff7ed",
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+    width: "100%",
+    marginBottom: 16,
+  },
+  pendingIqacTitle: {
+    color: "#c2410c",
+    fontSize: 15,
+    fontWeight: 750,
+  },
+  pendingIqacMessage: {
+    color: "#9a3412",
+    fontSize: 13.5,
+    lineHeight: 1.5,
+    fontWeight: 500,
   },
   auditorReviewCardHeader: {
     display: "flex",

@@ -184,7 +184,13 @@ const groupAuditorAssignmentsForDisplay = (assignments = []) => {
   return [...groups.values()];
 };
 const isAuditorModule = (module = {}) =>
-  module.number === "F" || /^Part\s+F\b/i.test(module.title || "") || String(module.id || "").includes("observations-recommendations");
+  Boolean(
+    module.isAuditorSection ||
+    module.ownerRole === "auditor" ||
+    module.number === "F" ||
+    /^Part\s+F\b/i.test(module.title || "") ||
+    String(module.id || "").includes("observations-recommendations")
+  );
 
 export default function AdministrativeReportPanel({
   meta,
