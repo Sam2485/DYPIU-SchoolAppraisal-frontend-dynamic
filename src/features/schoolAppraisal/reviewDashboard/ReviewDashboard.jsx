@@ -1445,10 +1445,13 @@ const buildAuditorAssignmentsForForwarding = (submission = {}, auditorType = "",
 
   const submittedPosts = administrativeSubmittedPostsFor(submission);
   return matchingAuditors.flatMap((auditor) => {
-    const matchedPosts = administrativePostsFor(auditor).filter((auditorPost) =>
-      !submittedPosts.length ||
-      submittedPosts.some((submittedPost) => assignmentMatches(auditorPost, submittedPost, postAliasesFor))
-    );
+    const auditorPosts = administrativePostsFor(auditor);
+    const matchedPosts = auditorPosts.length
+      ? auditorPosts.filter((auditorPost) =>
+          !submittedPosts.length ||
+          submittedPosts.some((submittedPost) => assignmentMatches(auditorPost, submittedPost, postAliasesFor))
+        )
+      : (submittedPosts.length ? submittedPosts : ["administrative"]);
     return matchedPosts.map((post) => ({
       key: `${auditor.id}-${post}`,
       auditorId: auditor.id,
@@ -1456,7 +1459,7 @@ const buildAuditorAssignmentsForForwarding = (submission = {}, auditorType = "",
       auditorEmail: auditor.email,
       auditorType,
       auditCategory: "administrative",
-      post,
+      post: post === "administrative" ? "" : post,
       school: "",
       status: "pending",
       submittedAt: null,
@@ -1506,6 +1509,7 @@ const matchesSubmissionAssignment = (auditor, submission) => {
 
   const auditorPosts = administrativePostsFor(auditor);
   const submittedPosts = administrativeSubmittedPostsFor(submission);
+  if (!auditorPosts.length) return true;
   if (submittedPosts.length) {
     return auditorPosts.some((auditorPost) =>
       submittedPosts.some((submittedPost) => assignmentMatches(auditorPost, submittedPost, postAliasesFor))
@@ -1537,6 +1541,7 @@ const matchesAuditorResponsibility = (submission, profile) => {
 
   const auditorPosts = administrativePostsFor(profile);
   const submittedPosts = administrativeSubmittedPostsFor(submission);
+  if (!auditorPosts.length) return true;
   if (submittedPosts.length) {
     return auditorPosts.some((auditorPost) =>
       submittedPosts.some((submittedPost) => assignmentMatches(auditorPost, submittedPost, postAliasesFor))

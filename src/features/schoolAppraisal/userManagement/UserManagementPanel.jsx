@@ -269,7 +269,6 @@ export default function UserManagementPanel({ currentUser }) {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [accountFilter, setAccountFilter] = useState("all");
   const [avatarPreviewUser, setAvatarPreviewUser] = useState(null);
-  const [showDeleted, setShowDeleted] = useState(false);
 
   const fetchUniversityMetadata = async () => {
     const uId = currentUser?.universityId || sessionStorage.getItem("universityId") || 1;
@@ -319,7 +318,7 @@ export default function UserManagementPanel({ currentUser }) {
       setLoadNotice("");
 
       try {
-        const { data } = await fetchUsers({ includeDeleted: showDeleted });
+        const { data } = await fetchUsers({ includeDeleted: false });
         const list = normalizeList(data).map(normalizeUser);
         const filteredByTenant = (currentUser?.universityId || currentUser?.universityCode)
           ? list.filter((u) => {
@@ -347,7 +346,7 @@ export default function UserManagementPanel({ currentUser }) {
     return () => {
       isActive = false;
     };
-  }, [showDeleted]);
+  }, []);
 
   const updateField = (field, value) => {
     setForm((current) => ({
@@ -754,7 +753,6 @@ export default function UserManagementPanel({ currentUser }) {
           <div style={styles.tableBadges}>
             <span style={styles.count}>{userStats.total} users</span>
             <span style={styles.count}>{userStats.auditors} auditors</span>
-            {showDeleted && <span style={styles.count}>{userStats.deleted} deleted</span>}
             <span style={styles.printHint}>Print-ready report available</span>
           </div>
         </div>
@@ -776,15 +774,6 @@ export default function UserManagementPanel({ currentUser }) {
               <option value="internal-auditor">Internal Auditors</option>
               <option value="external-auditor">External Auditors</option>
             </select>
-          </label>
-          <label style={styles.showDeletedField}>
-            <input
-              type="checkbox"
-              checked={showDeleted}
-              onChange={(event) => setShowDeleted(event.target.checked)}
-              style={styles.multiSelectCheckbox}
-            />
-            <span style={styles.label}>Show deleted accounts</span>
           </label>
           <button type="button" className="btn btn-secondary" onClick={resetFilters} disabled={categoryFilter === "all" && accountFilter === "all"}>
             Clear Filters
@@ -1382,10 +1371,9 @@ const styles = {
   tableBadges: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" },
   count: { padding: "5px 8px", borderRadius: 999, color: "#475569", background: "#f1f5f9", fontSize: 10.5, fontWeight: 700 },
   printHint: { padding: "5px 8px", borderRadius: 999, color: "#1d4ed8", background: "#eff6ff", fontSize: 10.5, fontWeight: 750 },
-  filterBar: { display: "grid", gridTemplateColumns: "minmax(180px, 240px) minmax(180px, 240px) auto auto", alignItems: "end", justifyContent: "start", gap: 12, padding: "14px 20px", borderBottom: "1px solid #edf1f6", background: "#f8fafc" },
+  filterBar: { display: "grid", gridTemplateColumns: "minmax(180px, 240px) minmax(180px, 240px) auto", alignItems: "end", justifyContent: "start", gap: 12, padding: "14px 20px", borderBottom: "1px solid #edf1f6", background: "#f8fafc" },
   filterField: { display: "flex", flexDirection: "column", gap: 6 },
   filterControl: { width: "100%", minHeight: 40, border: "1px solid #d7dee9", borderRadius: 8, padding: "8px 10px", color: "#0f172a", background: "#fff", outline: "none" },
-  showDeletedField: { display: "flex", alignItems: "center", gap: 8, minHeight: 40, padding: "0 2px", cursor: "pointer" },
   readOnlyHint: { color: "#94a3b8", fontSize: 11, fontStyle: "italic" },
   scroller: { overflowX: "auto" },
   table: { width: "100%", borderCollapse: "collapse", tableLayout: "fixed" },

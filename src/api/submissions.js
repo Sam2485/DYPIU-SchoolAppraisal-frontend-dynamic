@@ -258,6 +258,8 @@ export const normalizeDraft = (payload = {}, fallbackValues = {}, fallbackTables
 
   return {
     id: draft.id || draft.submissionId || null,
+    universityId: draft.universityId ?? null,
+    universityCode: draft.universityCode ?? null,
     cycleId: draft.cycleId || draft.auditCycleId || draft.currentCycleId || draft.academicYear || null,
     cycleType,
     reportCategory,
@@ -400,30 +402,43 @@ export const extractAttachments = (tables) => {
   return attachments;
 };
 
-export const buildSubmissionPayload = ({ auditType, values, tables, attachments, academicYear }) => ({
-  auditType,
-  ...(academicYear ? {
-    academicYear,
-    auditCycle: academicYear,
-    cycleId: academicYear,
-  } : {}),
-  valuesData: JSON.stringify(values || {}),
-  tablesData: JSON.stringify(tables || {}),
-  attachments: JSON.stringify(attachments || extractAttachments(tables)),
-});
+export const buildSubmissionPayload = ({ auditType, values, tables, attachments, academicYear }) => {
+  const universityId = sessionStorage.getItem("universityId") || localStorage.getItem("universityId");
+  const universityCode = sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode");
+
+  return {
+    auditType,
+    ...(academicYear ? {
+      academicYear,
+      auditCycle: academicYear,
+      cycleId: academicYear,
+    } : {}),
+    valuesData: JSON.stringify(values || {}),
+    tablesData: JSON.stringify(tables || {}),
+    attachments: JSON.stringify(attachments || extractAttachments(tables)),
+    ...(universityId ? { universityId: Number(universityId) } : {}),
+    ...(universityCode ? { universityCode } : {}),
+  };
+};
 
 export const fetchMyDraft = (auditType, academicYear) =>
   fetchMyDraftForAcademicYearAliases(auditType, academicYear);
 
-const fetchMyDraftVariant = (auditType, yearAlias, sharedParams, extraParams = {}) =>
-  apiClient.get("/api/submissions/my-draft", {
+const fetchMyDraftVariant = (auditType, yearAlias, sharedParams, extraParams = {}) => {
+  const universityId = sessionStorage.getItem("universityId") || localStorage.getItem("universityId");
+  const universityCode = sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode");
+
+  return apiClient.get("/api/submissions/my-draft", {
     params: {
       auditType,
       ...(yearAlias ? academicYearParams(yearAlias) : {}),
+      ...(universityId ? { universityId } : {}),
+      ...(universityCode ? { universityCode } : {}),
       ...sharedParams,
       ...extraParams,
     },
   });
+};
 
 const fetchMyDraftForAcademicYearAliases = async (auditType, academicYear) => {
   const yearAliases = uniqueAcademicYearAliases(academicYear);
@@ -532,11 +547,29 @@ export const fetchCurrentAuditCycle = () => apiClient.get("/api/audit-cycles/cur
 export const startNextAcademicYear = (payload) =>
   apiClient.post("/api/audit-cycles/start-next", payload);
 
-export const submitAdministrativePart = (cycleId) =>
-  apiClient.post(`/api/submissions/administrative/${encodeURIComponent(cycleId)}/submit`);
+export const submitAdministrativePart = (cycleId) => {
+  const universityId = sessionStorage.getItem("universityId") || localStorage.getItem("universityId");
+  const universityCode = sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode");
 
-export const fetchAdministrativeStatus = (cycleId) =>
-  apiClient.get(`/api/submissions/administrative/${encodeURIComponent(cycleId)}/status`);
+  return apiClient.post(`/api/submissions/administrative/${encodeURIComponent(cycleId)}/submit`, null, {
+    params: {
+      ...(universityId ? { universityId } : {}),
+      ...(universityCode ? { universityCode } : {}),
+    },
+  });
+};
+
+export const fetchAdministrativeStatus = (cycleId) => {
+  const universityId = sessionStorage.getItem("universityId") || localStorage.getItem("universityId");
+  const universityCode = sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode");
+
+  return apiClient.get(`/api/submissions/administrative/${encodeURIComponent(cycleId)}/status`, {
+    params: {
+      ...(universityId ? { universityId } : {}),
+      ...(universityCode ? { universityCode } : {}),
+    },
+  });
+};
 
 export const parseSubmissionFormData = (submission = {}) => {
   const values = safeJsonParse(submission.valuesData ?? submission.values ?? submission.fieldsData ?? submission.fields, {});
