@@ -29,6 +29,33 @@ export const DynamicSection = ({
   const isAuditorDesignated = ownerRole === 'auditor' || isAuditorSection === true;
   const effectiveReadOnly = readOnly || isAuditorDesignated;
 
+  const isReviewRemarkField = (f) => {
+    if (!f) return false;
+    if (f.kind === 'review') return true;
+    const key = String(f.fieldKey || f.idString || f.id || '').toLowerCase();
+    const label = String(f.label || '').toLowerCase();
+    if (
+      key === 'reviewremarks' ||
+      key === 'review_remarks' ||
+      key.includes('reviewremark') ||
+      key.includes('review_remark')
+    ) {
+      return true;
+    }
+    if (
+      label.includes('review remark') ||
+      label.includes('review remarks') ||
+      label.includes('review observation') ||
+      label.includes('review observations')
+    ) {
+      return true;
+    }
+    return false;
+  };
+
+  const headerFields = (fields || []).filter((f) => !isReviewRemarkField(f));
+  const reviewFields = (fields || []).filter((f) => isReviewRemarkField(f));
+
   return (
     <div className="dynamic-section mb-5">
       <div className="section-header bg-primary text-white p-3 rounded mb-4 shadow-sm d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -55,12 +82,12 @@ export const DynamicSection = ({
         </div>
       )}
 
-      {/* Top-level fields */}
-      {fields && fields.length > 0 && (
+      {/* Top-level header fields */}
+      {headerFields && headerFields.length > 0 && (
         <div className="card mb-4 shadow-sm border-0">
           <div className="card-body">
             <div className="row g-3">
-              {fields.map((field) => {
+              {headerFields.map((field) => {
                 const key = field.fieldKey || field.idString;
                 return (
                   <div key={field.id || key} className="col-md-6 col-12">
@@ -95,6 +122,34 @@ export const DynamicSection = ({
               />
             );
           })}
+        </div>
+      )}
+
+      {/* Review Remarks / Bottom Auditor Fields */}
+      {reviewFields && reviewFields.length > 0 && (
+        <div className="card mt-4 mb-4 shadow-sm border-0">
+          <div className="card-header bg-light py-2 px-3 fw-bold d-flex align-items-center gap-2">
+            <span>📝</span>
+            <span>Review Remarks & Observations</span>
+          </div>
+          <div className="card-body">
+            <div className="row g-3">
+              {reviewFields.map((field) => {
+                const key = field.fieldKey || field.idString;
+                return (
+                  <div key={field.id || key} className="col-12">
+                    <DynamicField
+                      field={field}
+                      value={valuesData[key]}
+                      onChange={onValueChange}
+                      readOnly={effectiveReadOnly}
+                      error={errors[key]}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
     </div>

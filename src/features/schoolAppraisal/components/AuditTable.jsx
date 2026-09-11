@@ -1,7 +1,7 @@
 //academic & administrative table add rows and delete last row functionality , sr no, table heading(blue)
 import { useState } from "react";
 import { getApiErrorMessage } from "../../../api/client";
-import { columnsWithSerial, serialColumnFor, numberedRowFor } from "./tableHelpers";
+import { columnsWithSerial, serialColumnFor, numberedRowFor, withSerialNumbers } from "./tableHelpers";
 import { getAttachmentUrl } from "../../../utils/attachment";
 import { formatDateDDMMYYYY } from "../../../utils/dateFormat";
 import DateInput from "./DateInput";
@@ -192,7 +192,7 @@ export default function AuditTable({
       : [];
   const columns = columnsWithSerial(rawColumns);
   const displayRows = (Array.isArray(rows) && rows.length > 0)
-    ? rows
+    ? withSerialNumbers(columns, rows)
     : [numberedRowFor(columns, 0)];
   const fitToContainer = table?.fitToContainer !== false;
   const denseTable = columns.length >= 9;
@@ -533,7 +533,7 @@ export default function AuditTable({
                         type={isUrlColumn(column, table) ? "url" : isNumberColumn(column, table) ? "number" : "text"}
                         min={isNumberColumn(column, table) ? "0" : undefined}
                         step={isNumberColumn(column, table) ? "1" : undefined}
-                        value={row[column] ?? ""}
+                        value={serialColumnFor([column]) ? (row[column] || String(rowIndex + 1)) : (row[column] ?? "")}
                         onChange={(event) => handleCellChange(rowIndex, column, event.target.value)}
                         style={{
                           ...styles.cellInput,

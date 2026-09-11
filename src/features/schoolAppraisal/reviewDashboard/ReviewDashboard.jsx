@@ -437,11 +437,68 @@ const resolveTableColumns = (table = {}) => {
   return columnsWithSerial(raw);
 };
 
-const blocksFor = (section) =>
-  section.blocks || [
-    ...(section.fields?.length ? [{ type: "fields", fields: section.fields }] : []),
-    ...(section.tables?.length ? [{ type: "tables", tables: section.tables }] : []),
+const isReviewRemarkField = (f) => {
+  if (!f) return false;
+  if (f.kind === "review") return true;
+  const key = String(f.fieldKey || f.idString || f.id || "").toLowerCase();
+  const label = String(f.label || "").toLowerCase();
+  if (
+    key === "reviewremarks" ||
+    key === "review_remarks" ||
+    key.includes("reviewremark") ||
+    key.includes("review_remark")
+  ) {
+    return true;
+  }
+  if (
+    label.includes("review remark") ||
+    label.includes("review remarks") ||
+    label.includes("review observation") ||
+    label.includes("review observations")
+  ) {
+    return true;
+  }
+  return false;
+};
+
+const blocksFor = (section) => {
+  if (!section) return [];
+  const allFields = (section.fields || []).concat(
+    (section.blocks || []).flatMap((b) => (b.type === "fields" && Array.isArray(b.fields) ? b.fields : []))
+  );
+  const seenFields = new Set();
+  const uniqueFields = allFields.filter((f) => {
+    const k = String(f?.id || f?.fieldKey || f?.idString || "").trim();
+    if (!k || seenFields.has(k)) return false;
+    seenFields.add(k);
+    return true;
+  });
+
+  const headerFields = uniqueFields.filter((f) => !isReviewRemarkField(f));
+  const reviewFields = uniqueFields.filter((f) => isReviewRemarkField(f));
+
+  const rawTables = (section.tables || []).concat(
+    (section.blocks || []).flatMap((b) => (b.type === "tables" && Array.isArray(b.tables) ? b.tables : []))
+  );
+  const seenTables = new Set();
+  const uniqueTables = rawTables.filter((t) => {
+    const k = String(t?.id || t?.tableKey || t?.idString || t?.title || "").trim();
+    if (!k || seenTables.has(k)) return false;
+    seenTables.add(k);
+    return true;
+  });
+
+  const otherBlocks = (section.blocks || []).filter(
+    (b) => b.type !== "fields" && b.type !== "tables"
+  );
+
+  return [
+    ...(headerFields.length ? [{ type: "fields", fields: headerFields }] : []),
+    ...(uniqueTables.length ? [{ type: "tables", tables: uniqueTables }] : []),
+    ...otherBlocks,
+    ...(reviewFields.length ? [{ type: "fields", fields: reviewFields, isReviewBlock: true }] : []),
   ];
+};
 
 const normalizeFieldDefinition = (field) => {
   if (!field) return field;
@@ -505,17 +562,15 @@ const normalizeDynamicSchema = (schema) => {
   const normalizedSections = schema.sections.map((sec, idx) => {
     const rawFields = Array.isArray(sec.fields) ? sec.fields : [];
     const normalizedFields = rawFields.map(normalizeFieldDefinition);
-    const rawBlocks = Array.isArray(sec.blocks) && sec.blocks.length > 0
-      ? sec.blocks.map((b) => {
-          if (b.type === "fields" && Array.isArray(b.fields)) {
-            return { ...b, fields: b.fields.map(normalizeFieldDefinition) };
-          }
-          return b;
-        })
-      : [
-          ...(normalizedFields.length ? [{ type: "fields", fields: normalizedFields }] : []),
-          ...(sec.tables?.length ? [{ type: "tables", tables: sec.tables }] : []),
-        ];
+
+    const headerFields = normalizedFields.filter((f) => !isReviewRemarkField(f));
+    const reviewFields = normalizedFields.filter((f) => isReviewRemarkField(f));
+
+    const rawBlocks = [
+      ...(headerFields.length ? [{ type: "fields", fields: headerFields }] : []),
+      ...(sec.tables?.length ? [{ type: "tables", tables: sec.tables }] : []),
+      ...(reviewFields.length ? [{ type: "fields", fields: reviewFields, isReviewBlock: true }] : []),
+    ];
 
     return {
       ...sec,
@@ -593,13 +648,64 @@ const academicPartEValuesMatch = (firstValues = {}, secondValues = {}) => {
     comparablePartEValue(first[fieldId]) === comparablePartEValue(second[fieldId])
   );
 };
-const clearAcademicPartEValues = (values = {}) => ({
-  ...(values || {}),
-  auditObservations: "",
-  auditRecommendations: "",
-  auditDocumentation: [],
-});
-const hidePendingAuditorReviewValues = clearAcademicPartEValues;
+const getAuditorSectionFieldKeys = (sections = [], auditType) => {
+  const keys = new Set([
+    ...ACADEMIC_PART_E_FIELD_IDS,
+    "remarks",
+    "reviewRemarks",
+    "auditObservations",
+    "auditRecommendations",
+    "auditDocumentation",
+  ]);
+
+  (sections || []).forEach((sec) => {
+    if (isAuditorSection(sec, auditType)) {
+      (sec.fields || []).forEach((f) => {
+        if (f.id != null) keys.add(String(f.id));
+        if (f.rawId != null) keys.add(String(f.rawId));
+        if (f.fieldKey) keys.add(String(f.fieldKey));
+        if (f.idString) keys.add(String(f.idString));
+        if (f.label) keys.add(String(f.label));
+      });
+      (sec.blocks || []).forEach((b) => {
+        if (b.type === "fields" && Array.isArray(b.fields)) {
+          b.fields.forEach((f) => {
+            if (f.id != null) keys.add(String(f.id));
+            if (f.rawId != null) keys.add(String(f.rawId));
+            if (f.fieldKey) keys.add(String(f.fieldKey));
+            if (f.idString) keys.add(String(f.idString));
+            if (f.label) keys.add(String(f.label));
+          });
+        }
+      });
+    }
+  });
+  return keys;
+};
+
+const clearAuditorSectionValues = (values = {}, sections = [], auditType = "academic") => {
+  const next = { ...(values || {}) };
+  const keysToClear = getAuditorSectionFieldKeys(sections, auditType);
+  const normalizeKey = (k) => String(k || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const normalizedTargets = new Set(Array.from(keysToClear).map(normalizeKey).filter(Boolean));
+
+  Object.keys(next).forEach((k) => {
+    if (keysToClear.has(k) || normalizedTargets.has(normalizeKey(k))) {
+      delete next[k];
+    }
+  });
+
+  next.auditObservations = "";
+  next.auditRecommendations = "";
+  next.auditDocumentation = [];
+  next.remarks = "";
+  return next;
+};
+
+const clearAcademicPartEValues = (values = {}, sections = [], auditType = "academic") =>
+  clearAuditorSectionValues(values, sections, auditType);
+const hidePendingAuditorReviewValues = (values = {}, sections = [], auditType = "academic") =>
+  clearAuditorSectionValues(values, sections, auditType);
 const removeMatchingPartEAttachments = (attachments = [], previousValues = {}) => {
   const prev = previousValues || {};
   const previousAttachmentKeys = new Set(
@@ -692,8 +798,18 @@ function auditorAssignmentsForCorrection(submission = {}) {
   return matchingTypeAssignments.length ? matchingTypeAssignments : assignments;
 }
 const allAuditorAssignmentsSubmitted = (submission = {}) => {
-  const assignments = submittedAuditorAssignmentsForSubmission(submission);
-  return assignments.length > 0 && assignments.every(auditorAssignmentSubmitted);
+  const s = submission || {};
+  const targetType = normalizeUserRole(
+    s.forwardedAuditorType ||
+    auditorTypeForReportCategory(s.reportCategory) ||
+    ""
+  );
+  const assignments = submittedAuditorAssignmentsForSubmission(s);
+  const cycleAssignments = targetType
+    ? assignments.filter((assignment) => normalizeUserRole(assignment.auditorType) === targetType)
+    : assignments;
+
+  return cycleAssignments.length > 0 && cycleAssignments.every(auditorAssignmentSubmitted);
 };
 // A next-cycle submission (e.g. the external cycle spawned when IQAC clicks "Start External
 // Cycle") is created from the prior, already-approved cycle via preserveApprovedVersion, and
@@ -718,6 +834,22 @@ const isAuditorCompleted = (submission = {}) => {
   const freshSuccessor = isFreshCycleSuccessor(s);
   const ownSignOffDate = getAuditorSignOff(s.values)?.date;
 
+  const targetType = normalizeUserRole(
+    s.forwardedAuditorType ||
+    auditorTypeForReportCategory(s.reportCategory) ||
+    ""
+  );
+  const assignments = submittedAuditorAssignmentsForSubmission(s);
+  const cycleAssignments = targetType
+    ? assignments.filter((assignment) => normalizeUserRole(assignment.auditorType) === targetType)
+    : assignments;
+  const cycleProgress = buildAuditorProgress(cycleAssignments);
+
+  // If there are assignments for this cycle, they MUST all be submitted
+  if (cycleAssignments.length > 0) {
+    if (!cycleProgress.allSubmitted) return false;
+  }
+
   if (["auditor-completed", "external_auditor_completed", "external-auditor-completed", "approved"].includes(s.status)) {
     return freshSuccessor ? Boolean(ownSignOffDate) : true;
   }
@@ -733,7 +865,6 @@ const isAuditorCompleted = (submission = {}) => {
   }
 
   const progress = s.auditorProgress || {};
-  const assignments = submittedAuditorAssignmentsForSubmission(s);
   const hasAssignmentProgress = assignments.length > 0 || Number(progress.total || 0) > 0;
   if (hasAssignmentProgress) {
     return Boolean(
@@ -1237,9 +1368,8 @@ const auditorAssignmentMatchesProfile = (assignment = {}, submission = {}, profi
   const userId = String(profile.id || sessionStorage.getItem("userId") || "");
   const email = normalizeAuditAssignment(profile.email || sessionStorage.getItem("email") || sessionStorage.getItem("username") || "");
   const assignmentAuditorId = String(assignment.auditorId || "");
-  const idMatches = userId && String(assignment.auditorId) === userId;
-  const emailMatches = email && normalizeAuditAssignment(assignment.auditorEmail) === email;
-  if (userId && assignmentAuditorId) return idMatches;
+  const idMatches = Boolean(userId && assignmentAuditorId && assignmentAuditorId === userId);
+  const emailMatches = Boolean(email && normalizeAuditAssignment(assignment.auditorEmail) === email);
   if (idMatches || emailMatches) return true;
   if ((submission.auditorAssignments || []).length) return false;
 
@@ -2571,9 +2701,11 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
     try {
       const auditorReviewedOn = new Date().toISOString();
       const signedValues = withAuditorSignOff(values, profile, auditorReviewedOn);
-      if (auditorRemarks) {
-        signedValues.remarks = auditorRemarks;
-        signedValues.auditObservations = auditorRemarks;
+      const effectiveRemarks = auditorRemarks || values.reviewRemarks || values.remarks || values.auditObservations || "";
+      if (effectiveRemarks) {
+        signedValues.remarks = effectiveRemarks;
+        signedValues.auditObservations = effectiveRemarks;
+        signedValues.reviewRemarks = effectiveRemarks;
       }
       const assignedPosts = auditorPostsForCurrentSubmission(submission, profile);
       const currentAssignments = auditorAssignmentsForCurrentUser(submission, profile);
@@ -2604,8 +2736,8 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
         auditorAssignmentKeys: assignmentKeys,
         submittedAt: auditorReviewedOn,
         reviewStatus: "submitted",
-        remarks: auditorRemarks || signedValues.remarks || "",
-        auditObservations: auditorRemarks || signedValues.auditObservations || "",
+        remarks: effectiveRemarks || signedValues.remarks || "",
+        auditObservations: effectiveRemarks || signedValues.auditObservations || "",
         valuesData,
         tablesData,
         attachments,
@@ -2689,14 +2821,31 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
           : assignment
       );
       const auditorAssignments = reconciledReturnedAssignments.length ? reconciledReturnedAssignments : fallbackAssignments;
-      const auditorProgress = buildAuditorProgress(auditorAssignments);
+      const currentCycleType = normalizeUserRole(
+        payload.auditorType ||
+        submission.forwardedAuditorType ||
+        auditorTypeForReportCategory(submission.reportCategory) ||
+        (role?.includes("external") ? "external" : "internal")
+      );
+      const currentCycleAssignments = auditorAssignments.filter((assignment) => {
+        const aType = normalizeUserRole(assignment.auditorType || assignment.type || "");
+        return !aType || aType === currentCycleType;
+      });
+      const cycleProgress = buildAuditorProgress(currentCycleAssignments);
+      const backendCompletedStatus = [
+        "auditor-completed",
+        "auditor_completed",
+        "external-auditor-completed",
+        "external_auditor_completed"
+      ].includes(String(responseSubmission.status || responseSubmission.submissionStatus || "").toLowerCase());
+
       const allAuditorsSubmitted = booleanOrNull(
         responseSubmission.allAuditorsSubmitted ??
         responseSubmission.allAssignedAuditorsSubmitted
       );
-      const allAssignedAuditorsSubmitted = auditorAssignments.length
-        ? auditorProgress.allSubmitted
-        : Boolean(allAuditorsSubmitted);
+      const allAssignedAuditorsSubmitted = currentCycleAssignments.length
+        ? (cycleProgress.allSubmitted && (allAuditorsSubmitted === null ? true : allAuditorsSubmitted))
+        : (allAuditorsSubmitted !== null ? allAuditorsSubmitted : backendCompletedStatus);
       const auditorCorrectionPending = auditorAssignments.some((assignment) =>
         assignment.auditorCorrectionRequested ||
         assignment.correctionRequestedForAuditor ||
@@ -2709,13 +2858,16 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
       // auditor as "Not Submitted" indefinitely, since only the fully-complete case used to
       // call updateSubmissionById.
       if (allAssignedAuditorsSubmitted) {
+        const completedBackendStatus = currentCycleType === "external"
+          ? "EXTERNAL_AUDITOR_COMPLETED"
+          : backendStatusFor("auditor-completed");
         await updateSubmissionById(submission.id, {
-          status: backendStatusFor("auditor-completed"),
-          submissionStatus: backendStatusFor("auditor-completed"),
-          overallStatus: backendStatusFor("auditor-completed"),
-          workflowStatus: backendStatusFor("auditor-completed"),
+          status: completedBackendStatus,
+          submissionStatus: completedBackendStatus,
+          overallStatus: completedBackendStatus,
+          workflowStatus: completedBackendStatus,
           auditorAssignments,
-          auditorProgress,
+          auditorProgress: cycleProgress,
           allAuditorsSubmitted: true,
           allAssignedAuditorsSubmitted: true,
           auditorReviewedBy: profile.name,
@@ -2731,14 +2883,19 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
         });
       } else {
         await updateSubmissionById(submission.id, {
+          status: backendStatusFor("under-review"),
+          submissionStatus: backendStatusFor("under-review"),
+          overallStatus: backendStatusFor("under-review"),
+          workflowStatus: backendStatusFor("under-review"),
           auditorAssignments,
-          auditorProgress,
+          auditorProgress: cycleProgress,
           remarks: auditorRemarks || submission.remarks,
           auditObservations: auditorRemarks || submission.auditObservations,
         });
       }
+      const defaultCompletedStatus = currentCycleType === "external" ? "external-auditor-completed" : "auditor-completed";
       const nextStatus = allAssignedAuditorsSubmitted
-        ? normalizeStatus(responseSubmission.status || responseSubmission.submissionStatus || "auditor-completed")
+        ? normalizeStatus(responseSubmission.status || responseSubmission.submissionStatus || defaultCompletedStatus)
         : "under-review";
 
       updateSubmission(submission.auditType, submission.id, {
@@ -2748,7 +2905,7 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
         remarks: auditorRemarks || submission.remarks,
         auditObservations: auditorRemarks || submission.auditObservations,
         auditorAssignments,
-        auditorProgress,
+        auditorProgress: cycleProgress,
         allAuditorsSubmitted: allAssignedAuditorsSubmitted,
         ...(allAssignedAuditorsSubmitted ? {
           auditorReviewedBy: profile.name,
@@ -4824,17 +4981,16 @@ function FullFormReview({
   const shouldClearFreshAuditorDraft =
     canEditAuditorSection &&
     !auditorCorrectionMode &&
-    !currentAssignmentValues &&
-    !shouldClearCopiedExternalPartE;
+    !currentAssignmentValues;
   const initialDraftValues = currentAssignmentValues
     ? { ...(submission.values || {}), ...currentAssignmentValues }
     : shouldClearCopiedExternalPartE || shouldClearFreshAuditorDraft
-      ? clearAcademicPartEValues(submission.values)
+      ? clearAuditorSectionValues(submission.values, sections, submission.auditType)
       : submission.values || {};
   const initialDraftAttachments = currentAssignmentValues
     ? currentAssignmentAttachments
-    : shouldClearCopiedExternalPartE
-      ? removeMatchingPartEAttachments(submission?.attachments || [], previousInternalReport?.values)
+    : shouldClearCopiedExternalPartE || shouldClearFreshAuditorDraft
+      ? []
       : submission.attachments || [];
   const auditorTableKeys = useMemo(() => {
     const keys = new Set();
@@ -4866,6 +5022,16 @@ function FullFormReview({
     .find((tables) => Object.keys(tables).length > 0);
 
   const baseTables = { ...(submission.tables || {}) };
+  if (!currentAssignmentTables && canEditAuditorSection) {
+    auditorTableKeys.forEach((key) => {
+      delete baseTables[key];
+    });
+    Object.keys(baseTables).forEach((k) => {
+      if (Array.from(auditorTableKeys).some((ak) => String(ak).toLowerCase().trim() === String(k).toLowerCase().trim())) {
+        delete baseTables[k];
+      }
+    });
+  }
   const initialDraftTables = currentAssignmentTables
     ? { ...baseTables, ...currentAssignmentTables }
     : baseTables;
@@ -4887,52 +5053,66 @@ function FullFormReview({
   const canShowAuditorReviewValues = canEditAuditorSection || auditorReviewReadOnly || isAuditorCompleted(submission);
   const shouldHidePendingAuditorValues = activeSectionIsAuditorOwned && !canShowAuditorReviewValues;
   const submittedForm = useMemo(() => {
-    const mergedTables = {
-      ...(submission.tables || {}),
-      ...(draftTables || {}),
-    };
-    Object.entries(submission.tables || {}).forEach(([k, rows]) => {
-      if (Array.isArray(rows) && rows.length > 0) {
-        if (!mergedTables[k] || !mergedTables[k].length) {
-          mergedTables[k] = rows;
-        }
-      }
-    });
-
-    const mergedValues = {
+    let effectiveValues = {
       ...(submission.values || {}),
       ...(draftValues || {}),
     };
 
+    let effectiveTables = {
+      ...(submission.tables || {}),
+      ...(draftTables || {}),
+    };
+
+    if (canEditAuditorSection) {
+      effectiveValues = { ...draftValues };
+      const auditorKeys = getAuditorSectionFieldKeys(sections, submission.auditType);
+      const normalizeKey = (k) => String(k || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const normalizedAuditorKeys = new Set(Array.from(auditorKeys).map(normalizeKey).filter(Boolean));
+
+      Object.entries(submission.values || {}).forEach(([k, val]) => {
+        const isAuditorField = auditorKeys.has(k) || normalizedAuditorKeys.has(normalizeKey(k));
+        if (!isAuditorField && effectiveValues[k] === undefined) {
+          effectiveValues[k] = val;
+        }
+      });
+
+      effectiveTables = { ...(submission.tables || {}), ...(draftTables || {}) };
+      auditorTableKeys.forEach((k) => {
+        effectiveTables[k] = draftTables[k] || [];
+      });
+    }
+
     return {
-      values: shouldHidePendingAuditorValues ? hidePendingAuditorReviewValues(mergedValues) : mergedValues,
-      tables: mergedTables,
-      attachments: uniqueAttachments([...(submission.attachments || []), ...(draftAttachments || [])]),
+      values: shouldHidePendingAuditorValues ? clearAuditorSectionValues(effectiveValues, sections, submission.auditType) : effectiveValues,
+      tables: effectiveTables,
+      attachments: canEditAuditorSection ? (draftAttachments || []) : uniqueAttachments([...(submission.attachments || []), ...(draftAttachments || [])]),
       hasSavedData: Boolean(submission.hasSavedData || Object.keys(submission.tables || {}).length > 0 || Object.keys(submission.values || {}).length > 0),
     };
-  }, [submission, draftTables, draftValues, draftAttachments, shouldHidePendingAuditorValues]);
+  }, [submission, draftTables, draftValues, draftAttachments, shouldHidePendingAuditorValues, canEditAuditorSection, sections, auditorTableKeys]);
   const isLastSection = activeSectionIndex === sections.length - 1;
   const hasRemarks = Boolean(reviewRemarks.trim());
 
   const auditorRemarksForDisplay = useMemo(() => {
     const myAssignment = currentUserAssignments.find(
-      (a) => a.remarks || a.auditObservations || a.values?.remarks || a.values?.auditObservations
+      (a) => a.remarks || a.auditObservations || a.values?.remarks || a.values?.auditObservations || a.values?.reviewRemarks
     );
     if (myAssignment) {
-      const text = myAssignment.remarks || myAssignment.auditObservations || myAssignment.values?.remarks || myAssignment.values?.auditObservations;
+      const text = myAssignment.remarks || myAssignment.auditObservations || myAssignment.values?.remarks || myAssignment.values?.auditObservations || myAssignment.values?.reviewRemarks;
       if (text && String(text).trim()) return String(text).trim();
     }
 
     const anyAssignment = (submission.auditorAssignments || [])
       .filter(auditorAssignmentSubmitted)
-      .find((a) => a.remarks || a.auditObservations || a.values?.remarks || a.values?.auditObservations);
+      .find((a) => a.remarks || a.auditObservations || a.values?.remarks || a.values?.auditObservations || a.values?.reviewRemarks);
     if (anyAssignment) {
-      const text = anyAssignment.remarks || anyAssignment.auditObservations || anyAssignment.values?.remarks || anyAssignment.values?.auditObservations;
+      const text = anyAssignment.remarks || anyAssignment.auditObservations || anyAssignment.values?.remarks || anyAssignment.values?.auditObservations || anyAssignment.values?.reviewRemarks;
       if (text && String(text).trim()) return String(text).trim();
     }
 
+    if (draftValues?.reviewRemarks && String(draftValues.reviewRemarks).trim()) return String(draftValues.reviewRemarks).trim();
     if (draftValues?.remarks && String(draftValues.remarks).trim()) return String(draftValues.remarks).trim();
     if (draftValues?.auditObservations && String(draftValues.auditObservations).trim()) return String(draftValues.auditObservations).trim();
+    if (submission.values?.reviewRemarks && String(submission.values.reviewRemarks).trim()) return String(submission.values.reviewRemarks).trim();
     if (submission.values?.remarks && String(submission.values.remarks).trim()) return String(submission.values.remarks).trim();
     if (submission.values?.auditObservations && String(submission.values.auditObservations).trim()) return String(submission.values.auditObservations).trim();
     if (submission.auditObservations && String(submission.auditObservations).trim()) return String(submission.auditObservations).trim();
@@ -4963,6 +5143,38 @@ function FullFormReview({
       }
       return next;
     });
+  };
+
+  const handleAuditorSubmitClick = () => {
+    const auditorSections = sections.filter((s) => isAuditorSection(s, submission.auditType));
+
+    for (const sec of auditorSections) {
+      const secFields = sec.fields || [];
+      for (const field of secFields) {
+        const isReviewField = isReviewRemarkField(field);
+        const isRequired = field.isRequired || isReviewField;
+        if (isRequired) {
+          const val = resolveFieldValue(field, draftValues);
+          const rawType = String(field.fieldType || field.type || "text").trim().toLowerCase();
+          const isFile = rawType === "file" || rawType === "attachment" || rawType === "document";
+          const isEmpty = isFile
+            ? !valueList(val).some(isAttachmentValue)
+            : !val || !String(val).trim();
+          if (isEmpty) {
+            const secIdx = sections.indexOf(sec);
+            if (secIdx >= 0 && secIdx !== activeSectionIndex) {
+              setActiveSectionIndex(secIdx);
+              scrollPageToTop();
+            }
+            alert(`Please complete the mandatory field "${field.label || 'Review Remarks'}" in ${sec.title || 'Auditor Section'} before submitting.`);
+            return;
+          }
+        }
+      }
+    }
+
+    const finalRemarks = draftValues.reviewRemarks || reviewRemarks || "";
+    onCompleteAuditorReview(draftValues, draftAttachments, draftTables, finalRemarks);
   };
   const handleAuditorFileUpload = async (fieldId, files, fieldKey) => {
     const uploaded = await uploadAttachments(files);
@@ -4999,10 +5211,21 @@ function FullFormReview({
       let rows = Array.isArray(existing) ? [...existing] : [];
       if (rowIndex >= rows.length) {
         while (rows.length <= rowIndex) {
-          rows.push({});
+          const nextIdx = rows.length;
+          rows.push({ "Sr No": String(nextIdx + 1) });
         }
       }
-      rows = rows.map((row, index) => (index === rowIndex ? { ...row, [column]: value } : row));
+      rows = rows.map((row, index) => {
+        if (index === rowIndex) {
+          const updated = { ...row, [column]: value };
+          const serialCol = serialColumnFor(Object.keys(updated)) || "Sr No";
+          if (!updated[serialCol]) {
+            updated[serialCol] = String(index + 1);
+          }
+          return updated;
+        }
+        return row;
+      });
       return {
         ...current,
         [strKey]: rows,
@@ -5295,7 +5518,7 @@ function FullFormReview({
                 </button>
               )}
               <span style={styles.reviewHint}>Complete your assigned auditor observations and submit them for this assignment.</span>
-              <button type="button" className="btn btn-primary" onClick={() => onCompleteAuditorReview(draftValues, draftAttachments, draftTables, reviewRemarks)} disabled={Boolean(reviewingStatus)} aria-busy={reviewingStatus === "auditor-submit"}>
+              <button type="button" className="btn btn-primary" onClick={handleAuditorSubmitClick} disabled={Boolean(reviewingStatus)} aria-busy={reviewingStatus === "auditor-submit"}>
                 {reviewingStatus === "auditor-submit" && <InlineSpinner label="Submitting auditor review" />}
                 {reviewingStatus === "auditor-submit" ? "Submitting..." : "Submit My Auditor Review"}
               </button>
@@ -5480,12 +5703,27 @@ function SubmittedFormViewer({
       .map((assignment) => normalizeAuditAssignment(assignment.auditorEmail || assignment.email || ""))
       .filter(Boolean)
   );
-  const submittedPeerAuditorAssignments = submittedAuditorAssignments.filter((assignment) => {
-    const assignmentEmail = normalizeAuditAssignment(assignment.auditorEmail || assignment.email || "");
-    if (assignment.key && currentAssignmentKeys.size) return !currentAssignmentKeys.has(assignment.key);
-    if (assignment.auditorId && currentAssignmentIds.size) return !currentAssignmentIds.has(String(assignment.auditorId));
-    return !(assignmentEmail && currentAssignmentEmails.has(assignmentEmail));
-  });
+  const normalizedCategory = String(reportCategory || "").toLowerCase().trim();
+  const isExternalCycle =
+    normalizedCategory === "external" ||
+    (
+      normalizedCategory !== "internal" &&
+      (
+        String(auditType || "").toLowerCase().includes("external") ||
+        String(activeSection?.reportCategory || "").toLowerCase().includes("external")
+      )
+    );
+
+  const peerAuditorType = isExternalCycle ? "external" : "internal";
+  const submittedPeerAuditorAssignments = submittedAuditorAssignments
+    .filter((a) => normalizeUserRole(a.auditorType || a.type || "").includes(peerAuditorType))
+    .filter((assignment) => {
+      const assignmentEmail = normalizeAuditAssignment(assignment.auditorEmail || assignment.email || "");
+      if (assignment.key && currentAssignmentKeys.size) return !currentAssignmentKeys.has(assignment.key);
+      if (assignment.auditorId && currentAssignmentIds.size) return !currentAssignmentIds.has(String(assignment.auditorId));
+      return !(assignmentEmail && currentAssignmentEmails.has(assignmentEmail));
+    });
+
   const sectionTables = useMemo(() => {
     const rawTables = (activeSection?.tables || []).concat(
       (activeSection?.blocks || []).flatMap((b) => (b.type === "tables" && Array.isArray(b.tables) ? b.tables : []))
@@ -5499,16 +5737,18 @@ function SubmittedFormViewer({
     });
   }, [activeSection]);
 
-  const normalizedCategory = String(reportCategory || "").toLowerCase().trim();
-  const isExternalCycle =
-    normalizedCategory === "external" ||
-    (
-      normalizedCategory !== "internal" &&
-      (
-        String(auditType || "").toLowerCase().includes("external") ||
-        String(activeSection?.reportCategory || "").toLowerCase().includes("external")
-      )
+  const sectionAllFields = useMemo(() => {
+    const all = (activeSection?.fields || []).concat(
+      (activeSection?.blocks || []).flatMap((b) => (b.type === "fields" && Array.isArray(b.fields) ? b.fields : []))
     );
+    const seen = new Set();
+    return all.filter((f) => {
+      const k = String(f?.id || f?.fieldKey || f?.idString || "").trim();
+      if (!k || seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  }, [activeSection]);
 
   const internalAssignments = useMemo(() => {
     const list = submittedAuditorAssignments.filter((a) =>
@@ -5582,70 +5822,80 @@ function SubmittedFormViewer({
           </h3>
           {activeSection.note && <p style={styles.reviewSectionNote}>{activeSection.note}</p>}
 
-          {blocksFor(activeSection).map((block, blockIndex) => {
-            if (block.type === "fields") {
-              if (activeSectionIsAuditorOwned && !editableSection) {
-                if (!hasAnyAuditorData) {
-                  const isPartE = activeSection.id === "part-e-observations" || String(activeSection.title || "").toLowerCase().includes("part e");
-                  const pendingText = isPartE
+          {activeSectionIsAuditorOwned && !editableSection ? (
+            !hasAnyAuditorData ? (
+              <div style={styles.pendingIqacCard}>
+                <div style={styles.pendingIqacTitle}>IQAC Approval Pending</div>
+                <div style={styles.pendingIqacMessage}>
+                  {activeSection.id === "part-e-observations" || String(activeSection.title || "").toLowerCase().includes("part e")
                     ? "IQAC has not approved your form yet. Part E audit observations, recommendations, and IQAC review remarks will be displayed here once your form is reviewed and approved by IQAC."
-                    : `IQAC has not approved your form yet. ${activeSection.title ? `${activeSection.title} audit` : "Auditor"} observations, recommendations, and IQAC review remarks will be displayed here once your form is reviewed and approved by IQAC.`;
-                  return (
-                    <div key={`${activeSection.id}-pending-iqac-${blockIndex}`} style={styles.pendingIqacCard}>
-                      <div style={styles.pendingIqacTitle}>IQAC Approval Pending</div>
-                      <div style={styles.pendingIqacMessage}>{pendingText}</div>
+                    : `IQAC has not approved your form yet. ${activeSection.title ? `${activeSection.title} audit` : "Auditor"} observations, recommendations, and IQAC review remarks will be displayed here once your form is reviewed and approved by IQAC.`}
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%" }}>
+                {internalAssignments.length > 0 && (
+                  <AuditorAssignmentReviewGrid
+                    fields={sectionAllFields}
+                    assignments={internalAssignments}
+                    fallbackAuditorType="internal"
+                    tables={sectionTables}
+                    allFormDataTables={formData.tables}
+                  />
+                )}
+                {isExternalCycle && externalAssignments.length === 0 && (
+                  <div style={styles.pendingIqacCard}>
+                    <div style={styles.pendingIqacTitle}>External Auditor Review Pending</div>
+                    <div style={styles.pendingIqacMessage}>
+                      Awaiting external auditor review submission.
                     </div>
-                  );
-                }
-
-                return (
-                  <div key={`${activeSection.id}-auditor-reviews-${blockIndex}`} style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%" }}>
-                    {internalAssignments.length > 0 && (
-                      <AuditorAssignmentReviewGrid
-                        fields={block.fields}
-                        assignments={internalAssignments}
-                        fallbackAuditorType="internal"
-                        tables={sectionTables}
-                        allFormDataTables={formData.tables}
-                      />
-                    )}
-                    {isExternalCycle && externalAssignments.length === 0 && (
-                      <div style={styles.pendingIqacCard}>
-                        <div style={styles.pendingIqacTitle}>External Auditor Review Pending</div>
-                        <div style={styles.pendingIqacMessage}>
-                          Awaiting external auditor review submission.
-                        </div>
-                      </div>
-                    )}
-                    {externalAssignments.length > 0 && (
-                      <AuditorAssignmentReviewGrid
-                        fields={block.fields}
-                        assignments={externalAssignments}
-                        fallbackAuditorType="external"
-                        tables={sectionTables}
-                        allFormDataTables={formData.tables}
-                      />
-                    )}
                   </div>
-                );
+                )}
+                {externalAssignments.length > 0 && (
+                  <AuditorAssignmentReviewGrid
+                    fields={sectionAllFields}
+                    assignments={externalAssignments}
+                    fallbackAuditorType="external"
+                    tables={sectionTables}
+                    allFormDataTables={formData.tables}
+                  />
+                )}
+              </div>
+            )
+          ) : (
+            blocksFor(activeSection).map((block, blockIndex) => {
+              if (block.type === "fields") {
+                const currentFields = (
+                <div key={`${activeSection.id}-fields-${blockIndex}`} style={{ width: "100%" }}>
+                  {block.isReviewBlock && (
+                    <div style={{ marginTop: 20, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 16 }}>📝</span>
+                      <h4 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#0f172a" }}>
+                        Review Remarks & Observations
+                      </h4>
+                    </div>
+                  )}
+                  {editableSection ? (
+                    <EditableFieldGrid
+                      fields={block.fields}
+                      values={formData.values}
+                      onFieldChange={onFieldChange}
+                      onFileUpload={onFileUpload}
+                      onFileDelete={onFileDelete}
+                    />
+                  ) : (
+                    <ReadOnlyFieldGrid
+                      fields={block.fields}
+                      values={formData.values}
+                    />
+                  )}
+                </div>
+              );
+
+              if (block.isReviewBlock) {
+                return currentFields;
               }
 
-              const currentFields = editableSection ? (
-                <EditableFieldGrid
-                  key={`${activeSection.id}-fields-${blockIndex}`}
-                  fields={block.fields}
-                  values={formData.values}
-                  onFieldChange={onFieldChange}
-                  onFileUpload={onFileUpload}
-                  onFileDelete={onFileDelete}
-                />
-              ) : (
-                <ReadOnlyFieldGrid
-                  key={`${activeSection.id}-fields-${blockIndex}`}
-                  fields={block.fields}
-                  values={formData.values}
-                />
-              );
               const currentFieldsWithReferences = (
                 <div style={styles.partEComparison}>
                   {showSubmittedPeerAuditorReviews && (
@@ -5757,48 +6007,21 @@ function SubmittedFormViewer({
                   {block.tables.map((table) => {
                     const tableKey = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
                     const rows = getTableRows(formData.tables, table);
-                    const previousRows = showPreviousInternalPartE && previousInternalPartETables
-                      ? getTableRows(previousInternalPartETables, table)
-                      : [];
-                    const hasPreviousRows = Array.isArray(previousRows) && previousRows.length > 0 && previousRows.some((r) => Object.values(r).some((v) => String(v || "").trim() !== ""));
 
                     return (
                       <div key={table.id || tableKey || table.tableKey || table.idString} style={{ marginBottom: 24, width: "100%" }}>
-                        {hasPreviousRows && (
-                          <div style={{ marginBottom: 20 }}>
-                            <div style={{ marginBottom: 8 }}>
-                              <span style={{ fontSize: 12, fontWeight: 700, color: "#1e40af", background: "#dbeafe", padding: "4px 10px", borderRadius: 6, border: "1px solid #bfdbfe" }}>
-                                Internal Auditor Reference Table (Read-Only)
-                              </span>
-                            </div>
-                            <ReadOnlyTable
-                              table={table}
-                              rows={previousRows}
-                              values={previousInternalPartEValues || {}}
-                            />
-                          </div>
-                        )}
-                        <div>
-                          {hasPreviousRows && (
-                            <div style={{ marginBottom: 8 }}>
-                              <span style={{ fontSize: 12, fontWeight: 700, color: "#166534", background: "#dcfce7", padding: "4px 10px", borderRadius: 6, border: "1px solid #bbf7d0" }}>
-                                External Auditor Table (Your Review)
-                              </span>
-                            </div>
-                          )}
-                          <AuditTable
-                            table={table}
-                            rows={rows}
-                            values={formData.values}
-                            onFieldChange={onFieldChange}
-                            onChange={(rowIndex, column, value) => onTableChange?.(tableKey || table.id, rowIndex, column, value)}
-                            onAddRow={onAddRow}
-                            onDeleteLastRow={onDeleteLastRow}
-                            onUploadAttachment={onUploadAttachment}
-                            onDeleteAttachment={onDeleteAttachment}
-                            readOnly={false}
-                          />
-                        </div>
+                        <AuditTable
+                          table={table}
+                          rows={rows}
+                          values={formData.values}
+                          onFieldChange={onFieldChange}
+                          onChange={(rowIndex, column, value) => onTableChange?.(tableKey || table.id, rowIndex, column, value)}
+                          onAddRow={onAddRow}
+                          onDeleteLastRow={onDeleteLastRow}
+                          onUploadAttachment={onUploadAttachment}
+                          onDeleteAttachment={onDeleteAttachment}
+                          readOnly={false}
+                        />
                       </div>
                     );
                   })}
@@ -5806,51 +6029,10 @@ function SubmittedFormViewer({
               );
             }
 
-            if (activeSectionIsAuditorOwned && !editableSection) {
-              return null;
-            }
-
             return (
               <div key={`${activeSection.id}-tables-${blockIndex}`} style={styles.reviewTables}>
                 {block.tables.map((table) => {
-                  const tableKey = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
                   const rows = getTableRows(formData.tables, table);
-                  const previousRows = showPreviousInternalPartE && previousInternalPartETables
-                    ? getTableRows(previousInternalPartETables, table)
-                    : [];
-                  const hasPreviousRows = Array.isArray(previousRows) && previousRows.length > 0 && previousRows.some((r) => Object.values(r).some((v) => String(v || "").trim() !== ""));
-
-                  if (hasPreviousRows) {
-                    return (
-                      <div key={table.id || tableKey || table.tableKey || table.idString} style={{ marginBottom: 24, width: "100%" }}>
-                        <div style={{ marginBottom: 20 }}>
-                          <div style={{ marginBottom: 8 }}>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: "#1e40af", background: "#dbeafe", padding: "4px 10px", borderRadius: 6, border: "1px solid #bfdbfe" }}>
-                              Internal Auditor Reference Table (Read-Only)
-                            </span>
-                          </div>
-                          <ReadOnlyTable
-                            table={table}
-                            rows={previousRows}
-                            values={previousInternalPartEValues || {}}
-                          />
-                        </div>
-                        <div>
-                          <div style={{ marginBottom: 8 }}>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: "#166534", background: "#dcfce7", padding: "4px 10px", borderRadius: 6, border: "1px solid #bbf7d0" }}>
-                              External Auditor Table (Read-Only)
-                            </span>
-                          </div>
-                          <ReadOnlyTable
-                            table={table}
-                            rows={rows}
-                            values={formData.values || {}}
-                          />
-                        </div>
-                      </div>
-                    );
-                  }
-
                   return (
                     <ReadOnlyTable
                       key={table.id || table.tableKey || table.idString}
@@ -5862,7 +6044,7 @@ function SubmittedFormViewer({
                 })}
               </div>
             );
-          })}
+          }))}
         </section>
       )}
     </div>
@@ -6097,6 +6279,8 @@ function ReadOnlyFieldGrid({ fields, values }) {
 
 function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType, tables = [], allFormDataTables = {} }) {
   const visibleFields = (fields || []).filter((field) => field.kind !== "heading");
+  const headerFields = visibleFields.filter((f) => !isReviewRemarkField(f));
+  const reviewRemarkFields = visibleFields.filter((f) => isReviewRemarkField(f));
   const displayAssignments = groupAuditorAssignmentsForDisplay(assignments);
   const uniqueTables = useMemo(() => {
     const seen = new Set();
@@ -6117,6 +6301,10 @@ function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType,
           .join(", ") || "-";
         const remarks = assignment.remarks || values.remarks || values.auditObservations || "";
         const assignmentTables = assignment.tables || {};
+        const reviewRemarkField = reviewRemarkFields[0];
+        const finalRemarks =
+          (reviewRemarkField ? resolveFieldValue(reviewRemarkField, values) : "") ||
+          remarks;
 
         return (
           <section key={assignment.key || index} style={styles.auditorReviewCard}>
@@ -6136,29 +6324,23 @@ function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType,
                 </span>
               </div>
             </div>
-            <div className="review-auditor-review-fields" style={styles.auditorReviewFieldGrid}>
-              {visibleFields.map((field) => {
-                const rawType = String(field.fieldType || field.type || "text").trim().toLowerCase();
-                const isFile = rawType === "file" || rawType === "attachment" || rawType === "document";
-                const val = resolveFieldValue(field, values);
-                return (
-                  <div key={field.id} style={isFile ? styles.auditorReviewDocsField : styles.auditorReviewField}>
-                    <div style={styles.readOnlyLabel}>{field.label}</div>
-                    <div style={isFile ? styles.auditorReviewDocsValue : styles.auditorReviewValue}>
-                      {renderValue(val)}
+            {headerFields.length > 0 && (
+              <div className="review-auditor-review-fields" style={styles.auditorReviewFieldGrid}>
+                {headerFields.map((field) => {
+                  const rawType = String(field.fieldType || field.type || "text").trim().toLowerCase();
+                  const isFile = rawType === "file" || rawType === "attachment" || rawType === "document";
+                  const val = resolveFieldValue(field, values);
+                  return (
+                    <div key={field.id} style={isFile ? styles.auditorReviewDocsField : styles.auditorReviewField}>
+                      <div style={styles.readOnlyLabel}>{field.label}</div>
+                      <div style={isFile ? styles.auditorReviewDocsValue : styles.auditorReviewValue}>
+                        {renderValue(val)}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-              {remarks && !visibleFields.some((f) => f.id === "remarks" || f.id === "auditObservations") && (
-                <div style={styles.auditorReviewDocsField}>
-                  <div style={styles.readOnlyLabel}>Review Remarks / Observations</div>
-                  <div style={styles.auditorReviewValue}>
-                    {renderValue(remarks)}
-                  </div>
-                </div>
-              )}
-            </div>
+                  );
+                })}
+              </div>
+            )}
 
             {Array.isArray(uniqueTables) && uniqueTables.length > 0 && (
               <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 14, width: "100%" }}>
@@ -6180,6 +6362,19 @@ function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType,
                 })}
               </div>
             )}
+
+            {Boolean(finalRemarks && String(finalRemarks).trim()) && (
+              <div style={{ marginTop: 14, width: "100%" }}>
+                <div style={styles.auditorReviewDocsField}>
+                  <div style={styles.readOnlyLabel}>
+                    {reviewRemarkField?.label || "Review Remarks / Observations"}
+                  </div>
+                  <div style={styles.auditorReviewValue}>
+                    {renderValue(finalRemarks)}
+                  </div>
+                </div>
+              </div>
+            )}
           </section>
         );
       })}
@@ -6190,8 +6385,8 @@ function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType,
 function ReadOnlyTable({ table, rows = [], values = {} }) {
   const columns = resolveTableColumns(table);
   const visibleRows = (Array.isArray(rows) && rows.length > 0)
-    ? rows
-    : [columns.reduce((row, column) => ({ ...row, [column]: "" }), {})];
+    ? withSerialNumbers(columns, rows)
+    : [numberedRowFor(columns, 0)];
 
   const standaloneFields = (Array.isArray(table.fields) ? table.fields : []).filter((field) => {
     const fieldIdentifier = String(field.label || field.fieldKey || field.id || "").toLowerCase().trim();
@@ -6255,7 +6450,7 @@ function ReadOnlyTable({ table, rows = [], values = {} }) {
                         ...(isSerial ? { width: "65px", maxWidth: "70px", textAlign: "center" } : {}),
                       }}
                     >
-                      {renderValue(getCellValue(row, column, table))}
+                      {renderValue(isSerial ? (row[column] || String(rowIndex + 1)) : getCellValue(row, column, table))}
                     </td>
                   );
                 })}

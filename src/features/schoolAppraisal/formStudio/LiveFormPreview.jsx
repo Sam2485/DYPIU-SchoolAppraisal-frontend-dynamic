@@ -1,6 +1,30 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getVersionTree } from './formStudioApi';
 
+const isReviewRemarkField = (f) => {
+  if (!f) return false;
+  if (f.kind === 'review') return true;
+  const key = String(f.fieldKey || f.idString || f.id || '').toLowerCase();
+  const label = String(f.label || '').toLowerCase();
+  if (
+    key === 'reviewremarks' ||
+    key === 'review_remarks' ||
+    key.includes('reviewremark') ||
+    key.includes('review_remark')
+  ) {
+    return true;
+  }
+  if (
+    label.includes('review remark') ||
+    label.includes('review remarks') ||
+    label.includes('review observation') ||
+    label.includes('review observations')
+  ) {
+    return true;
+  }
+  return false;
+};
+
 // Sub-component for rendering individual table cell in preview
 const PreviewTableCell = ({
   tableKey,
@@ -879,26 +903,29 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
             )}
 
             {/* Top-Level Section Fields (Grid Cards) */}
-            {currentSection.fields && currentSection.fields.length > 0 && (
-              <div style={{
-                background: '#ffffff',
-                border: '1px solid #e2e8f0',
-                borderRadius: '14px',
-                padding: '20px 24px',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '18px', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>
-                  <span style={{ fontSize: '16px' }}>📋</span>
-                  <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 750, color: '#1e293b' }}>
-                    Section Information & General Fields
-                  </h3>
-                  <span style={{ fontSize: '11px', background: '#f1f5f9', color: '#64748b', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}>
-                    {currentSection.fields.length} Field(s)
-                  </span>
-                </div>
+            {(() => {
+              const headerFields = (currentSection.fields || []).filter((f) => !isReviewRemarkField(f));
+              if (!headerFields.length) return null;
+              return (
+                <div style={{
+                  background: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '14px',
+                  padding: '20px 24px',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '18px', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>
+                    <span style={{ fontSize: '16px' }}>📋</span>
+                    <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 750, color: '#1e293b' }}>
+                      Section Information & General Fields
+                    </h3>
+                    <span style={{ fontSize: '11px', background: '#f1f5f9', color: '#64748b', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}>
+                      {headerFields.length} Field(s)
+                    </span>
+                  </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '18px' }}>
-                  {currentSection.fields.map((field) => {
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '18px' }}>
+                    {headerFields.map((field) => {
                     const key = field.fieldKey || field.idString;
                     const isRequired = field.isRequired;
                     const fieldVal = valuesData[key] || '';
@@ -1025,7 +1052,8 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                   })}
                 </div>
               </div>
-            )}
+              );
+            })()}
 
             {/* Dynamic Tables in Current Section */}
             {currentSection.tables && currentSection.tables.length > 0 ? (
@@ -1273,6 +1301,74 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                 <p style={{ margin: 0, fontSize: '14px' }}>No tables configured in this section.</p>
               </div>
             )}
+
+            {/* Review Remarks / Bottom Auditor Fields */}
+            {(() => {
+              const reviewFields = (currentSection.fields || []).filter((f) => isReviewRemarkField(f));
+              if (!reviewFields.length) return null;
+              return (
+                <div style={{
+                  marginTop: '24px',
+                  background: '#ffffff',
+                  border: '1px solid #bbf7d0',
+                  borderRadius: '14px',
+                  padding: '20px 24px',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '18px', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>
+                    <span style={{ fontSize: '16px' }}>📝</span>
+                    <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 750, color: '#1e293b' }}>
+                      Review Remarks & Observations
+                    </h3>
+                    <span style={{ fontSize: '11px', background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '12px', fontWeight: 700 }}>
+                      Auditor Review
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {reviewFields.map((field) => {
+                      const key = field.fieldKey || field.idString;
+                      const isRequired = field.isRequired;
+                      const fieldVal = valuesData[key] || '';
+
+                      return (
+                        <div key={field.id || key} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <label style={{ fontSize: '13px', fontWeight: 650, color: '#334155', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span>
+                              {field.label || key}
+                              {isRequired && <span style={{ color: '#ef4444', marginLeft: '4px' }}>*</span>}
+                            </span>
+                            <span style={{ fontSize: '10.5px', color: '#15803d', textTransform: 'uppercase', fontWeight: 700 }}>
+                              {field.fieldType || 'TEXTAREA'}
+                            </span>
+                          </label>
+                          <textarea
+                            disabled={isSectionLockedInCurrentRole}
+                            placeholder={field.placeholder || `Enter ${field.label || 'review remarks'}...`}
+                            value={fieldVal}
+                            onChange={(e) => setValuesData((prev) => ({ ...prev, [key]: e.target.value }))}
+                            rows={4}
+                            style={{
+                              width: '100%',
+                              borderRadius: '8px',
+                              border: '1px solid #cbd5e1',
+                              padding: '10px 12px',
+                              fontSize: '13px',
+                              color: '#0f172a',
+                              background: isSectionLockedInCurrentRole ? '#f8fafc' : '#fff',
+                              outline: 'none',
+                              boxSizing: 'border-box',
+                              resize: 'vertical',
+                              lineHeight: 1.5,
+                            }}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         ) : null}
 
