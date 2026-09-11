@@ -1,7 +1,7 @@
 //renders a section of the audit form, like part A, part B, etc. It can contain fields and tables
 import AuditTable from "./AuditTable";
 import DateInput from "./DateInput";
-import { columnsWithSerial, serialColumnFor } from "./tableHelpers";
+import { columnsWithSerial, serialColumnFor, numberedRowFor, withSerialNumbers, emptyRowFor } from "./tableHelpers";
 import { getAttachmentUrl } from "../../../utils/attachment";
 import { formatDateDDMMYYYY } from "../../../utils/dateFormat";
 import { uploadAttachments } from "../../../api/submissions";
@@ -211,6 +211,7 @@ const getAuditorSignOff = (entry = {}) => {
 export const buildAuditorSectionReview = (draft = {}, history = []) => {
   const status = normalizeStatus(draft.overallStatus || draft.status);
   const reportCategory = normalizeAuditCycleCategory(draft.reportCategory || draft.cycleType);
+  const assignments = Array.isArray(draft.auditorAssignments) ? draft.auditorAssignments : [];
 
   const sortedHistory = [...history].sort((first, second) => Number(second.version || 0) - Number(first.version || 0));
   const previousInternal = sortedHistory.find((entry) =>
@@ -222,7 +223,6 @@ export const buildAuditorSectionReview = (draft = {}, history = []) => {
   );
 
   const currentHasPartE = hasPartEValues(draft.values);
-  const assignments = Array.isArray(draft.auditorAssignments) ? draft.auditorAssignments : [];
 
   if (reportCategory === "internal") {
     const rawInternalAssignments = assignmentsForType(assignments, "internal");
@@ -261,20 +261,26 @@ export const buildAuditorSectionReview = (draft = {}, history = []) => {
       internalAuditor: firstAssignment ? assignmentAuditor(firstAssignment) : (status === "approved" ? getAuditorSignOff(draft) : null),
       externalAuditor: null,
       auditorAssignments: internalAssignments,
+      previousInternalAssignments: internalAssignments,
     };
   }
 
   // External cycle:
+  const currentInternalAssignments = assignmentsForType(assignments, "internal");
   const previousInternalAssignments = Array.isArray(previousInternal?.auditorAssignments)
     ? assignmentsForType(previousInternal.auditorAssignments, "internal")
     : [];
 
+  const internalAssignments = currentInternalAssignments.length > 0
+    ? currentInternalAssignments
+    : previousInternalAssignments;
+
   if (
-    previousInternalAssignments.length === 0 &&
+    internalAssignments.length === 0 &&
     previousInternal &&
     (hasPartEValues(previousInternal.values) || (previousInternal.tables && Object.keys(previousInternal.tables).length > 0) || Boolean(previousInternal.remarks))
   ) {
-    previousInternalAssignments.push({
+    internalAssignments.push({
       auditorName: previousInternal.auditorName || "Internal Auditor",
       auditorEmail: previousInternal.auditorEmail || "",
       auditorType: "internal",
@@ -304,14 +310,14 @@ export const buildAuditorSectionReview = (draft = {}, history = []) => {
     });
   }
 
-  const firstInternal = previousInternalAssignments[0];
+  const firstInternal = internalAssignments[0];
   const firstExternal = externalAssignments[0];
-  const hasAnyData = previousInternalAssignments.length > 0 || externalAssignments.length > 0;
+  const hasAnyData = internalAssignments.length > 0 || externalAssignments.length > 0;
 
   return {
     isApproved: hasAnyData || status === "approved" || status === "auditor-completed",
     reportCategory: "external",
-    internalAssignments: previousInternalAssignments,
+    internalAssignments,
     externalAssignments,
     internalValues: firstInternal ? (firstInternal.values || assignmentPartEValues(firstInternal)) : {},
     internalTables: firstInternal ? (firstInternal.tables || safeJsonParse(firstInternal.tablesData, {})) : {},
@@ -323,31 +329,87 @@ export const buildAuditorSectionReview = (draft = {}, history = []) => {
     previousIqacRemarks: previousInternal?.remarks || "",
     internalAuditor: firstInternal ? assignmentAuditor(firstInternal) : getAuditorSignOff(previousInternal),
     externalAuditor: firstExternal ? assignmentAuditor(firstExternal) : (status === "approved" ? getAuditorSignOff(draft) : null),
-    auditorAssignments: externalAssignments,
-    previousInternalAssignments,
+    auditorAssignments: [...internalAssignments, ...externalAssignments],
+    previousInternalAssignments: internalAssignments,
   };
 };
 
 const getCellValue = (row = {}, column = "", table = {}) => {
   if (!row || typeof row !== "object") return "";
-  if (row[column] !== undefined) return row[column];
+  if (row[column] !== undefined && row[column] !== null && String(row[column]).trim() !== "") return row[column];
 
   const colLower = String(column).toLowerCase().trim();
-  const rowEntries = Object.entries(row);
-  const found = rowEntries.find(([k]) => String(k).toLowerCase().trim() === colLower);
-  if (found && found[1] !== undefined) return found[1];
+  const colSlug = colLower.replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  const colNoSpace = colLower.replace(/[^a-z0-9]+/g, "");
 
-  if (Array.isArray(table?.fields)) {
-    const field = table.fields.find((f) =>
-      String(f.label || "").toLowerCase().trim() === colLower ||
-      String(f.fieldKey || "").toLowerCase().trim() === colLower ||
-      String(f.id || "").toLowerCase().trim() === colLower
-    );
-    if (field) {
-      if (field.fieldKey && row[field.fieldKey] !== undefined) return row[field.fieldKey];
-      if (field.label && row[field.label] !== undefined) return row[field.label];
-      if (field.id && row[field.id] !== undefined) return row[field.id];
+  // 1. Direct case-insensitive or slugified match on row keys
+  const rowEntries = Object.entries(row);
+  for (const [k, v] of rowEntries) {
+    if (v !== undefined && v !== null && (Array.isArray(v) ? v.length > 0 : String(v).trim() !== "")) {
+      const kLower = String(k).toLowerCase().trim();
+      const kSlug = kLower.replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+      const kNoSpace = kLower.replace(/[^a-z0-9]+/g, "");
+      if (kLower === colLower || kSlug === colSlug || kNoSpace === colNoSpace) {
+        return v;
+      }
     }
+  }
+
+  // 2. Check table.fields definitions for label, fieldKey, id
+  if (Array.isArray(table?.fields)) {
+    const field = table.fields.find((f) => {
+      if (!f) return false;
+      const fLabel = String(f.label || "").toLowerCase().trim();
+      const fKey = String(f.fieldKey || f.key || "").toLowerCase().trim();
+      const fId = String(f.id || "").toLowerCase().trim();
+      const fIdString = String(f.idString || "").toLowerCase().trim();
+      return (
+        fLabel === colLower ||
+        fKey === colLower ||
+        fKey === colSlug ||
+        fId === colLower ||
+        fIdString === colLower ||
+        fLabel.replace(/[^a-z0-9]+/g, "") === colNoSpace
+      );
+    });
+    if (field) {
+      const candidateKeys = [field.fieldKey, field.key, field.label, field.idString, field.id];
+      for (const ck of candidateKeys) {
+        if (ck && row[ck] !== undefined && row[ck] !== null && (Array.isArray(row[ck]) ? row[ck].length > 0 : String(row[ck]).trim() !== "")) {
+          return row[ck];
+        }
+      }
+      for (const ck of candidateKeys) {
+        if (!ck) continue;
+        const ckLower = String(ck).toLowerCase().trim();
+        const ckNoSpace = ckLower.replace(/[^a-z0-9]+/g, "");
+        for (const [k, v] of rowEntries) {
+          if (v !== undefined && v !== null && (Array.isArray(v) ? v.length > 0 : String(v).trim() !== "")) {
+            const kLower = String(k).toLowerCase().trim();
+            const kNoSpace = kLower.replace(/[^a-z0-9]+/g, "");
+            if (kLower === ckLower || kNoSpace === ckNoSpace) return v;
+          }
+        }
+      }
+    }
+  }
+
+  // 3. Serial column fallback
+  const isSerial = Boolean(serialColumnFor([column]));
+  if (isSerial) {
+    for (const [k, v] of rowEntries) {
+      const kClean = String(k).toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (["srno", "sno", "sn", "id", "serialno", "serialnumber"].includes(kClean)) {
+        if (v !== undefined && v !== null && String(v).trim() !== "") return v;
+      }
+    }
+  }
+
+  // 4. Default return
+  if (row[column] !== undefined) return row[column];
+  for (const [k, v] of rowEntries) {
+    const kLower = String(k).toLowerCase().trim();
+    if (kLower === colLower) return v;
   }
   return "";
 };
@@ -394,8 +456,8 @@ function renderTableCellValue(rawValue) {
 function ReadOnlyTable({ table, rows = [], values = {} }) {
   const columns = resolveTableColumns(table);
   const visibleRows = (Array.isArray(rows) && rows.length > 0)
-    ? rows
-    : [columns.reduce((row, column) => ({ ...row, [column]: "" }), {})];
+    ? withSerialNumbers(columns, rows)
+    : [numberedRowFor(columns, 0)];
 
   return (
     <div style={styles.readOnlyTableBlock}>
@@ -440,7 +502,7 @@ function ReadOnlyTable({ table, rows = [], values = {} }) {
                         ...(isSerial ? { width: "65px", maxWidth: "70px", textAlign: "center" } : {}),
                       }}
                     >
-                      {renderTableCellValue(getCellValue(row, column, table))}
+                      {renderTableCellValue(isSerial ? (row[column] || row["Sr. no"] || row["Sr.no"] || row["Sr No"] || String(rowIndex + 1)) : getCellValue(row, column, table))}
                     </td>
                   );
                 })}
@@ -679,7 +741,10 @@ const isReviewRemarkField = (f) => {
 
 function AuditorCard({ assignment, index, fieldDefinitions, tableDefinitions, fallbackAuditorType, allFormDataTables = {} }) {
   const values = safeObjectValue(assignment.values || assignmentPartEValues(assignment));
-  const assignmentTables = safeObjectValue(assignment.tables || safeJsonParse(assignment.tablesData, {}));
+  const assignmentTables = safeObjectValue(
+    assignment.tables ||
+    (assignment.tablesData ? safeJsonParse(assignment.tablesData, {}) : (assignment.reviewTablesData ? safeJsonParse(assignment.reviewTablesData, {}) : assignment.reviewTables))
+  );
   const remarks = assignment.remarks || assignment.auditObservations || values.remarks || values.auditObservations || "";
   const displayPost = assignment.school || assignment.post || "-";
   const visibleFields = (fieldDefinitions || []).filter((f) => f.kind !== "heading");
@@ -726,9 +791,10 @@ function AuditorCard({ assignment, index, fieldDefinitions, tableDefinitions, fa
         <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 14, width: "100%" }}>
           {tableDefinitions.map((table) => {
             const tableKey = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
-            const rows = (assignmentTables && (assignmentTables[table.id] || assignmentTables[tableKey])) ||
-              (allFormDataTables && (allFormDataTables[table.id] || allFormDataTables[tableKey])) ||
+            const rows =
+              (assignmentTables && (assignmentTables[table.id] || assignmentTables[tableKey])) ||
               getTableRows(assignmentTables, table) ||
+              (allFormDataTables && (allFormDataTables[table.id] || allFormDataTables[tableKey])) ||
               getTableRows(allFormDataTables, table) ||
               [];
             return (
@@ -782,9 +848,11 @@ export function AuditorSectionReviewPanel({ section, review, tables = {}, values
     return true;
   });
 
-  const internalAssignments = Array.isArray(review?.internalAssignments)
+  const internalAssignments = Array.isArray(review?.internalAssignments) && review.internalAssignments.length > 0
     ? review.internalAssignments
-    : (review?.auditorAssignments || []).filter((a) => normalizeCategory(a.auditorType || a.type || "").includes("internal"));
+    : Array.isArray(review?.previousInternalAssignments) && review.previousInternalAssignments.length > 0
+      ? review.previousInternalAssignments
+      : (review?.auditorAssignments || []).filter((a) => normalizeCategory(a.auditorType || a.type || "").includes("internal"));
 
   if (
     internalAssignments.length === 0 &&
@@ -803,7 +871,7 @@ export function AuditorSectionReviewPanel({ section, review, tables = {}, values
     });
   }
 
-  const externalAssignments = Array.isArray(review?.externalAssignments)
+  const externalAssignments = Array.isArray(review?.externalAssignments) && review.externalAssignments.length > 0
     ? review.externalAssignments
     : (review?.auditorAssignments || []).filter((a) => normalizeCategory(a.auditorType || a.type || "").includes("external"));
 

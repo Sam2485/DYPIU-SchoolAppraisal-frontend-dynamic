@@ -202,9 +202,9 @@ const buildAcademicPartEReview = (draft = {}, history = []) => {
   );
 
   const currentHasPartE = hasAcademicPartEValues(draft.values);
+  const assignments = Array.isArray(draft.auditorAssignments) ? draft.auditorAssignments : [];
 
   if (reportCategory === "internal") {
-    const assignments = Array.isArray(draft.auditorAssignments) ? draft.auditorAssignments : [];
     const internalAssignments = assignmentsForType(assignments, "internal");
     const internalAssignment = latestSubmittedAssignment(internalAssignments);
     const hasInternalAssignment = Boolean(internalAssignment);
@@ -234,6 +234,8 @@ const buildAcademicPartEReview = (draft = {}, history = []) => {
     return {
       isApproved: hasAnyInternalData || status === "approved" || status === "auditor-completed",
       reportCategory: "internal",
+      internalAssignments,
+      externalAssignments: [],
       internalValues,
       internalTables,
       internalRemarks,
@@ -245,13 +247,21 @@ const buildAcademicPartEReview = (draft = {}, history = []) => {
       internalAuditor: internalAssignment ? assignmentAuditor(internalAssignment) : (status === "approved" ? getAuditorSignOff(draft) : null),
       externalAuditor: null,
       auditorAssignments: internalAssignments,
+      previousInternalAssignments: internalAssignments,
     };
   }
 
   // External cycle:
-  const previousInternalAssignments = Array.isArray(previousInternal?.auditorAssignments) ? previousInternal.auditorAssignments : [];
-  const submittedPreviousInternalAssignments = assignmentsForType(previousInternalAssignments, "internal");
-  const previousInternalAssignment = latestSubmittedAssignment(submittedPreviousInternalAssignments);
+  const currentInternalAssignments = assignmentsForType(assignments, "internal");
+  const previousInternalAssignments = Array.isArray(previousInternal?.auditorAssignments)
+    ? assignmentsForType(previousInternal.auditorAssignments, "internal")
+    : [];
+
+  const internalAssignments = currentInternalAssignments.length > 0
+    ? currentInternalAssignments
+    : previousInternalAssignments;
+
+  const previousInternalAssignment = latestSubmittedAssignment(internalAssignments);
 
   const internalValues =
     previousInternalAssignment ? normalizedAssignmentValues(previousInternalAssignment) :
@@ -272,7 +282,6 @@ const buildAcademicPartEReview = (draft = {}, history = []) => {
   const internalAuditor = previousInternalAssignment ? assignmentAuditor(previousInternalAssignment) : getAuditorSignOff(previousInternal);
   const previousIqacRemarks = previousInternal?.remarks || "";
 
-  const assignments = Array.isArray(draft.auditorAssignments) ? draft.auditorAssignments : [];
   const externalAssignments = assignmentsForType(assignments, "external");
   const externalAssignment = latestSubmittedAssignment(externalAssignments);
   const hasExternalAssignment = Boolean(externalAssignment);
@@ -304,11 +313,15 @@ const buildAcademicPartEReview = (draft = {}, history = []) => {
     Object.keys(internalTables || {}).length > 0 ||
     hasAnyExternalData ||
     Boolean(internalRemarks) ||
-    Boolean(externalRemarks);
+    Boolean(externalRemarks) ||
+    internalAssignments.length > 0 ||
+    externalAssignments.length > 0;
 
   return {
     isApproved: hasAnyData || status === "approved" || status === "auditor-completed",
     reportCategory: "external",
+    internalAssignments,
+    externalAssignments,
     internalValues,
     internalTables,
     internalRemarks,
@@ -319,8 +332,8 @@ const buildAcademicPartEReview = (draft = {}, history = []) => {
     previousIqacRemarks,
     internalAuditor,
     externalAuditor: externalAssignment ? assignmentAuditor(externalAssignment) : (status === "approved" ? getAuditorSignOff(draft) : null),
-    auditorAssignments: externalAssignments,
-    previousInternalAssignments: submittedPreviousInternalAssignments,
+    auditorAssignments: [...internalAssignments, ...externalAssignments],
+    previousInternalAssignments: internalAssignments,
   };
 };
 
