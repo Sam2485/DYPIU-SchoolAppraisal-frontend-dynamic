@@ -5863,188 +5863,159 @@ function SubmittedFormViewer({
               </div>
             )
           ) : (
-            blocksFor(activeSection).map((block, blockIndex) => {
-              if (block.type === "fields") {
-                const currentFields = (
-                <div key={`${activeSection.id}-fields-${blockIndex}`} style={{ width: "100%" }}>
-                  {block.isReviewBlock && (
-                    <div style={{ marginTop: 20, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 16 }}>📝</span>
-                      <h4 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#0f172a" }}>
-                        Review Remarks & Observations
-                      </h4>
-                    </div>
-                  )}
-                  {editableSection ? (
-                    <EditableFieldGrid
-                      fields={block.fields}
-                      values={formData.values}
-                      onFieldChange={onFieldChange}
-                      onFileUpload={onFileUpload}
-                      onFileDelete={onFileDelete}
-                    />
-                  ) : (
-                    <ReadOnlyFieldGrid
-                      fields={block.fields}
-                      values={formData.values}
-                    />
-                  )}
-                </div>
-              );
-
-              if (block.isReviewBlock) {
-                return currentFields;
-              }
-
-              const currentFieldsWithReferences = (
-                <div style={styles.partEComparison}>
-                  {showSubmittedPeerAuditorReviews && (
-                    <div style={styles.partEReferenceBlock}>
-                      <h4 style={styles.partEReferenceTitle}>Submitted External Auditor Reviews</h4>
-                      <AuditorAssignmentReviewGrid
-                        fields={block.fields}
-                        assignments={submittedPeerAuditorAssignments}
-                        fallbackAuditorType="external"
-                        tables={sectionTables}
-                        allFormDataTables={formData.tables}
-                      />
-                    </div>
-                  )}
-                  {currentFields}
-                </div>
-              );
-
-              if (showPreviousInternalPartE) {
-                return (
-                  <div key={`${activeSection.id}-part-e-comparison-${blockIndex}`} style={styles.partEComparison}>
-                    <div style={styles.partEReferenceBlock}>
+            <>
+              {activeSectionIsAuditorOwned && editableSection && (
+                <>
+                  {isExternalCycle && internalAssignments.length > 0 && (
+                    <div style={{ marginBottom: 20, width: "100%" }}>
                       <div style={styles.partEReferenceHeader}>
-                        <h4 style={styles.partEReferenceTitle}>Internal Auditor Part E - V1</h4>
+                        <h4 style={styles.partEReferenceTitle}>Internal Auditor Review(s)</h4>
                         {previousInternalPartEMeta && <span style={styles.partEReferenceMeta}>{previousInternalPartEMeta}</span>}
                       </div>
                       <AuditorAssignmentReviewGrid
-                        fields={block.fields}
+                        fields={sectionAllFields}
                         assignments={internalAssignments}
                         fallbackAuditorType="internal"
                         tables={sectionTables}
                         allFormDataTables={previousInternalPartETables || formData.tables}
                       />
                       {previousInternalIqacRemarks && (
-                        <div>
+                        <div style={{ marginTop: 12 }}>
                           <h4 style={styles.partEReferenceTitle}>IQAC Internal Audit Review Remarks</h4>
                           <p style={styles.reviewText}>{previousInternalIqacRemarks}</p>
                         </div>
                       )}
                     </div>
-                    <div style={styles.partECurrentBlock}>
-                      <h4 style={styles.partEReferenceTitle}>External Auditor Part E - Current External Audit</h4>
-                      {currentFieldsWithReferences}
-                    </div>
-                  </div>
-                );
-              }
+                  )}
 
-              if (showPreviousInternalPartF) {
-                return (
-                  <div key={`${activeSection.id}-part-f-comparison-${blockIndex}`} style={styles.partEComparison}>
-                    <div style={styles.partEReferenceBlock}>
-                      <h4 style={styles.partEReferenceTitle}>Internal Auditor Observations & Recommendations</h4>
+                  {showSubmittedPeerAuditorReviews && (
+                    <div style={{ marginBottom: 20, width: "100%" }}>
+                      <div style={styles.partEReferenceHeader}>
+                        <h4 style={styles.partEReferenceTitle}>
+                          Submitted {isExternalCycle ? "External" : "Internal"} Auditor Review(s)
+                        </h4>
+                      </div>
                       <AuditorAssignmentReviewGrid
-                        fields={block.fields}
-                        assignments={internalAssignments}
-                        fallbackAuditorType="internal"
+                        fields={sectionAllFields}
+                        assignments={submittedPeerAuditorAssignments}
+                        fallbackAuditorType={isExternalCycle ? "external" : "internal"}
                         tables={sectionTables}
                         allFormDataTables={formData.tables}
                       />
                     </div>
-                    <div style={styles.partECurrentBlock}>
-                      <h4 style={styles.partEReferenceTitle}>External Auditor Observations & Recommendations</h4>
-                      {currentFields}
-                    </div>
-                  </div>
-                );
-              }
+                  )}
+                </>
+              )}
 
-              return showSubmittedPeerAuditorReviews ? currentFieldsWithReferences : currentFields;
-            }
-
-            if (block.type === "text") {
-              return (
-                <p key={`${activeSection.id}-text-${blockIndex}`} style={styles.reviewText}>
-                  {block.text}
-                </p>
-              );
-            }
-
-            if (block.type === "attachment-field") {
-              return (
-                <ReadOnlyFieldGrid
-                  key={`${activeSection.id}-attachment-${block.id}`}
-                  fields={[{ id: block.id, label: block.label }]}
-                  values={formData.values}
-                />
-              );
-            }
-
-            if (block.type === "part-e-schools") {
-              return (
-                <AdministrativePartE
-                  key={`${activeSection.id}-part-e-${blockIndex}`}
-                  value={formData.values[block.fieldId]}
-                  coursesOffered={formData.tables.coursesOffered || []}
-                  readOnly
-                />
-              );
-            }
-
-            if (!Array.isArray(block.tables)) {
-              return null;
-            }
-
-            if (editableSection) {
-              return (
-                <div key={`${activeSection.id}-tables-${blockIndex}`} style={styles.reviewTables}>
-                  {block.tables.map((table) => {
-                    const tableKey = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
-                    const rows = getTableRows(formData.tables, table);
-
-                    return (
-                      <div key={table.id || tableKey || table.tableKey || table.idString} style={{ marginBottom: 24, width: "100%" }}>
-                        <AuditTable
-                          table={table}
-                          rows={rows}
+              {blocksFor(activeSection).map((block, blockIndex) => {
+                if (block.type === "fields") {
+                  return (
+                    <div key={`${activeSection.id}-fields-${blockIndex}`} style={{ width: "100%" }}>
+                      {block.isReviewBlock && (
+                        <div style={{ marginTop: 20, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 16 }}>📝</span>
+                          <h4 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#0f172a" }}>
+                            Review Remarks & Observations
+                          </h4>
+                        </div>
+                      )}
+                      {editableSection ? (
+                        <EditableFieldGrid
+                          fields={block.fields}
                           values={formData.values}
                           onFieldChange={onFieldChange}
-                          onChange={(rowIndex, column, value) => onTableChange?.(tableKey || table.id, rowIndex, column, value)}
-                          onAddRow={onAddRow}
-                          onDeleteLastRow={onDeleteLastRow}
-                          onUploadAttachment={onUploadAttachment}
-                          onDeleteAttachment={onDeleteAttachment}
-                          readOnly={false}
+                          onFileUpload={onFileUpload}
+                          onFileDelete={onFileDelete}
                         />
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            }
+                      ) : (
+                        <ReadOnlyFieldGrid
+                          fields={block.fields}
+                          values={formData.values}
+                        />
+                      )}
+                    </div>
+                  );
+                }
 
-            return (
-              <div key={`${activeSection.id}-tables-${blockIndex}`} style={styles.reviewTables}>
-                {block.tables.map((table) => {
-                  const rows = getTableRows(formData.tables, table);
+                if (block.type === "text") {
                   return (
-                    <ReadOnlyTable
-                      key={table.id || table.tableKey || table.idString}
-                      table={table}
-                      rows={rows}
+                    <p key={`${activeSection.id}-text-${blockIndex}`} style={styles.reviewText}>
+                      {block.text}
+                    </p>
+                  );
+                }
+
+                if (block.type === "attachment-field") {
+                  return (
+                    <ReadOnlyFieldGrid
+                      key={`${activeSection.id}-attachment-${block.id}`}
+                      fields={[{ id: block.id, label: block.label }]}
                       values={formData.values}
                     />
                   );
-                })}
-              </div>
-            );
-          }))}
+                }
+
+                if (block.type === "part-e-schools") {
+                  return (
+                    <AdministrativePartE
+                      key={`${activeSection.id}-part-e-${blockIndex}`}
+                      value={formData.values[block.fieldId]}
+                      coursesOffered={formData.tables.coursesOffered || []}
+                      readOnly
+                    />
+                  );
+                }
+
+                if (!Array.isArray(block.tables)) {
+                  return null;
+                }
+
+                if (editableSection) {
+                  return (
+                    <div key={`${activeSection.id}-tables-${blockIndex}`} style={styles.reviewTables}>
+                      {block.tables.map((table) => {
+                        const tableKey = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
+                        const rows = getTableRows(formData.tables, table);
+
+                        return (
+                          <div key={table.id || tableKey || table.tableKey || table.idString} style={{ marginBottom: 24, width: "100%" }}>
+                            <AuditTable
+                              table={table}
+                              rows={rows}
+                              values={formData.values}
+                              onFieldChange={onFieldChange}
+                              onChange={(rowIndex, column, value) => onTableChange?.(tableKey || table.id, rowIndex, column, value)}
+                              onAddRow={onAddRow}
+                              onDeleteLastRow={onDeleteLastRow}
+                              onUploadAttachment={onUploadAttachment}
+                              onDeleteAttachment={onDeleteAttachment}
+                              readOnly={false}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={`${activeSection.id}-tables-${blockIndex}`} style={styles.reviewTables}>
+                    {block.tables.map((table) => {
+                      const rows = getTableRows(formData.tables, table);
+                      return (
+                        <ReadOnlyTable
+                          key={table.id || table.tableKey || table.idString}
+                          table={table}
+                          rows={rows}
+                          values={formData.values}
+                        />
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </>
+          )}
         </section>
       )}
     </div>
@@ -6346,16 +6317,25 @@ function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType,
               <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 14, width: "100%" }}>
                 {uniqueTables.map((table) => {
                   const tableKey = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
-                  const rows = (assignmentTables && (assignmentTables[table.id] || assignmentTables[tableKey])) ||
-                    (allFormDataTables && (allFormDataTables[table.id] || allFormDataTables[tableKey])) ||
-                    getTableRows(assignmentTables, table) ||
-                    getTableRows(allFormDataTables, table) ||
-                    [];
+                  let rows = getTableRows(assignmentTables, table);
+                  if (!rows || rows.length === 0) {
+                    if (assignmentTables && (assignmentTables[table.id] || assignmentTables[tableKey])) {
+                      rows = assignmentTables[table.id] || assignmentTables[tableKey];
+                    }
+                  }
+                  if (!rows || rows.length === 0) {
+                    rows = getTableRows(allFormDataTables, table);
+                  }
+                  if (!rows || rows.length === 0) {
+                    if (allFormDataTables && (allFormDataTables[table.id] || allFormDataTables[tableKey])) {
+                      rows = allFormDataTables[table.id] || allFormDataTables[tableKey];
+                    }
+                  }
                   return (
                     <ReadOnlyTable
                       key={table.id || tableKey || table.tableKey || table.idString}
                       table={table}
-                      rows={rows}
+                      rows={rows || []}
                       values={values}
                     />
                   );
