@@ -147,6 +147,17 @@ const normalizedAssignmentValues = (assignment = {}) => {
   };
 };
 
+const normalizedAssignmentTables = (assignment = {}, fallbackTables = {}) => {
+  if (assignment.tables && typeof assignment.tables === "object" && Object.keys(assignment.tables).length > 0) {
+    return assignment.tables;
+  }
+  const parsed = safeJsonParse(assignment.tablesData || assignment.tables, {});
+  if (parsed && typeof parsed === "object" && Object.keys(parsed).length > 0) {
+    return parsed;
+  }
+  return fallbackTables || {};
+};
+
 const assignmentAuditor = (assignment = {}) => ({
   name: assignment.auditorName || assignment.name || "",
   designation: assignment.auditorDesignation || assignment.designation || "",
@@ -162,9 +173,15 @@ const assignmentsForType = (assignments = [], auditorType = "") =>
       assignment.status === "submitted" ||
       assignment.reviewStatus === "submitted" ||
       hasAcademicPartEValues(normalizedAssignmentValues(assignment)) ||
+      Object.keys(normalizedAssignmentTables(assignment)).length > 0 ||
       Boolean(assignment.submittedAt || assignment.auditorReviewedOn)
     )
-  );
+  ).map((assignment) => ({
+    ...assignment,
+    values: normalizedAssignmentValues(assignment),
+    tables: normalizedAssignmentTables(assignment),
+    remarks: assignment.remarks || assignment.auditObservations || normalizedAssignmentValues(assignment).remarks || "",
+  }));
 const latestSubmittedAssignment = (assignments = []) =>
   [...assignments].sort((first, second) =>
     new Date(second.submittedAt || second.auditorReviewedOn || 0) -

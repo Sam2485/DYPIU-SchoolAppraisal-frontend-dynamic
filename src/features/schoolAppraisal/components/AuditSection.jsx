@@ -648,12 +648,47 @@ function ReadOnlyPartEValue({ value }) {
   return text ? <span style={styles.readOnlyText}>{text}</span> : <span style={styles.emptyText}>-</span>;
 }
 
-function AuditorCard({ assignment, index, fieldDefinitions, tableDefinitions, fallbackAuditorType }) {
+const isReviewRemarkField = (f) => {
+  if (!f) return false;
+  if (f.kind === "review") return true;
+  const key = String(f.fieldKey || f.idString || f.id || "").toLowerCase();
+  const label = String(f.label || "").toLowerCase();
+  if (
+    key === "reviewremarks" ||
+    key === "review_remarks" ||
+    key === "remarks" ||
+    key === "auditobservations" ||
+    key.includes("reviewremark") ||
+    key.includes("review_remark")
+  ) {
+    return true;
+  }
+  if (
+    label.includes("review remark") ||
+    label.includes("review remarks") ||
+    label.includes("review observation") ||
+    label.includes("review observations") ||
+    label.includes("remarks / observations") ||
+    label.includes("remarks/observations") ||
+    label.includes("observations of the audit")
+  ) {
+    return true;
+  }
+  return false;
+};
+
+function AuditorCard({ assignment, index, fieldDefinitions, tableDefinitions, fallbackAuditorType, allFormDataTables = {} }) {
   const values = safeObjectValue(assignment.values || assignmentPartEValues(assignment));
   const assignmentTables = safeObjectValue(assignment.tables || safeJsonParse(assignment.tablesData, {}));
   const remarks = assignment.remarks || assignment.auditObservations || values.remarks || values.auditObservations || "";
   const displayPost = assignment.school || assignment.post || "-";
   const visibleFields = (fieldDefinitions || []).filter((f) => f.kind !== "heading");
+  const headerFields = visibleFields.filter((f) => !isReviewRemarkField(f));
+  const reviewRemarkFields = visibleFields.filter((f) => isReviewRemarkField(f));
+  const reviewRemarkField = reviewRemarkFields[0];
+  const finalRemarks =
+    (reviewRemarkField ? resolveFieldValue(reviewRemarkField, values) : "") ||
+    remarks;
 
   return (
     <section key={assignment.key || index} style={styles.auditorReviewCard}>
@@ -674,31 +709,27 @@ function AuditorCard({ assignment, index, fieldDefinitions, tableDefinitions, fa
         </div>
       </div>
 
-      <div className="review-auditor-review-fields" style={styles.auditorReviewFieldGrid}>
-        {visibleFields.map((field) => (
-          <div key={field.id} style={field.type === "file" ? styles.auditorReviewDocsField : styles.auditorReviewField}>
-            <div style={styles.readOnlyLabel}>{field.label}</div>
-            <div style={field.type === "file" ? styles.auditorReviewDocsValue : styles.auditorReviewValue}>
-              <ReadOnlyPartEValue value={resolveFieldValue(field, values)} />
+      {headerFields.length > 0 && (
+        <div className="review-auditor-review-fields" style={styles.auditorReviewFieldGrid}>
+          {headerFields.map((field) => (
+            <div key={field.id} style={field.type === "file" ? styles.auditorReviewDocsField : styles.auditorReviewField}>
+              <div style={styles.readOnlyLabel}>{field.label}</div>
+              <div style={field.type === "file" ? styles.auditorReviewDocsValue : styles.auditorReviewValue}>
+                <ReadOnlyPartEValue value={resolveFieldValue(field, values)} />
+              </div>
             </div>
-          </div>
-        ))}
-        {remarks && !visibleFields.some((f) => f.id === "remarks" || f.id === "auditObservations") && (
-          <div style={styles.auditorReviewDocsField}>
-            <div style={styles.readOnlyLabel}>Review Remarks / Observations</div>
-            <div style={styles.auditorReviewValue}>
-              <ReadOnlyPartEValue value={remarks} />
-            </div>
-          </div>
-        )}
-      </div>
+          ))}
+        </div>
+      )}
 
       {Array.isArray(tableDefinitions) && tableDefinitions.length > 0 && (
         <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 14, width: "100%" }}>
           {tableDefinitions.map((table) => {
             const tableKey = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
             const rows = (assignmentTables && (assignmentTables[table.id] || assignmentTables[tableKey])) ||
+              (allFormDataTables && (allFormDataTables[table.id] || allFormDataTables[tableKey])) ||
               getTableRows(assignmentTables, table) ||
+              getTableRows(allFormDataTables, table) ||
               [];
             return (
               <ReadOnlyTable
@@ -709,6 +740,19 @@ function AuditorCard({ assignment, index, fieldDefinitions, tableDefinitions, fa
               />
             );
           })}
+        </div>
+      )}
+
+      {Boolean(finalRemarks && String(finalRemarks).trim()) && (
+        <div style={{ marginTop: 14, width: "100%" }}>
+          <div style={styles.auditorReviewDocsField}>
+            <div style={styles.readOnlyLabel}>
+              {reviewRemarkField?.label || "Review Remarks / Observations"}
+            </div>
+            <div style={styles.auditorReviewValue}>
+              <ReadOnlyPartEValue value={finalRemarks} />
+            </div>
+          </div>
         </div>
       )}
     </section>
@@ -812,6 +856,7 @@ export function AuditorSectionReviewPanel({ section, review, tables = {}, values
               fieldDefinitions={fieldDefinitions}
               tableDefinitions={tableDefinitions}
               fallbackAuditorType="internal"
+              allFormDataTables={tables}
             />
           ))}
         </div>
@@ -836,6 +881,7 @@ export function AuditorSectionReviewPanel({ section, review, tables = {}, values
               fieldDefinitions={fieldDefinitions}
               tableDefinitions={tableDefinitions}
               fallbackAuditorType="external"
+              allFormDataTables={tables}
             />
           ))}
         </div>
