@@ -1369,7 +1369,7 @@ const auditorAssignmentMatchesProfile = (assignment = {}, submission = {}, profi
   const email = normalizeAuditAssignment(profile.email || sessionStorage.getItem("email") || sessionStorage.getItem("username") || "");
   const assignmentAuditorId = String(assignment.auditorId || "");
   const idMatches = Boolean(userId && assignmentAuditorId && assignmentAuditorId === userId);
-  const emailMatches = Boolean(email && normalizeAuditAssignment(assignment.auditorEmail) === email);
+  const emailMatches = Boolean(email && normalizeAuditAssignment(assignment.auditorEmail || "") === email);
   if (idMatches || emailMatches) return true;
   if ((submission.auditorAssignments || []).length) return false;
 
