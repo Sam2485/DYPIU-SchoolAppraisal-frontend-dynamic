@@ -64,16 +64,19 @@ const ADMIN_STATUS_ROLES = [
   { key: "hr", label: "HR", post: "hr" },
   { key: "deanStudentWelfare", label: "Dean Student Welfare", post: "dean-student-welfare" },
   { key: "deanPlacement", label: "Dean Placement", post: "dean-placement" },
-  { key: "dp", label: "Dean Placement", post: "dp" },
 ];
 
 const statusRoleForPost = (post) => {
   const norm = normalizePost(post);
-  return ADMIN_STATUS_ROLES.find((role) => role.post === post || role.post === norm) || {
-    key: norm,
-    label: titleCase(post),
-    post: norm,
-  };
+  return (
+    ADMIN_STATUS_ROLES.find(
+      (role) => role.post === post || role.post === norm || role.key === post || role.key === norm
+    ) || {
+      key: norm,
+      label: titleCase(post),
+      post: norm,
+    }
+  );
 };
 const titleCase = (value = "") => String(value).replaceAll("-", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 const compactAcademicYear = (value = "") => String(value || "")
@@ -434,12 +437,41 @@ export default function AdministrativeAuditDashboard() {
   const backendBlocksContributionEdit =
     workflow.canEditContribution === false ||
     isLockedContributionStatus(workflow.contributionStatus);
-  const contributionLocked = !backendAllowsContributionEdit && (isSubmitted || contributionApproved);
+  const contributionLocked = contributionApproved || (!backendAllowsContributionEdit && isSubmitted);
   const readOnly = isHistoricalYear || !canEditActiveModule || backendBlocksContributionEdit || contributionLocked;
   const isFinalOwnedModule = canEditActiveModule && activeModule.id === finalOwnedModule?.id;
   const canWorkOnOwnedModule = canEditActiveModule && !backendBlocksContributionEdit && !contributionLocked;
   const canSubmitPart = isSubmissionConfirmed(submissionConfirmation);
   const currentStatusRole = statusRoleForPost(userPost);
+
+  const statusRoles = useMemo(() => {
+    const schemaRoles = [];
+    const seen = new Set();
+    dynamicModules.forEach((mod) => {
+      if (mod.id !== "submission-status" && !mod.isAuditorSection && mod.owner && mod.owner !== "system") {
+        const norm = normalizePost(mod.owner);
+        if (!seen.has(norm)) {
+          seen.add(norm);
+          const predefined = ADMIN_STATUS_ROLES.find((r) => r.post === norm || r.key === norm);
+          schemaRoles.push(
+            predefined || {
+              key: norm,
+              label: titleCase(mod.owner),
+              post: norm,
+            }
+          );
+        }
+      }
+    });
+    return schemaRoles.length > 0 ? schemaRoles : ADMIN_STATUS_ROLES;
+  }, [dynamicModules]);
+
+  useEffect(() => {
+    if (!dynamicModules.some((m) => m.id === activeModuleId)) {
+      const owned = dynamicModules.find((module) => !module.isAuditorSection && moduleOwnerPost(module) === userPost);
+      setActiveModuleId(owned?.id || dynamicModules[0]?.id);
+    }
+  }, [dynamicModules, activeModuleId, userPost]);
 
   const handleModuleChange = (moduleId) => {
     setReportMode(false);
@@ -463,15 +495,30 @@ export default function AdministrativeAuditDashboard() {
         const initial = buildInitialData(dynamicModules);
         const { data: draftResponse } = await fetchMyDraft("administrative", academicYear);
         const draft = normalizeDraft(draftResponse, initial.fields, initial.tables);
-        const activeDraft = draftBelongsToAcademicYear(draft, academicYear)
+
+        const currentUniversityId = sessionStorage.getItem("universityId") || localStorage.getItem("universityId");
+        const currentUniversityCode = sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode");
+
+        const rawPayload = draftResponse?.data?.data || draftResponse?.data || draftResponse || {};
+        const draftUniId = draft.universityId ?? rawPayload.universityId;
+        const draftUniCode = draft.universityCode ?? rawPayload.universityCode;
+
+        const isCrossTenantDraft = Boolean(
+          (currentUniversityId && draftUniId && String(draftUniId) !== String(currentUniversityId)) ||
+          (currentUniversityCode && draftUniCode && String(draftUniCode).toLowerCase() !== String(currentUniversityCode).toLowerCase())
+        );
+
+        const activeDraft = (!isCrossTenantDraft && draftBelongsToAcademicYear(draft, academicYear))
           ? draft
           : normalizeDraft({}, initial.fields, initial.tables);
 
-        let historyEntries = responseList(activeDraft.versionHistory).map((entry, index) =>
-          normalizeHistoryDraft(entry, initial.fields, initial.tables)
-        );
+        let historyEntries = !isCrossTenantDraft
+          ? responseList(activeDraft.versionHistory).map((entry, index) =>
+              normalizeHistoryDraft(entry, initial.fields, initial.tables)
+            )
+          : [];
 
-        if (activeDraft.id) {
+        if (!isCrossTenantDraft && activeDraft.id) {
           try {
             const { data: snapshotsData } = await fetchSubmissionSnapshots(activeDraft.id);
             historyEntries = [
@@ -485,7 +532,7 @@ export default function AdministrativeAuditDashboard() {
           }
         }
 
-        const review = buildAuditorSectionReview(activeDraft, historyEntries);
+        const review = !isCrossTenantDraft ? buildAuditorSectionReview(activeDraft, historyEntries) : null;
 
         if (!isActive) return;
         setData({
@@ -494,18 +541,29 @@ export default function AdministrativeAuditDashboard() {
           attachments: activeDraft.attachments,
           lastSavedAt: new Date().toISOString(),
         });
-        setHasExistingSubmission(activeDraft.exists);
-        setIsSubmitted(activeDraft.isSubmitted);
-        setWorkflow(workflowFromDraft(activeDraft));
-        setAdministrativeProgress(activeDraft.administrativeProgress || {});
-        setActiveDraftData(activeDraft);
+        setHasExistingSubmission(!isCrossTenantDraft && Boolean(activeDraft.exists && activeDraft.id));
+        setIsSubmitted(!isCrossTenantDraft && activeDraft.isSubmitted);
+        setWorkflow(workflowFromDraft(!isCrossTenantDraft ? activeDraft : {}));
+        setAdministrativeProgress(!isCrossTenantDraft ? (activeDraft.administrativeProgress || {}) : {});
+        setActiveDraftData(!isCrossTenantDraft ? activeDraft : null);
         setAuditorSectionReview(review);
-        const contributionStatus = String(
+        const storedAdminStatus = storedAdministrativeStatusFor(activeDraft.values);
+        const myStoredInfo = storedAdminStatus?.[currentStatusRole?.key] || storedAdminStatus?.[userPost];
+        const currentDraftVersion = Number(activeDraft.version || 1);
+        const isCurrentVersion = !myStoredInfo?.version || Number(myStoredInfo.version) === currentDraftVersion;
+        const isStoredSubmitted = Boolean(myStoredInfo?.submitted && isCurrentVersion);
+
+        const progressStatus = String(
           activeDraft.administrativeProgress?.[currentStatusRole?.key] ||
           activeDraft.administrativeProgress?.[userPost] ||
           "",
         ).toLowerCase();
-        setContributionApproved(["approved", "submitted"].includes(contributionStatus));
+
+        const isProgressSubmitted = ["approved", "submitted"].includes(progressStatus) &&
+          !(currentDraftVersion > 1 && !isStoredSubmitted && (activeDraft.status === "DRAFT" || activeDraft.overallStatus === "DRAFT"));
+
+        const isPostSubmitted = !isCrossTenantDraft && (isStoredSubmitted || isProgressSubmitted);
+        setContributionApproved(isPostSubmitted);
       } catch (error) {
         if (isActive) setStatus(getApiErrorMessage(error, "Could not load your draft from the server."));
       } finally {
@@ -725,6 +783,8 @@ export default function AdministrativeAuditDashboard() {
 
   const storeAdministrativeSubmissionStatus = async ({ roleKey, submittedAt, confirmation, isUpdate = hasExistingSubmission }) => {
     const profile = getUserProfile();
+    const currentVersion = Number(activeDraftData?.version || workflow.version || 1);
+    const currentCategory = activeDraftData?.reportCategory || workflow.reportCategory || "internal";
     const nextFields = {
       ...data.fields,
       [ADMIN_SUBMISSION_STATUS_FIELD]: {
@@ -737,6 +797,8 @@ export default function AdministrativeAuditDashboard() {
           email: profile.email,
           designation: profile.designation,
           confirmation,
+          version: currentVersion,
+          cycle: currentCategory,
         },
       },
     };
@@ -753,11 +815,11 @@ export default function AdministrativeAuditDashboard() {
   const handleSubmitMyPart = async () => {
     if (readOnly) return;
     if (!canSubmitPart) {
-      setSubmitStatus("Please confirm both declarations before submitting your part.");
+      setSubmitStatus({ type: "error", message: "Please confirm both declarations before submitting your part." });
       return;
     }
     if (!currentStatusRole) {
-      setSubmitStatus("Could not identify your administrative role for submission.");
+      setSubmitStatus({ type: "error", message: "Could not identify your administrative role for submission." });
       return;
     }
     if (!window.confirm("Are you sure you want to submit your part of the Administrative Audit? This will lock your section from further edits.")) {
@@ -765,7 +827,7 @@ export default function AdministrativeAuditDashboard() {
     }
 
     setSubmitting(true);
-    setSubmitStatus("");
+    setSubmitStatus(null);
 
     try {
       const submittedAt = new Date().toISOString();
@@ -783,7 +845,10 @@ export default function AdministrativeAuditDashboard() {
       setContributionApproved(true);
       setIsSubmitted(updatedDraft.isSubmitted);
       setWorkflow(workflowFromDraft(updatedDraft));
-      setAdministrativeProgress(updatedDraft.administrativeProgress || {});
+      setAdministrativeProgress(updatedDraft.administrativeProgress || {
+        ...administrativeProgress,
+        [currentStatusRole.key]: "submitted",
+      });
       setData((current) => ({
         ...current,
         fields: {
@@ -796,9 +861,12 @@ export default function AdministrativeAuditDashboard() {
         lastSavedAt: new Date().toISOString(),
       }));
       setSubmissionConfirmation(emptySubmissionConfirmation);
-      setSubmitStatus("Your section has been submitted successfully.");
+      setSubmitStatus({ type: "success", message: "Your section has been submitted successfully." });
     } catch (error) {
-      setSubmitStatus(getApiErrorMessage(error, "Could not submit your Administrative Audit section."));
+      setSubmitStatus({
+        type: "error",
+        message: getApiErrorMessage(error, "Could not submit your Administrative Audit section."),
+      });
     } finally {
       setSubmitting(false);
     }
@@ -984,6 +1052,9 @@ export default function AdministrativeAuditDashboard() {
                 cycleId={workflow.cycleId || academicYear}
                 storedSubmissionStatus={storedAdministrativeStatusFor(data.fields)}
                 administrativeProgress={administrativeProgress}
+                hasExistingSubmission={hasExistingSubmission}
+                roles={statusRoles}
+                currentVersion={Number(activeDraftData?.version || workflow.version || 1)}
               />
             ) : activeModule?.isAuditorSection ? (
               <AuditorSectionReviewPanel
@@ -1105,7 +1176,18 @@ export default function AdministrativeAuditDashboard() {
                 </>
               )}
             </div>
-            {(isLastModule || isFinalOwnedModule) && submitStatus && <div style={styles.submitStatus}>{submitStatus}</div>}
+            {(isLastModule || isFinalOwnedModule) && submitStatus && (
+              <div
+                style={
+                  (typeof submitStatus === "object" && submitStatus?.type === "error") ||
+                  (typeof submitStatus === "string" && /locked|failed|error|could not|cannot/i.test(submitStatus))
+                    ? styles.submitStatusError
+                    : styles.submitStatus
+                }
+              >
+                {typeof submitStatus === "object" ? submitStatus.message : submitStatus}
+              </div>
+            )}
           </section>}
           </>
           )}
@@ -1898,6 +1980,15 @@ const styles = {
     fontSize: 14,
     fontWeight: 800,
   },
+  submitStatusError: {
+    border: "1px solid #fecaca",
+    borderRadius: 8,
+    background: "#fef2f2",
+    color: "#991b1b",
+    padding: "10px 12px",
+    fontSize: 14,
+    fontWeight: 800,
+  },
   modalBackdrop: {
     position: "fixed",
     inset: 0,
@@ -1954,7 +2045,10 @@ const styles = {
 const submittedStatusValues = new Set(["submitted", "approved", "under-review", "auditor-completed"]);
 
 const progressInfoForRole = (administrativeProgress = {}, role = {}) => {
-  const progressValue = administrativeProgress[role.key] ?? administrativeProgress[role.post];
+  const progressValue =
+    administrativeProgress[role.key] ??
+    administrativeProgress[role.post] ??
+    (role.key === "deanPlacement" ? (administrativeProgress.dp ?? administrativeProgress["dean-placement"]) : undefined);
   if (!progressValue) return {};
 
   if (typeof progressValue === "object") {
@@ -1971,31 +2065,48 @@ const progressInfoForRole = (administrativeProgress = {}, role = {}) => {
   return { submitted: submittedStatusValues.has(status) };
 };
 
-function SubmissionStatusPanel({ cycleId, storedSubmissionStatus = {}, administrativeProgress = {} }) {
-  const [statusMap, setStatusMap] = useState({
-    registrar: { submitted: false, submittedAt: null, name: null, email: null },
-    hr: { submitted: false, submittedAt: null, name: null, email: null },
-    deanStudentWelfare: { submitted: false, submittedAt: null, name: null, email: null },
-    deanPlacement: { submitted: false, submittedAt: null, name: null, email: null }
-  });
-  const [loading, setLoading] = useState(true);
+function SubmissionStatusPanel({
+  cycleId,
+  storedSubmissionStatus = {},
+  administrativeProgress = {},
+  hasExistingSubmission = true,
+  roles = ADMIN_STATUS_ROLES,
+  currentVersion = 1,
+}) {
+  const [statusMap, setStatusMap] = useState({});
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let isActive = true;
 
+    if (!hasExistingSubmission) {
+      setStatusMap({});
+      return;
+    }
+
     const loadStatus = async () => {
+      setLoading(true);
       try {
         const { data: res } = await fetchAdministrativeStatus(cycleId);
         if (!isActive) return;
 
-        if (res) {
-          setStatusMap((current) => ({
-            registrar: res.registrar || current.registrar,
-            hr: res.hr || current.hr,
-            deanStudentWelfare: res.deanStudentWelfare || current.deanStudentWelfare,
-            deanPlacement: res.deanPlacement || current.deanPlacement
-          }));
+        if (res && typeof res === "object") {
+          const currentEmail = sessionStorage.getItem("email") || "";
+          const currentDomain = currentEmail.includes("@") ? currentEmail.split("@")[1].toLowerCase() : "";
+          const hasAlienEmail = Object.values(res).some((val) => {
+            const email = val?.email || "";
+            return (
+              email &&
+              currentDomain &&
+              !email.toLowerCase().endsWith(currentDomain) &&
+              !currentDomain.includes("gmail") &&
+              !email.includes("gmail")
+            );
+          });
+          if (!hasAlienEmail) {
+            setStatusMap(res);
+          }
         }
       } catch (err) {
         if (isActive) setError(getApiErrorMessage(err, "Failed to load submission status."));
@@ -2009,7 +2120,7 @@ function SubmissionStatusPanel({ cycleId, storedSubmissionStatus = {}, administr
     return () => {
       isActive = false;
     };
-  }, [cycleId]);
+  }, [cycleId, hasExistingSubmission]);
 
   if (loading) {
     return <LoadingState label="Loading status..." compact />;
@@ -2019,7 +2130,7 @@ function SubmissionStatusPanel({ cycleId, storedSubmissionStatus = {}, administr
     <div style={statusStyles.container}>
       <h3 style={statusStyles.title}>Section Submission Progress</h3>
       <p style={statusStyles.intro}>
-        The complete Administrative Appraisal Form will transition to the next step once all four roles have submitted their respective parts.
+        The complete Administrative Appraisal Form will transition to the next step once all roles have submitted their respective parts.
       </p>
 
       {error && <div style={statusStyles.error}>{error}</div>}
@@ -2031,16 +2142,32 @@ function SubmissionStatusPanel({ cycleId, storedSubmissionStatus = {}, administr
           <div style={statusStyles.colDetails}>Submission Details</div>
         </div>
 
-        {ADMIN_STATUS_ROLES.map((r) => {
-          const info = statusMap[r.key] || { submitted: false, submittedAt: null, name: null, email: null };
-          const storedInfo = storedSubmissionStatus[r.key] || {};
+        {roles.map((r) => {
+          const info =
+            statusMap[r.key] ||
+            statusMap[r.post] ||
+            (r.key === "deanPlacement" ? (statusMap.dp || statusMap["dean-placement"]) : null) ||
+            { submitted: false, submittedAt: null, name: null, email: null };
+          const storedInfo =
+            storedSubmissionStatus[r.key] ||
+            storedSubmissionStatus[r.post] ||
+            (r.key === "deanPlacement" ? (storedSubmissionStatus.dp || storedSubmissionStatus["dean-placement"]) : null) ||
+            {};
           const progressInfo = progressInfoForRole(administrativeProgress, r);
+          const isCurrentVersionStored = !storedInfo.version || Number(storedInfo.version) === Number(currentVersion);
+          const isStoredRoleSubmitted = Boolean(storedInfo.submitted && isCurrentVersionStored);
+          const isProgressRoleSubmitted = Boolean(
+            progressInfo.submitted && !(Number(currentVersion) > 1 && !isStoredRoleSubmitted)
+          );
+          const isInfoRoleSubmitted = Boolean(info.submitted);
+
+          const isRoleSubmitted = Boolean(isInfoRoleSubmitted || isStoredRoleSubmitted || isProgressRoleSubmitted);
           const mergedInfo = {
             ...info,
-            submitted: Boolean(info.submitted || storedInfo.submitted || progressInfo.submitted),
-            submittedAt: storedInfo.submittedAt || info.submittedAt || progressInfo.submittedAt,
-            name: storedInfo.name || info.name || progressInfo.name,
-            email: storedInfo.email || info.email || progressInfo.email,
+            submitted: isRoleSubmitted,
+            submittedAt: isRoleSubmitted ? (storedInfo.submittedAt || info.submittedAt || progressInfo.submittedAt) : null,
+            name: isRoleSubmitted ? (storedInfo.name || info.name || progressInfo.name) : null,
+            email: isRoleSubmitted ? (storedInfo.email || info.email || progressInfo.email) : null,
           };
           const formattedDate = formatSubmittedDateTime(mergedInfo.submittedAt);
 
