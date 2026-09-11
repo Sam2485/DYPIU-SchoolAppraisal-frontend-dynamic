@@ -21,6 +21,30 @@ import {
 import { ExcelTableImportModal } from './ExcelTableImportModal';
 import { ExcelFullSchemaImportModal } from './ExcelFullSchemaImportModal';
 
+const isReviewRemarkField = (f) => {
+  if (!f) return false;
+  if (f.kind === 'review') return true;
+  const key = String(f.fieldKey || f.idString || f.id || '').toLowerCase();
+  const label = String(f.label || '').toLowerCase();
+  if (
+    key === 'reviewremarks' ||
+    key === 'review_remarks' ||
+    key.includes('reviewremark') ||
+    key.includes('review_remark')
+  ) {
+    return true;
+  }
+  if (
+    label.includes('review remark') ||
+    label.includes('review remarks') ||
+    label.includes('review observation') ||
+    label.includes('review observations')
+  ) {
+    return true;
+  }
+  return false;
+};
+
 export const FormBuilderCanvas = ({
   versionId,
   selectedUniversity,
@@ -393,11 +417,13 @@ export const FormBuilderCanvas = ({
       sectionId: secId,
       tableId: tblId,
       isEdit: false,
+      isReviewField: false,
       data: {
         id: null,
         label: '',
         fieldKey: '',
         fieldType: 'TEXT',
+        kind: null,
         isRequired: false,
         placeholder: '',
         optionsString: '',
@@ -405,18 +431,41 @@ export const FormBuilderCanvas = ({
     });
   };
 
+  const handleOpenAddReviewField = (secId) => {
+    setFieldModal({
+      show: true,
+      sectionId: secId,
+      tableId: null,
+      isEdit: false,
+      isReviewField: true,
+      data: {
+        id: null,
+        label: 'Review Remarks / Observations',
+        fieldKey: 'reviewRemarks',
+        fieldType: 'TEXTAREA',
+        kind: 'review',
+        isRequired: true,
+        placeholder: 'Enter mandatory review remarks, suggestions, and audit observations...',
+        optionsString: '',
+      },
+    });
+  };
+
   const handleOpenEditField = (f, secId, tblId = null) => {
+    const isReview = isReviewRemarkField(f);
     setFieldModal({
       show: true,
       sectionId: secId,
       tableId: tblId,
       isEdit: true,
+      isReviewField: isReview,
       data: {
         id: f.id,
         label: f.label || '',
         fieldKey: f.fieldKey || '',
         fieldType: f.fieldType || 'TEXT',
-        isRequired: f.isRequired ?? false,
+        kind: f.kind || (isReview ? 'review' : null),
+        isRequired: f.isRequired ?? (isReview ? true : false),
         placeholder: f.placeholder || '',
         optionsString: Array.isArray(f.options) ? f.options.join(', ') : '',
       },
@@ -435,6 +484,7 @@ export const FormBuilderCanvas = ({
           label: fieldModal.data.label,
           fieldKey: fieldModal.data.fieldKey,
           fieldType: fieldModal.data.fieldType,
+          kind: fieldModal.data.kind || (fieldModal.isReviewField ? 'review' : null),
           isRequired: fieldModal.data.isRequired,
           placeholder: fieldModal.data.placeholder,
           options: opts,
@@ -446,6 +496,7 @@ export const FormBuilderCanvas = ({
           label: fieldModal.data.label,
           fieldKey: fieldModal.data.fieldKey,
           fieldType: fieldModal.data.fieldType,
+          kind: fieldModal.data.kind || (fieldModal.isReviewField ? 'review' : null),
           isRequired: fieldModal.data.isRequired,
           placeholder: fieldModal.data.placeholder,
           options: opts,
@@ -815,39 +866,44 @@ export const FormBuilderCanvas = ({
                   </button>
                 </div>
 
-                {currentSection.fields && currentSection.fields.length > 0 ? (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '10px' }}>
-                    {currentSection.fields.map((f) => (
-                      <div key={f.id} style={{ padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <span style={{ fontWeight: 700, fontSize: '13px', color: '#0f172a' }}>{f.label}</span>
-                          <span style={{ fontSize: '10.5px', fontWeight: 700, padding: '2px 6px', background: '#e0f2fe', color: '#0369a1', borderRadius: '4px', marginLeft: '6px' }}>
-                            {f.fieldType}
-                          </span>
-                          {f.isRequired && <span style={{ color: '#ef4444', marginLeft: '3px' }}>*</span>}
+                {(() => {
+                  const headerFields = (currentSection.fields || []).filter(
+                    (f) => !isReviewRemarkField(f)
+                  );
+                  return headerFields.length > 0 ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '10px' }}>
+                      {headerFields.map((f) => (
+                        <div key={f.id} style={{ padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div>
+                            <span style={{ fontWeight: 700, fontSize: '13px', color: '#0f172a' }}>{f.label}</span>
+                            <span style={{ fontSize: '10.5px', fontWeight: 700, padding: '2px 6px', background: '#e0f2fe', color: '#0369a1', borderRadius: '4px', marginLeft: '6px' }}>
+                              {f.fieldType}
+                            </span>
+                            {f.isRequired && <span style={{ color: '#ef4444', marginLeft: '3px' }}>*</span>}
+                          </div>
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <button
+                              type="button"
+                              style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px' }}
+                              onClick={() => handleOpenEditField(f, currentSection.id, null)}
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              type="button"
+                              style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px', color: '#ef4444' }}
+                              onClick={() => handleDeleteField(f.id)}
+                            >
+                              ✕
+                            </button>
+                          </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                          <button
-                            type="button"
-                            style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px' }}
-                            onClick={() => handleOpenEditField(f, currentSection.id, null)}
-                          >
-                            ✏️
-                          </button>
-                          <button
-                            type="button"
-                            style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px', color: '#ef4444' }}
-                            onClick={() => handleDeleteField(f.id)}
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p style={{ color: '#94a3b8', fontSize: '12.5px', margin: 0 }}>No header fields in this section.</p>
-                )}
+                      ))}
+                    </div>
+                  ) : (
+                    <p style={{ color: '#94a3b8', fontSize: '12.5px', margin: 0 }}>No header fields in this section.</p>
+                  );
+                })()}
               </div>
 
               {/* Tables in Section */}
@@ -1076,6 +1132,168 @@ export const FormBuilderCanvas = ({
                   </button>
                 </div>
               )}
+
+              {/* Review Remarks (Auditor Inputs) - Placed below tables */}
+              {currentSection.ownerRole === 'auditor' && (() => {
+                const reviewFields = (currentSection.fields || []).filter(
+                  (f) => isReviewRemarkField(f)
+                );
+                const auditorSections = (tree?.sections || []).filter((s) => s.ownerRole === 'auditor');
+                const isLastAuditorSec =
+                  auditorSections.length > 0 && auditorSections[auditorSections.length - 1].id === currentSection.id;
+
+                return (
+                  <div
+                    style={{
+                      marginTop: '24px',
+                      background: '#fff',
+                      border: '1px solid #bbf7d0',
+                      borderRadius: '12px',
+                      padding: '18px',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '14px',
+                        flexWrap: 'wrap',
+                        gap: '8px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <h4 style={{ margin: 0, fontWeight: 700, color: '#0f172a', fontSize: '14px' }}>
+                          📝 Review Remarks (Auditor Inputs)
+                        </h4>
+                        {isLastAuditorSec ? (
+                          <span
+                            style={{
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              padding: '3px 8px',
+                              background: '#dcfce7',
+                              color: '#15803d',
+                              borderRadius: '6px',
+                              border: '1px solid #86efac',
+                            }}
+                          >
+                            Final Auditor Section (Mandatory Review)
+                          </span>
+                        ) : auditorSections.length > 1 ? (
+                          <span
+                            style={{
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              padding: '3px 8px',
+                              background: '#fef3c7',
+                              color: '#92400e',
+                              borderRadius: '6px',
+                              border: '1px solid #fcd34d',
+                            }}
+                          >
+                            Auditor Section
+                          </span>
+                        ) : null}
+                      </div>
+                      <button
+                        type="button"
+                        style={{
+                          padding: '5px 12px',
+                          borderRadius: '6px',
+                          border: '1px solid #86efac',
+                          background: '#f0fdf4',
+                          color: '#15803d',
+                          fontWeight: 600,
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => handleOpenAddReviewField(currentSection.id)}
+                      >
+                        + Add Review Field
+                      </button>
+                    </div>
+
+                    {reviewFields.length > 0 ? (
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                          gap: '10px',
+                        }}
+                      >
+                        {reviewFields.map((f) => (
+                          <div
+                            key={f.id}
+                            style={{
+                              padding: '10px 12px',
+                              border: '1px solid #bbf7d0',
+                              borderRadius: '8px',
+                              background: '#f0fdf4',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <div>
+                              <span style={{ fontWeight: 700, fontSize: '13px', color: '#0f172a' }}>{f.label}</span>
+                              <span
+                                style={{
+                                  fontSize: '10.5px',
+                                  fontWeight: 700,
+                                  padding: '2px 6px',
+                                  background: '#dcfce7',
+                                  color: '#166534',
+                                  borderRadius: '4px',
+                                  marginLeft: '6px',
+                                }}
+                              >
+                                {f.fieldType || 'TEXTAREA'}
+                              </span>
+                              <span
+                                style={{
+                                  fontSize: '10.5px',
+                                  fontWeight: 700,
+                                  padding: '2px 6px',
+                                  background: '#fee2e2',
+                                  color: '#991b1b',
+                                  borderRadius: '4px',
+                                  marginLeft: '4px',
+                                }}
+                              >
+                                Mandatory*
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', gap: '4px' }}>
+                              <button
+                                type="button"
+                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px' }}
+                                onClick={() => handleOpenEditField(f, currentSection.id, null)}
+                                title="Edit Review Field"
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                type="button"
+                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px', color: '#ef4444' }}
+                                onClick={() => handleDeleteField(f.id)}
+                                title="Delete Review Field"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p style={{ color: '#64748b', fontSize: '12.5px', margin: 0 }}>
+                        No review remarks field added yet. Click <strong>+ Add Review Field</strong> to add a mandatory review textarea for this auditor section below the tables.
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           ) : (
             <div style={{ textAlign: 'center', padding: '60px 20px', color: '#64748b' }}>
@@ -1439,7 +1657,13 @@ export const FormBuilderCanvas = ({
           <div style={{ width: '100%', maxWidth: '520px', background: '#fff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
             <div style={{ padding: '16px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h4 style={{ margin: 0, fontWeight: 800, color: '#0f172a', fontSize: '16px' }}>
-                {fieldModal.isEdit ? '✏️ Edit Column / Field' : fieldModal.tableId ? '➕ Add Column to Table' : '➕ Add Header Field'}
+                {fieldModal.isEdit
+                  ? (fieldModal.isReviewField ? '✏️ Edit Review Remark Field' : '✏️ Edit Column / Field')
+                  : fieldModal.isReviewField
+                  ? '📝 Add Review Remark Field (Auditor)'
+                  : fieldModal.tableId
+                  ? '➕ Add Column to Table'
+                  : '➕ Add Header Field'}
               </h4>
               <button
                 type="button"
@@ -1451,6 +1675,11 @@ export const FormBuilderCanvas = ({
             </div>
             <form onSubmit={handleSaveField}>
               <div style={{ padding: '20px', display: 'grid', gap: '14px' }}>
+                {fieldModal.isReviewField && (
+                  <div style={{ padding: '8px 12px', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '7px', fontSize: '12px', color: '#065f46', lineHeight: 1.4 }}>
+                    🔒 <strong>Auditor Review Field:</strong> This field appears below the tables. The assigned auditor is required to complete this observation / review remarks field before submitting their review.
+                  </div>
+                )}
                 <div>
                   <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>
                     {fieldModal.tableId ? 'Column Header / Label*' : 'Field Label*'}
@@ -1541,7 +1770,7 @@ export const FormBuilderCanvas = ({
                         })
                       }
                     />
-                    <span>Mark as Required (Mandatory input)</span>
+                    <span>{fieldModal.isReviewField ? 'Mandatory for Auditor (Required before submit)' : 'Mark as Required (Mandatory input)'}</span>
                   </label>
                 </div>
               </div>

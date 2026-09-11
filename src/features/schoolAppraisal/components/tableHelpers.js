@@ -23,11 +23,15 @@ export const numberedRowFor = (columns = [], index = 0) => {
 
 export const withSerialNumbers = (columns = [], rows = []) => {
   const normalizedColumns = columnsWithSerial(columns);
-  const serialColumn = serialColumnFor(normalizedColumns);
+  const serialColumn = serialColumnFor(normalizedColumns) || "Sr No";
 
-  return (Array.isArray(rows) ? rows : []).map((row, index) => ({
-    ...numberedRowFor(columns, index),
-    ...row,
-    ...(serialColumn && !row[serialColumn] ? { [serialColumn]: String(index + 1) } : {}),
-  }));
+  return (Array.isArray(rows) ? rows : []).map((row, index) => {
+    const rowSerialCol = serialColumnFor(Object.keys(row || {})) || serialColumn;
+    return {
+      ...numberedRowFor(columns, index),
+      ...row,
+      [rowSerialCol]: String(index + 1),
+      ...(serialColumn !== rowSerialCol ? { [serialColumn]: String(index + 1) } : {}),
+    };
+  });
 };
