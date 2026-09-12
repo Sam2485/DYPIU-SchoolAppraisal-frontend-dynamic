@@ -714,7 +714,21 @@ export default function AdministrativeAuditDashboard() {
       cycleType: workflow.cycleType || undefined,
       reportCategory: workflow.reportCategory || undefined,
       version: workflow.version || undefined,
-      sections: modules.map((module) => module.number),
+      sections: modules.map((module) => {
+        const clean = String(module.number || "").trim().toUpperCase().replace(/^(PART|SECTION)[-\s_]*/i, "");
+        if (["A", "B", "C", "D", "E"].includes(clean)) return clean;
+        if (clean === "1") return "A";
+        if (clean === "2") return "B";
+        if (clean === "3") return "C";
+        if (clean === "4") return "D";
+        if (clean === "5") return "E";
+        const post = moduleOwnerPost(module);
+        if (post === "hr") return "B";
+        if (post === "dean-student-welfare") return "D";
+        if (post === "dean-placement") return "E";
+        if (post === "registrar") return clean === "3" ? "C" : "A";
+        return clean;
+      }).filter(Boolean),
     };
   };
 
