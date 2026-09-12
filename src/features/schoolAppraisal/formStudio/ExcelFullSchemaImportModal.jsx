@@ -363,7 +363,7 @@ export const ExcelFullSchemaImportModal = ({
 
           if (tables.length > 0) {
             const defaultOwner = isAdministrative
-              ? (universityPosts[0]?.code?.toLowerCase() || 'registrar')
+              ? (universityPosts[0]?.code?.toLowerCase() || '')
               : 'director-schools';
 
             sections.push({

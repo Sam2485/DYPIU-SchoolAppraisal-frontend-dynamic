@@ -252,7 +252,7 @@ const canDeleteUser = (user = {}) => user.accountType === "auditor" && !user.del
 export default function UserManagementPanel({ currentUser }) {
   const [users, setUsers] = useState([]);
   const [schools, setSchools] = useState([]);
-  const [posts, setPosts] = useState(ADMINISTRATIVE_POSTS);
+  const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -278,11 +278,9 @@ export default function UserManagementPanel({ currentUser }) {
         getUniversityPosts(uId),
       ]);
       setSchools(schoolData || []);
-      if (postData && postData.length > 0) {
-        const mapped = postData.map((p) => ({ value: p.code.toLowerCase(), label: p.name }));
-        setPosts(mapped);
-        updateDynamicPostRegistry(mapped);
-      }
+      const mapped = (postData || []).map((p) => ({ value: p.code.toLowerCase(), label: p.name }));
+      setPosts(mapped);
+      updateDynamicPostRegistry(mapped);
     } catch (err) {
       console.error("Failed to load university metadata:", err);
     }
@@ -1243,7 +1241,7 @@ function AcademicSchoolMultiSelect({ selected, onToggle, schools = [] }) {
   );
 }
 
-function AdministrativePostMultiSelect({ selected, onToggle, posts = ADMINISTRATIVE_POSTS }) {
+function AdministrativePostMultiSelect({ selected, onToggle, posts = [] }) {
   const summary = selected.length
     ? `${selected.length} post${selected.length === 1 ? "" : "s"} selected`
     : "Select administrative posts";

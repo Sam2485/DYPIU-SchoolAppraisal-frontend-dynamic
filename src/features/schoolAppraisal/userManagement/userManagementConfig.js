@@ -112,10 +112,4 @@ export const schoolGroupFor = (value = "") => {
   return school?.group || "";
 };
 
-export const ADMINISTRATIVE_POSTS = [
-  { value: "registrar", label: "Registrar" },
-  { value: "hr", label: "HR" },
-  { value: "dean-student-welfare", label: "Dean Student Welfare" },
-  { value: "dean-placement", label: "Dean Placement" },
-  { value: "dp", label: "Dean Placement" },
-];
+export const ADMINISTRATIVE_POSTS = [];

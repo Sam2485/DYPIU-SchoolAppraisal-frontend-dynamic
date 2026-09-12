@@ -152,7 +152,7 @@ export const FormBuilderCanvas = ({
   const handleToggleAuditorSection = async (sec, isAuditor) => {
     try {
       const defaultRole = isAdministrative
-        ? (universityPosts[0]?.code?.toLowerCase() || 'registrar')
+        ? (universityPosts[0]?.code?.toLowerCase() || '')
         : 'director-schools';
       const targetRole = isAuditor ? 'auditor' : defaultRole;
       await updateSection(sec.id, {
@@ -169,7 +169,7 @@ export const FormBuilderCanvas = ({
 
   const handleOpenAddSection = () => {
     const defaultRole = isAdministrative
-      ? (universityPosts[0]?.code?.toLowerCase() || 'registrar')
+      ? (universityPosts[0]?.code?.toLowerCase() || '')
       : 'director-schools';
 
     setSectionModal({
@@ -187,7 +187,7 @@ export const FormBuilderCanvas = ({
         id: sec.id,
         title: sec.title,
         sectionNumber: sec.number || '',
-        ownerRole: sec.ownerRole || (isAdministrative ? 'registrar' : 'director-schools'),
+        ownerRole: sec.ownerRole || (isAdministrative ? (universityPosts[0]?.code?.toLowerCase() || '') : 'director-schools'),
         description: sec.description || '',
       },
     });
@@ -1373,12 +1373,7 @@ export const FormBuilderCanvas = ({
                         }
                       >
                         {universityPosts.length === 0 ? (
-                          <>
-                            <option value="registrar">Registrar</option>
-                            <option value="hr">HR Office</option>
-                            <option value="dean-student-welfare">Dean Student Welfare</option>
-                            <option value="dean-placement">Dean Placement</option>
-                          </>
+                          <option value="">-- No administrative posts configured yet (add in Administrative Posts) --</option>
                         ) : (
                           universityPosts.map((post) => (
                             <option key={post.id} value={post.code.toLowerCase()}>
