@@ -873,11 +873,19 @@ export function AuditorSectionReviewPanel({ section, review, tables = {}, values
 
   const externalAssignments = Array.isArray(review?.externalAssignments) && review.externalAssignments.length > 0
     ? review.externalAssignments
-    : (review?.auditorAssignments || []).filter((a) => normalizeCategory(a.auditorType || a.type || "").includes("external"));
+    : (review?.auditorAssignments || []).filter((a) =>
+        normalizeCategory(a.auditorType || a.type || "").includes("external") ||
+        (review?.reportCategory === "external" && !normalizeCategory(a.auditorType || a.type || "").includes("internal"))
+      );
 
   if (
     externalAssignments.length === 0 &&
-    (review?.externalAuditor?.name || review?.externalRemarks || (review?.externalValues && hasPartEValues(review.externalValues)))
+    (
+      review?.externalAuditor?.name ||
+      review?.externalRemarks ||
+      (review?.externalValues && (hasPartEValues(review.externalValues) || Object.keys(review.externalValues).length > 0)) ||
+      (review?.externalTables && Object.keys(review.externalTables).length > 0)
+    )
   ) {
     externalAssignments.push({
       auditorName: review.externalAuditor?.name || "External Auditor",

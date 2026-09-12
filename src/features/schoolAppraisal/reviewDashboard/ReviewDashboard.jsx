@@ -1235,7 +1235,7 @@ const canonicalAdministrativePost = (value = "") => {
     normalizeAuditAssignment(post.value) === normalized ||
     normalizeAuditAssignment(post.label) === normalized
   );
-  return option?.value || "";
+  return option?.value || value;
 };
 const assignmentSourceList = (source) => {
   if (!source) return [];
@@ -1308,18 +1308,33 @@ const auditorAssignmentSubmitted = (assignment = {}) =>
     assignment.correctionRequestedForAuditor ||
     assignment.requiresAuditorResubmission
   ) && (
-    ["submitted", "completed", "auditor-completed", "approved"].includes(normalizeStatus(assignment.status)) ||
-    Boolean(assignment.submittedAt)
+    ["submitted", "completed", "auditor-completed", "approved"].includes(normalizeStatus(assignment.status || assignment.reviewStatus)) ||
+    Boolean(assignment.submittedAt) ||
+    Boolean(assignment.isSubmitted)
   );
+const isAssignmentFilledOrSubmitted = (assignment = {}) => {
+  if (
+    assignment.auditorCorrectionRequested ||
+    assignment.correctionRequestedForAuditor ||
+    assignment.requiresAuditorResubmission
+  ) {
+    return false;
+  }
+  if (auditorAssignmentSubmitted(assignment)) return true;
+  const vals = safeObjectValue(assignment.values || assignment.valuesData || assignment.reviewValues || assignment.reviewValuesData);
+  const tbls = safeObjectValue(assignment.tables || (assignment.tablesData ? safeJsonParse(assignment.tablesData, {}) : (assignment.reviewTablesData ? safeJsonParse(assignment.reviewTablesData, {}) : assignment.reviewTables)));
+  const remarks = assignment.remarks || assignment.auditObservations || assignment.observations || assignment.reviewRemarks || vals.remarks || vals.auditObservations || vals.reviewRemarks || "";
+  const hasTables = Object.keys(tbls).length > 0 && Object.values(tbls).some((rows) => Array.isArray(rows) && rows.length > 0);
+  const hasDocs = arrayValue(assignment.attachments).length > 0;
+  return Boolean(hasAcademicPartEValues(vals) || hasTables || String(remarks).trim() !== "" || hasDocs);
+};
 function auditorAssignmentBelongsToSubmission(assignment = {}, submission = {}) {
   const submissionAuditType = normalizeOptionalAuditType(submission.auditType || submission.type);
   if (!submissionAuditType) return true;
 
   if (submissionAuditType === "administrative") {
-    if (assignment.auditCategory === "academic" || !canonicalAdministrativePost(assignment.post)) return false;
-    const submissionAuditorType = normalizeUserRole(submission.forwardedAuditorType || "");
-    const assignmentAuditorType = normalizeUserRole(assignment.auditorType || "");
-    return !submissionAuditorType || !assignmentAuditorType || assignmentAuditorType === submissionAuditorType;
+    if (assignment.auditCategory === "academic") return false;
+    return true;
   }
 
   if (assignment.auditCategory) return assignment.auditCategory === submissionAuditType;
@@ -1368,9 +1383,16 @@ const auditorAssignmentMatchesProfile = (assignment = {}, submission = {}, profi
   const userId = String(profile.id || sessionStorage.getItem("userId") || "");
   const email = normalizeAuditAssignment(profile.email || sessionStorage.getItem("email") || sessionStorage.getItem("username") || "");
   const assignmentAuditorId = String(assignment.auditorId || "");
+  const assignmentEmail = normalizeAuditAssignment(assignment.auditorEmail || "");
   const idMatches = Boolean(userId && assignmentAuditorId && assignmentAuditorId === userId);
-  const emailMatches = Boolean(email && normalizeAuditAssignment(assignment.auditorEmail || "") === email);
-  if (idMatches || emailMatches) return true;
+  const emailMatches = Boolean(
+    email && assignmentEmail &&
+    (email === assignmentEmail || email.split(" ")[0] === assignmentEmail.split(" ")[0])
+  );
+  const name = normalizeAuditAssignment(profile.name || "");
+  const assignmentName = normalizeAuditAssignment(assignment.auditorName || "");
+  const nameMatches = Boolean(name && assignmentName && name !== "-" && name === assignmentName);
+  if (idMatches || emailMatches || nameMatches) return true;
   if ((submission.auditorAssignments || []).length) return false;
 
   const profileType = normalizeUserRole(profile.auditorType || auditorTypeFromRole(profile.role));
@@ -1399,7 +1421,32 @@ const auditorAssignmentsForCurrentUser = (submission = {}, profile = {}) =>
   );
 const currentAuditorSubmitted = (submission = {}, profile = {}) => {
   const assignments = auditorAssignmentsForCurrentUser(submission, profile);
-  return assignments.length > 0 && assignments.every(auditorAssignmentSubmitted);
+  if (assignments.length > 0) {
+    return assignments.every((a) => auditorAssignmentSubmitted(a) || isAssignmentFilledOrSubmitted(a));
+  }
+
+  const auditorType = normalizeUserRole(profile.auditorType || auditorTypeFromRole(profile.role));
+  const submissionAuditorType = normalizeUserRole(
+    submission.forwardedAuditorType ||
+    auditorTypeForReportCategory(submission.reportCategory) ||
+    ""
+  );
+  if (auditorType && submissionAuditorType && auditorType !== submissionAuditorType) {
+    return false;
+  }
+
+  const email = normalizeAuditAssignment(profile.email || sessionStorage.getItem("email") || sessionStorage.getItem("username") || "");
+  const userId = String(profile.id || sessionStorage.getItem("userId") || "");
+  const reviewedByEmail = normalizeAuditAssignment(submission.auditorReviewedByEmail || "");
+  if (email && reviewedByEmail && email === reviewedByEmail) return true;
+  const reviewedById = String(submission.auditorReviewedById || "");
+  if (userId && reviewedById && userId === reviewedById) return true;
+
+  if (isAuditorCompleted(submission) || ["auditor-completed", "external-auditor-completed", "approved"].includes(normalizeStatus(submission.status))) {
+    return true;
+  }
+
+  return false;
 };
 const currentAuditorCorrectionRequested = (submission = {}, profile = {}) => {
   const assignments = auditorAssignmentsForCurrentUser(submission, profile);
@@ -1587,10 +1634,19 @@ const matchesAuditorSession = (submission, profile) => {
   return hasForwardingMetadata && matchesAuditorResponsibility(submission, profile);
 };
 
-const submissionVisibleForRole = (submission, role, profile) => {
+const submissionVisibleForRole = (submission, role, profile = {}) => {
   if (role === "iqac") return true;
   if (role === "vice-chancellor") return true;
-  if (isAuditorRole(role)) return matchesAuditorSession(submission, profile);
+  if (isAuditorRole(role) || isAuditorRole(profile?.role) || isAuditorRole(profile?.auditorRole)) {
+    if (!matchesAuditorSession(submission, profile)) return false;
+    const correctionRequested = currentAuditorCorrectionRequested(submission, profile);
+    if (correctionRequested) return true;
+    if (currentAuditorSubmitted(submission, profile)) return false;
+    if (isAuditorCompleted(submission) || ["auditor-completed", "external-auditor-completed", "approved"].includes(normalizeStatus(submission.status))) {
+      return false;
+    }
+    return true;
+  }
   return false;
 };
 
@@ -2041,9 +2097,13 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
     [allSubmissions],
   );
   const intakeSubmissions = useMemo(() => ({
-    academic: isAuditor ? submissions.academic : submissions.academic.filter((submission) => !isAuditorCompleted(submission)),
-    administrative: isAuditor ? submissions.administrative : submissions.administrative.filter((submission) => !isAuditorCompleted(submission)),
-  }), [isAuditor, submissions]);
+    academic: isAuditor
+      ? submissions.academic.filter((submission) => submissionVisibleForRole(submission, role, profile))
+      : submissions.academic.filter((submission) => !isAuditorCompleted(submission)),
+    administrative: isAuditor
+      ? submissions.administrative.filter((submission) => submissionVisibleForRole(submission, role, profile))
+      : submissions.administrative.filter((submission) => !isAuditorCompleted(submission)),
+  }), [isAuditor, profile, role, submissions]);
 
   useEffect(() => {
     if (!isAuditor) return undefined;
@@ -2153,17 +2213,82 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
       ]);
       if (detailResult.status === "rejected") throw detailResult.reason;
       const detailData = detailResult.value.data;
+      const detailPayload = submissionPayload(detailData);
+      const prevSubId =
+        detailPayload?.previousApprovedSubmissionId ||
+        detailPayload?.parentSubmissionId ||
+        submission.previousApprovedSubmissionId ||
+        submission.parentSubmissionId;
+
+      let prevSubmission = null;
+      if (prevSubId && String(prevSubId) !== String(submission.id)) {
+        try {
+          const prevRes = await fetchSubmissionById(prevSubId);
+          if (prevRes?.data) {
+            prevSubmission = normalizeSubmission(submissionPayload(prevRes.data));
+          }
+        } catch (prevErr) {
+          console.warn("Could not fetch previous submission by ID", prevSubId, prevErr);
+        }
+      }
+
+      if (!prevSubmission) {
+        const matchingPrev = allSubmissions.find(
+          (s) =>
+            s.id &&
+            String(s.id) !== String(submission.id) &&
+            s.auditType === (detailPayload?.auditType || submission.auditType) &&
+            (s.school === (detailPayload?.school || submission.school) ||
+             s.schoolName === (detailPayload?.school || submission.school) ||
+             (submission.administrativePost && s.administrativePost === submission.administrativePost)) &&
+            (String(s.reportCategory || "").toLowerCase() === "internal" ||
+             Number(s.version || 0) < Number(detailPayload?.version || submission.version || 1))
+        );
+        if (matchingPrev?.id) {
+          try {
+            const prevRes = await fetchSubmissionById(matchingPrev.id);
+            if (prevRes?.data) {
+              prevSubmission = normalizeSubmission(submissionPayload(prevRes.data));
+            }
+          } catch (prevErr) {
+            console.warn("Could not fetch matching previous submission by ID", matchingPrev.id, prevErr);
+          }
+        }
+      }
+
       const historyPayload = historyResult.status === "fulfilled" ? historyResult.value.data : [];
-      const embeddedHistory = submissionPayload(detailData)?.versionHistory || submissionPayload(detailData)?.previousVersions || [];
+      const embeddedHistory = detailPayload?.versionHistory || detailPayload?.previousVersions || [];
       const historyEntries = [
         ...responseList(historyPayload),
         ...(Array.isArray(embeddedHistory) ? embeddedHistory : []),
       ].map(normalizeHistoryEntry);
 
+      if (prevSubmission) {
+        const existingIdx = historyEntries.findIndex(
+          (h) =>
+            String(h.id) === String(prevSubmission.id) ||
+            (h.version === prevSubmission.version && h.reportCategory === prevSubmission.reportCategory)
+        );
+        if (existingIdx >= 0) {
+          historyEntries[existingIdx] = {
+            ...historyEntries[existingIdx],
+            auditorAssignments:
+              historyEntries[existingIdx].auditorAssignments?.length
+                ? historyEntries[existingIdx].auditorAssignments
+                : prevSubmission.auditorAssignments || [],
+            values: { ...(prevSubmission.values || {}), ...(historyEntries[existingIdx].values || {}) },
+            tables: { ...(prevSubmission.tables || {}), ...(historyEntries[existingIdx].tables || {}) },
+          };
+        } else {
+          historyEntries.unshift(prevSubmission);
+        }
+      }
+
       const rawSub = {
         ...submission,
-        ...submissionPayload(detailData),
+        ...detailPayload,
         versionHistory: historyEntries,
+        previousApprovedSubmission: prevSubmission || submission.previousApprovedSubmission,
       };
 
       let dynamicSchema = null;
@@ -2209,7 +2334,7 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
     } finally {
       setLoadingSubmissionId("");
     }
-  }, [profile, role, setDashboardRouteState]);
+  }, [allSubmissions, profile, role, setDashboardRouteState]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -2788,6 +2913,9 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
             values: assignment.values && Object.keys(assignment.values).length
               ? { ...assignment.values, remarks: auditorRemarks || assignment.values.remarks || signedValues.remarks, auditObservations: auditorRemarks || assignment.values.auditObservations || signedValues.auditObservations }
               : signedValues,
+            tables: assignment.tables && Object.keys(assignment.tables).length
+              ? assignment.tables
+              : (auditorTables || submission.tables || {}),
             remarks: auditorRemarks || assignment.remarks || signedValues.remarks || "",
             auditObservations: auditorRemarks || assignment.auditObservations || signedValues.auditObservations || "",
             attachments: assignment.attachments?.length ? assignment.attachments : attachments,
@@ -2815,6 +2943,7 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
               reviewStatus: "submitted",
               submittedAt: auditorReviewedOn,
               values: signedValues,
+              tables: auditorTables || submission.tables || {},
               remarks: auditorRemarks || assignment.remarks || signedValues.remarks || "",
               auditObservations: auditorRemarks || assignment.auditObservations || signedValues.auditObservations || "",
               attachments,
@@ -2923,6 +3052,17 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
         requiresAuditorResubmission: auditorCorrectionPending,
         auditorCorrectionMessage: auditorCorrectionPending ? submission.auditorCorrectionMessage : "",
       });
+
+      if (isAuditor) {
+        setSubmissions((current) => ({
+          ...current,
+          [submission.auditType]: current[submission.auditType].filter((s) => s.id !== submission.id),
+        }));
+        setSelectedSubmission(null);
+        setDashboardRouteState(submission.auditType, { replace: true });
+        setRefreshKey((current) => current + 1);
+        window.alert("Your auditor review has been submitted successfully.");
+      }
     } catch (reviewError) {
       setError(getApiErrorMessage(reviewError, "Could not submit your auditor review."));
     } finally {
@@ -3021,6 +3161,7 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
               currentProfile={profile}
               submitterAvatarUrl={resolveSubmitterAvatar(selectedSubmission)}
               directoryUsers={directoryUsers}
+              allSubmissions={allSubmissions}
             />
           ) : visibleActiveView === "overview" && isIqacDashboard ? (
             <AcademicAdministrativeSubmissionsPanel
@@ -4855,6 +4996,7 @@ function FullFormReview({
   currentProfile,
   submitterAvatarUrl,
   directoryUsers = [],
+  allSubmissions = [],
 }) {
   const [resolvedSchema, setResolvedSchema] = useState(submission.schema ? normalizeDynamicSchema(submission.schema) : null);
 
@@ -4916,6 +5058,7 @@ function FullFormReview({
   );
   const isExternalSubmission =
     String(submission.reportCategory || "").toLowerCase() === "external" ||
+    String(submission.forwardedAuditorType || "").toLowerCase() === "external" ||
     (submission.auditType === "academic" && String(submission.reportCategory || "").toLowerCase() === "external") ||
     Number(submission.version || 1) > 1;
 
@@ -4944,6 +5087,163 @@ function FullFormReview({
             : null
         ))
     : null;
+  const allPreviousInternalAssignments = useMemo(() => {
+    const list = [];
+    const seen = new Set();
+
+    const addAssignment = (assignment, fallbackMeta = {}) => {
+      if (!assignment) return;
+      const email = normalizeAuditAssignment(assignment.auditorEmail || assignment.email || "");
+      const id = String(assignment.auditorId || assignment.userId || "");
+      const key = assignment.key || (id ? `id:internal:${id}` : email ? `email:internal:${email}` : `assignment:internal:${list.length}`);
+      const dedupKey = id ? `id:${id}` : email ? `email:${email}` : key;
+      if (seen.has(dedupKey)) return;
+      seen.add(dedupKey);
+
+      const vals = safeObjectValue(assignment.values || fallbackMeta.values);
+      const tbls = safeObjectValue(assignment.tables || fallbackMeta.tables);
+      const remarks = assignment.remarks || assignment.auditObservations || fallbackMeta.remarks || "";
+      const attachments = arrayValue(assignment.attachments || fallbackMeta.attachments);
+
+      list.push({
+        ...assignment,
+        key,
+        auditorType: "internal",
+        auditorName: assignment.auditorName && assignment.auditorName !== "-"
+          ? assignment.auditorName
+          : fallbackMeta.auditorName || "Internal Auditor",
+        auditorEmail: assignment.auditorEmail || fallbackMeta.auditorEmail || "",
+        auditorDesignation: assignment.auditorDesignation || fallbackMeta.auditorDesignation || "",
+        status: assignment.status || "submitted",
+        submittedAt: assignment.submittedAt || fallbackMeta.submittedAt || "",
+        values: vals,
+        tables: tbls,
+        remarks,
+        attachments,
+      });
+    };
+
+    (submission.auditorAssignments || [])
+      .filter((a) => normalizeUserRole(a.auditorType || a.type || "").includes("internal"))
+      .forEach((a) => addAssignment(a));
+
+    if (submission.previousApprovedSubmission) {
+      const prev = submission.previousApprovedSubmission;
+      (prev.auditorAssignments || [])
+        .filter((a) => normalizeUserRole(a.auditorType || a.type || "").includes("internal") || String(prev.reportCategory || "").toLowerCase() === "internal")
+        .forEach((a) => addAssignment(a, {
+          values: prev.values,
+          tables: prev.tables,
+          remarks: prev.remarks,
+          submittedAt: prev.approvedOn || prev.reviewedOn,
+        }));
+      if (!list.length && (hasAcademicPartEValues(prev.values) || prev.remarks || getSubmissionAuditorSignOff(prev).name)) {
+        const signOff = getSubmissionAuditorSignOff(prev);
+        addAssignment({
+          key: `prev-sub-${prev.id}`,
+          auditorId: prev.id,
+          auditorName: signOff.name || `${titleCase(prev.reportCategory || "internal")} Auditor`,
+          auditorEmail: signOff.email || "",
+          auditorDesignation: signOff.designation || "",
+          auditorType: "internal",
+          status: "submitted",
+          submittedAt: prev.approvedOn || prev.reviewedOn || "",
+          values: prev.values || {},
+          tables: prev.tables || {},
+          remarks: prev.remarks || "",
+        });
+      }
+    }
+
+    (submission.versionHistory || [])
+      .filter((entry) =>
+        String(entry.reportCategory || "").toLowerCase() === "internal" ||
+        Number(entry.version || 0) < Number(submission.version || 0)
+      )
+      .sort((a, b) => Number(b.version || 0) - Number(a.version || 0))
+      .forEach((entry) => {
+        const entryAssignments = (entry.auditorAssignments || []).filter((a) =>
+          normalizeUserRole(a.auditorType || a.type || "").includes("internal") ||
+          String(entry.reportCategory || "").toLowerCase() === "internal"
+        );
+
+        if (entryAssignments.length > 0) {
+          entryAssignments.forEach((a) => addAssignment(a, {
+            values: entry.values,
+            tables: entry.tables,
+            remarks: entry.remarks,
+            submittedAt: entry.approvedOn || entry.reviewedOn,
+          }));
+        } else if (
+          hasAcademicPartEValues(entry?.values) ||
+          (entry?.values && Object.keys(entry.values).length > 0) ||
+          getSubmissionAuditorSignOff(entry).name
+        ) {
+          const signOff = getSubmissionAuditorSignOff(entry);
+          addAssignment({
+            key: `history-${entry.id || entry.version}`,
+            auditorId: entry.id || `history-${entry.version}`,
+            auditorName: signOff.name || `${titleCase(entry.reportCategory || "internal")} Auditor`,
+            auditorEmail: signOff.email || "",
+            auditorDesignation: signOff.designation || "",
+            auditorType: "internal",
+            status: "submitted",
+            submittedAt: entry.approvedOn || entry.reviewedOn || "",
+            values: entry.values || {},
+            tables: entry.tables || {},
+            remarks: entry.remarks || entry.auditObservations || "",
+          });
+        }
+      });
+
+    if (list.length === 0 && Array.isArray(allSubmissions)) {
+      const prevFromAll = allSubmissions.find(
+        (s) =>
+          s.id &&
+          String(s.id) !== String(submission.id) &&
+          s.auditType === submission.auditType &&
+          (s.school === submission.school || s.schoolName === submission.school || (submission.administrativePost && s.administrativePost === submission.administrativePost)) &&
+          (String(s.reportCategory || "").toLowerCase() === "internal" || Number(s.version || 0) < Number(submission.version || 1))
+      );
+      if (prevFromAll) {
+        (prevFromAll.auditorAssignments || [])
+          .filter((a) => normalizeUserRole(a.auditorType || a.type || "").includes("internal") || String(prevFromAll.reportCategory || "").toLowerCase() === "internal")
+          .forEach((a) => addAssignment(a, {
+            values: prevFromAll.values,
+            tables: prevFromAll.tables,
+            remarks: prevFromAll.remarks,
+            submittedAt: prevFromAll.approvedOn || prevFromAll.reviewedOn,
+          }));
+      }
+    }
+
+    if (list.length === 0 && previousInternalReport) {
+      if (previousInternalReport.auditorAssignments && previousInternalReport.auditorAssignments.length > 0) {
+        previousInternalReport.auditorAssignments.forEach((a) => addAssignment(a));
+      } else if (
+        hasAcademicPartEValues(previousInternalReport.values) ||
+        (previousInternalReport.values && Object.keys(previousInternalReport.values).length > 0) ||
+        Boolean(previousInternalReport.remarks)
+      ) {
+        const signOff = getSubmissionAuditorSignOff(previousInternalReport);
+        addAssignment({
+          key: "previous-internal-part-e",
+          auditorId: "prev-internal",
+          auditorName: signOff.name || `${titleCase(previousInternalReport.reportCategory || "internal")} Auditor`,
+          auditorEmail: signOff.email || "",
+          auditorDesignation: signOff.designation || "",
+          auditorType: "internal",
+          status: "submitted",
+          submittedAt: previousInternalReport.approvedOn || previousInternalReport.reviewedOn || "",
+          values: previousInternalReport.values || {},
+          tables: previousInternalReport.tables || {},
+          remarks: previousInternalReport.remarks || "",
+        });
+      }
+    }
+
+    return list;
+  }, [submission, allSubmissions, previousInternalReport]);
   const previousInternalAuditor = getSubmissionAuditorSignOff(previousInternalReport);
   const currentAuditor = getSubmissionAuditorSignOff(submission);
   const isExternalAcademicReport =
@@ -5055,7 +5355,10 @@ function FullFormReview({
 
   const activeSection = sections[activeSectionIndex] || sections[0];
   const activeSectionIsAuditorOwned = activeSection ? isAuditorSection(activeSection, submission.auditType) : false;
-  const canShowAuditorReviewValues = canEditAuditorSection || auditorReviewReadOnly || isAuditorCompleted(submission);
+  const userRole = normalizeUserRole(currentProfile?.role || sessionStorage.getItem("role") || "");
+  const isAuditorUser = isAuditorRole(userRole) || isAuditorRole(currentProfile?.auditorRole);
+  const isReviewerRole = ["iqac", "vice-chancellor"].includes(userRole) || !isAuditorUser;
+  const canShowAuditorReviewValues = isReviewerRole || canEditAuditorSection || auditorReviewReadOnly || isAuditorCompleted(submission);
   const shouldHidePendingAuditorValues = activeSectionIsAuditorOwned && !canShowAuditorReviewValues;
   const submittedForm = useMemo(() => {
     let effectiveValues = {
@@ -5401,6 +5704,8 @@ function FullFormReview({
         onDeleteAttachment={handleAuditorTableCellDelete}
         auditorAssignments={submission.auditorAssignments || []}
         currentAuditorAssignments={currentUserAssignments}
+        previousInternalAssignments={allPreviousInternalAssignments}
+        versionHistory={submission.versionHistory || []}
         previousInternalPartEValues={previousInternalPartE?.values}
         previousInternalPartETables={previousInternalPartE?.tables}
         previousInternalIqacRemarks={previousInternalPartE?.remarks}
@@ -5693,6 +5998,8 @@ function SubmittedFormViewer({
   onDeleteAttachment,
   auditorAssignments = [],
   currentAuditorAssignments = [],
+  previousInternalAssignments = [],
+  versionHistory = [],
   previousInternalPartEValues,
   previousInternalPartETables,
   previousInternalIqacRemarks = "",
@@ -5718,16 +6025,6 @@ function SubmittedFormViewer({
         String(activeSection?.reportCategory || "").toLowerCase().includes("external")
       )
     );
-
-  const peerAuditorType = isExternalCycle ? "external" : "internal";
-  const submittedPeerAuditorAssignments = submittedAuditorAssignments
-    .filter((a) => normalizeUserRole(a.auditorType || a.type || "").includes(peerAuditorType))
-    .filter((assignment) => {
-      const assignmentEmail = normalizeAuditAssignment(assignment.auditorEmail || assignment.email || "");
-      if (assignment.key && currentAssignmentKeys.size) return !currentAssignmentKeys.has(assignment.key);
-      if (assignment.auditorId && currentAssignmentIds.size) return !currentAssignmentIds.has(String(assignment.auditorId));
-      return !(assignmentEmail && currentAssignmentEmails.has(assignmentEmail));
-    });
 
   const sectionTables = useMemo(() => {
     const rawTables = (activeSection?.tables || []).concat(
@@ -5756,6 +6053,9 @@ function SubmittedFormViewer({
   }, [activeSection]);
 
   const internalAssignments = useMemo(() => {
+    if (Array.isArray(previousInternalAssignments) && previousInternalAssignments.length > 0) {
+      return previousInternalAssignments;
+    }
     const list = submittedAuditorAssignments.filter((a) =>
       normalizeUserRole(a.auditorType || a.type || "").includes("internal")
     );
@@ -5772,7 +6072,7 @@ function SubmittedFormViewer({
       return [{
         key: "previous-internal-part-e",
         auditorId: "prev-internal",
-        auditorName: previousInternalPartEMeta || "Internal Auditor",
+        auditorName: "Internal Auditor",
         auditorEmail: "",
         auditorType: "internal",
         status: "submitted",
@@ -5783,13 +6083,176 @@ function SubmittedFormViewer({
       }];
     }
     return [];
-  }, [submittedAuditorAssignments, isExternalCycle, previousInternalPartEValues, previousInternalPartETables, previousInternalIqacRemarks, previousInternalPartEMeta]);
+  }, [previousInternalAssignments, submittedAuditorAssignments, isExternalCycle, previousInternalPartEValues, previousInternalPartETables, previousInternalIqacRemarks]);
+
+  const allFilledExternalAssignments = useMemo(() => {
+    const list = [];
+    const seen = new Set();
+
+    const currentAuditorSignOff = getAuditorSignOff(formData?.values || {});
+    const fallbackExternalMeta = {
+      values: formData?.values,
+      tables: formData?.tables,
+      remarks: formData?.values?.remarks || formData?.values?.auditObservations || formData?.values?.reviewRemarks,
+      attachments: formData?.attachments,
+      auditorName: currentAuditorSignOff?.name,
+      auditorEmail: currentAuditorSignOff?.email,
+      auditorDesignation: currentAuditorSignOff?.designation,
+      submittedAt: currentAuditorSignOff?.date,
+    };
+
+    const addAssignment = (assignment, fallbackMeta = {}) => {
+      if (!assignment) return;
+      const assignedVals = safeObjectValue(assignment.values || assignment.valuesData);
+      const effectiveVals = Object.keys(assignedVals).length > 0 ? assignedVals : safeObjectValue(fallbackMeta.values);
+
+      const assignedTbls = safeObjectValue(assignment.tables || (assignment.tablesData ? safeJsonParse(assignment.tablesData, {}) : {}));
+      const effectiveTbls = Object.keys(assignedTbls).length > 0 ? assignedTbls : safeObjectValue(fallbackMeta.tables);
+
+      const effectiveRemarks = assignment.remarks || assignment.auditObservations || fallbackMeta.remarks || effectiveVals.remarks || effectiveVals.auditObservations || effectiveVals.reviewRemarks || "";
+
+      const hasReviewData = isAssignmentFilledOrSubmitted(assignment) ||
+        Boolean(
+          (effectiveVals && hasAcademicPartEValues(effectiveVals)) ||
+          (effectiveTbls && Object.keys(effectiveTbls).length > 0 && Object.values(effectiveTbls).some((r) => Array.isArray(r) && r.length > 0)) ||
+          String(effectiveRemarks).trim() !== "" ||
+          (assignment.status && ["submitted", "completed", "auditor-completed", "approved"].includes(normalizeStatus(assignment.status))) ||
+          assignment.submittedAt
+        );
+
+      if (!hasReviewData) return;
+
+      const key = auditorDisplayKeyFor(assignment, list.length);
+      const email = normalizeAuditAssignment(assignment.auditorEmail || assignment.email || fallbackMeta.auditorEmail || "");
+      const id = String(assignment.auditorId || assignment.userId || "");
+      const dedupKey = id ? `id:external:${id}` : email ? `email:external:${email}` : key;
+      if (seen.has(dedupKey)) return;
+      seen.add(dedupKey);
+
+      list.push({
+        ...assignment,
+        key: assignment.key || dedupKey,
+        auditorType: "external",
+        auditorName: assignment.auditorName && assignment.auditorName !== "-"
+          ? assignment.auditorName
+          : fallbackMeta.auditorName || "External Auditor",
+        auditorEmail: assignment.auditorEmail || fallbackMeta.auditorEmail || "",
+        auditorDesignation: assignment.auditorDesignation || fallbackMeta.auditorDesignation || "",
+        status: assignment.status || "submitted",
+        submittedAt: assignment.submittedAt || fallbackMeta.submittedAt || "",
+        values: effectiveVals,
+        tables: effectiveTbls,
+        remarks: effectiveRemarks,
+        attachments: arrayValue(assignment.attachments?.length ? assignment.attachments : fallbackMeta.attachments),
+      });
+    };
+
+    (auditorAssignments || [])
+      .filter((a) => {
+        const type = normalizeUserRole(a.auditorType || a.type || "");
+        if (type.includes("external")) return true;
+        if (isExternalCycle && !type.includes("internal")) return true;
+        return false;
+      })
+      .forEach((a) => addAssignment(a, fallbackExternalMeta));
+
+    (versionHistory || [])
+      .filter((entry) => String(entry.reportCategory || "").toLowerCase() === "external")
+      .forEach((entry) => {
+        const entrySignOff = getAuditorSignOff(entry.values || {});
+        const meta = {
+          values: entry.values,
+          tables: entry.tables,
+          remarks: entry.remarks || entry.auditObservations,
+          attachments: entry.attachments,
+          auditorName: entrySignOff?.name || entry.auditorReviewedBy,
+          auditorEmail: entrySignOff?.email || entry.auditorReviewedByEmail,
+          auditorDesignation: entrySignOff?.designation || entry.auditorReviewedByDesignation,
+          submittedAt: entry.approvedOn || entry.reviewedOn || entrySignOff?.date,
+        };
+
+        const extAssignments = (entry.auditorAssignments || []).filter((a) =>
+          normalizeUserRole(a.auditorType || a.type || "").includes("external") ||
+          !normalizeUserRole(a.auditorType || a.type || "").includes("internal")
+        );
+
+        if (extAssignments.length > 0) {
+          extAssignments.forEach((a) => addAssignment(a, meta));
+        } else if (
+          hasAcademicPartEValues(entry.values) ||
+          (entry.values && Object.keys(entry.values).length > 0) ||
+          (entry.tables && Object.keys(entry.tables).length > 0) ||
+          entrySignOff?.name
+        ) {
+          addAssignment({
+            key: `history-external-${entry.id || entry.version}`,
+            auditorId: entry.id || `external-${entry.version}`,
+            auditorName: entrySignOff?.name || entry.auditorReviewedBy || "External Auditor",
+            auditorEmail: entrySignOff?.email || entry.auditorReviewedByEmail || "",
+            auditorDesignation: entrySignOff?.designation || entry.auditorReviewedByDesignation || "",
+            auditorType: "external",
+            status: "submitted",
+            submittedAt: entry.approvedOn || entry.reviewedOn || entrySignOff?.date || "",
+            values: entry.values || {},
+            tables: entry.tables || {},
+            remarks: entry.remarks || entry.auditObservations || "",
+          }, meta);
+        }
+      });
+
+    if (list.length === 0 && isExternalCycle) {
+      const hasAuditorSignOff = Boolean(currentAuditorSignOff?.name || currentAuditorSignOff?.date);
+      const hasAuditorRemarks = Boolean(
+        (formData?.values?.remarks && String(formData.values.remarks).trim()) ||
+        (formData?.values?.auditObservations && String(formData.values.auditObservations).trim()) ||
+        (formData?.values?.reviewRemarks && String(formData.values.reviewRemarks).trim())
+      );
+      const hasAuditorTables = sectionTables.some((table) => {
+        const key = table.id || table.tableKey;
+        const rows = formData?.tables?.[key];
+        return Array.isArray(rows) && rows.length > 0;
+      });
+      const hasPartE = hasAcademicPartEValues(formData?.values);
+
+      if (hasAuditorSignOff || hasAuditorRemarks || hasAuditorTables || hasPartE) {
+        addAssignment({
+          key: "external-cycle-review",
+          auditorId: "external-auditor",
+          auditorName: currentAuditorSignOff?.name || "External Auditor",
+          auditorEmail: currentAuditorSignOff?.email || "",
+          auditorDesignation: currentAuditorSignOff?.designation || "",
+          auditorType: "external",
+          status: "submitted",
+          submittedAt: currentAuditorSignOff?.date || "",
+          values: formData?.values || {},
+          tables: formData?.tables || {},
+          remarks: formData?.values?.remarks || formData?.values?.auditObservations || formData?.values?.reviewRemarks || "",
+          attachments: formData?.attachments || [],
+        }, fallbackExternalMeta);
+      }
+    }
+
+    return list;
+  }, [auditorAssignments, versionHistory, isExternalCycle, formData, sectionTables]);
+
+  const peerAuditorType = isExternalCycle ? "external" : "internal";
+  const submittedPeerAuditorAssignments = useMemo(() => {
+    const sourceList = isExternalCycle
+      ? allFilledExternalAssignments
+      : submittedAuditorAssignments.filter((a) =>
+          normalizeUserRole(a.auditorType || a.type || "").includes("internal")
+        );
+    return sourceList.filter((assignment) => {
+      const assignmentEmail = normalizeAuditAssignment(assignment.auditorEmail || assignment.email || "");
+      if (assignment.key && currentAssignmentKeys.size) return !currentAssignmentKeys.has(assignment.key);
+      if (assignment.auditorId && currentAssignmentIds.size) return !currentAssignmentIds.has(String(assignment.auditorId));
+      return !(assignmentEmail && currentAssignmentEmails.has(assignmentEmail));
+    });
+  }, [isExternalCycle, allFilledExternalAssignments, submittedAuditorAssignments, currentAssignmentKeys, currentAssignmentIds, currentAssignmentEmails]);
 
   const externalAssignments = useMemo(() => {
-    return submittedAuditorAssignments.filter((a) =>
-      normalizeUserRole(a.auditorType || a.type || "").includes("external")
-    );
-  }, [submittedAuditorAssignments]);
+    return allFilledExternalAssignments;
+  }, [allFilledExternalAssignments]);
 
   const hasAnyAuditorData = internalAssignments.length > 0 || externalAssignments.length > 0;
 
@@ -5840,13 +6303,21 @@ function SubmittedFormViewer({
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%" }}>
                 {internalAssignments.length > 0 && (
-                  <AuditorAssignmentReviewGrid
-                    fields={sectionAllFields}
-                    assignments={internalAssignments}
-                    fallbackAuditorType="internal"
-                    tables={sectionTables}
-                    allFormDataTables={formData.tables}
-                  />
+                  <div style={{ width: "100%" }}>
+                    {isExternalCycle && (
+                      <div style={styles.partEReferenceHeader}>
+                        <h4 style={styles.partEReferenceTitle}>Internal Auditor Review(s)</h4>
+                        {previousInternalPartEMeta && <span style={styles.partEReferenceMeta}>{previousInternalPartEMeta}</span>}
+                      </div>
+                    )}
+                    <AuditorAssignmentReviewGrid
+                      fields={sectionAllFields}
+                      assignments={internalAssignments}
+                      fallbackAuditorType="internal"
+                      tables={sectionTables}
+                      allFormDataTables={formData.tables}
+                    />
+                  </div>
                 )}
                 {isExternalCycle && externalAssignments.length === 0 && (
                   <div style={styles.pendingIqacCard}>
@@ -5857,13 +6328,20 @@ function SubmittedFormViewer({
                   </div>
                 )}
                 {externalAssignments.length > 0 && (
-                  <AuditorAssignmentReviewGrid
-                    fields={sectionAllFields}
-                    assignments={externalAssignments}
-                    fallbackAuditorType="external"
-                    tables={sectionTables}
-                    allFormDataTables={formData.tables}
-                  />
+                  <div style={{ width: "100%" }}>
+                    {internalAssignments.length > 0 && (
+                      <div style={styles.partEReferenceHeader}>
+                        <h4 style={styles.partEReferenceTitle}>External Auditor Review(s)</h4>
+                      </div>
+                    )}
+                    <AuditorAssignmentReviewGrid
+                      fields={sectionAllFields}
+                      assignments={externalAssignments}
+                      fallbackAuditorType="external"
+                      tables={sectionTables}
+                      allFormDataTables={formData.tables}
+                    />
+                  </div>
                 )}
               </div>
             )
@@ -5897,7 +6375,7 @@ function SubmittedFormViewer({
                     <div style={{ marginBottom: 20, width: "100%" }}>
                       <div style={styles.partEReferenceHeader}>
                         <h4 style={styles.partEReferenceTitle}>
-                          Submitted {isExternalCycle ? "External" : "Internal"} Auditor Review(s)
+                          {isExternalCycle ? "Previously Filled External Auditor Review(s)" : "Submitted Internal Auditor Review(s)"}
                         </h4>
                       </div>
                       <AuditorAssignmentReviewGrid
