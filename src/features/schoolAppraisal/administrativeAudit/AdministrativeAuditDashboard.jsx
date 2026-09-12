@@ -2168,12 +2168,13 @@ function SubmissionStatusPanel({
             (r.key === "deanPlacement" ? (storedSubmissionStatus.dp || storedSubmissionStatus["dean-placement"]) : null) ||
             {};
           const progressInfo = progressInfoForRole(administrativeProgress, r);
+          const isInfoCurrentVersion = !info.version || Number(info.version) === Number(currentVersion);
+          const isInfoRoleSubmitted = Boolean(info.submitted && isInfoCurrentVersion);
           const isCurrentVersionStored = !storedInfo.version || Number(storedInfo.version) === Number(currentVersion);
           const isStoredRoleSubmitted = Boolean(storedInfo.submitted && isCurrentVersionStored);
           const isProgressRoleSubmitted = Boolean(
-            progressInfo.submitted && !(Number(currentVersion) > 1 && !isStoredRoleSubmitted)
+            progressInfo.submitted && !(Number(currentVersion) > 1 && !isStoredRoleSubmitted && !isInfoRoleSubmitted)
           );
-          const isInfoRoleSubmitted = Boolean(info.submitted);
 
           const isRoleSubmitted = Boolean(isInfoRoleSubmitted || isStoredRoleSubmitted || isProgressRoleSubmitted);
           const mergedInfo = {
