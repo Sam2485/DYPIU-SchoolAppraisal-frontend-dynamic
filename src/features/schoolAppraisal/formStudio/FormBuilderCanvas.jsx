@@ -592,12 +592,7 @@ export const FormBuilderCanvas = ({
     if (roleKey === 'auditor') return '🔒 Designated for Auditor (Auditor Only)';
     const match = universityPosts.find((p) => p.code?.toLowerCase() === roleKey.toLowerCase() || p.name?.toLowerCase() === roleKey.toLowerCase());
     if (match) return `${match.name} (${match.code})`;
-    if (roleKey === 'director-schools') return 'Director / Dean';
-    if (roleKey === 'registrar') return 'Registrar Office';
-    if (roleKey === 'hr') return 'HR Office';
-    if (roleKey === 'dean-student-welfare') return 'Dean Student Welfare';
-    if (roleKey === 'dean-placement') return 'Dean Placement';
-    return roleKey;
+    return String(roleKey).replaceAll('-', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
   };
 
   return (

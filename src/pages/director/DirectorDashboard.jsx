@@ -11,7 +11,7 @@ import { fetchActiveSchema, fetchUniversityBranding } from "../../api/config";
 
 const compactYear = (str = "") => {
   const match = String(str).match(/(\d{4})\D+(\d{2,4})/);
-  if (!match) return "2025-26";
+  if (!match) return String(str || "").trim();
   const start = match[1];
   const end = match[2].slice(-2);
   return `${start}-${end}`;
@@ -20,10 +20,13 @@ const compactYear = (str = "") => {
 export default function DirectorDashboard() {
   const navigate = useNavigate();
   const [academicYear, setAcademicYear] = useState(
-    sessionStorage.getItem("academicYear") ? compactYear(sessionStorage.getItem("academicYear")) : "2025-26"
+    sessionStorage.getItem("academicYear") ? compactYear(sessionStorage.getItem("academicYear")) : ""
   );
   const [activeAcademicYear, setActiveAcademicYear] = useState("");
-  const [availableYears, setAvailableYears] = useState(["2025-26", "2026-27"]);
+  const [availableYears, setAvailableYears] = useState(() => {
+    const stored = sessionStorage.getItem("academicYear");
+    return stored ? [compactYear(stored)] : [];
+  });
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileOverrides, setProfileOverrides] = useState({});
@@ -37,7 +40,7 @@ export default function DirectorDashboard() {
   // Fetch University Branding
   useEffect(() => {
     let isActive = true;
-    const universityCode = sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || "dypiu";
+    const universityCode = sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || "";
     fetchUniversityBranding(universityCode)
       .then((data) => {
         if (isActive && data) setUniversityInfo(data);
@@ -69,7 +72,7 @@ export default function DirectorDashboard() {
     const loadDynamicSchema = async () => {
       setSchemaLoading(true);
       try {
-        const universityCode = sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || "dypiu";
+        const universityCode = sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || "";
         const userSchool = sessionStorage.getItem("userSchool") || sessionStorage.getItem("school") || "";
         const dynamicSchema = await fetchActiveSchema("academic", universityCode, userSchool);
         if (!isActive) return;
@@ -113,7 +116,7 @@ export default function DirectorDashboard() {
       try {
         const { data } = await fetchCurrentAuditCycle();
         if (!isActive) return;
-        const activeLabel = data.activeYear || "2025-2026";
+        const activeLabel = data.activeYear || data.academicYear || "";
         const activeFormatted = compactYear(activeLabel);
         setActiveAcademicYear(activeFormatted);
 

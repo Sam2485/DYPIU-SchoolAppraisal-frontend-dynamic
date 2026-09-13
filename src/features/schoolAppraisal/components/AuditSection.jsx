@@ -7,8 +7,6 @@ import { formatDateDDMMYYYY } from "../../../utils/dateFormat";
 import { uploadAttachments } from "../../../api/submissions";
 import { resolveFieldValue } from "../../../utils/fieldResolver";
 
-const ACADEMIC_PART_E_SECTION_ID = "part-e-observations";
-
 const parseIfJson = (value) => {
   if (typeof value === "string" && (value.trim().startsWith("[") || value.trim().startsWith("{"))) {
     try {
@@ -127,16 +125,16 @@ export const isAuditorSection = (section) =>
     section &&
     (
       section.ownerRole === "auditor" ||
+      String(section.ownerRole || "").toLowerCase().includes("auditor") ||
       section.isAuditorSection === true ||
       section.auditorSection === true ||
-      section.id === ACADEMIC_PART_E_SECTION_ID ||
-      (typeof section.id === "string" && (
-        section.id.toLowerCase().includes("part-e") ||
-        section.id.toLowerCase().includes("part_e")
-      )) ||
       (typeof section.title === "string" && (
-        section.title.toLowerCase().includes("part e - observations") ||
-        section.title.toLowerCase().includes("observations & recommendations of the audit")
+        section.title.toLowerCase().includes("observations") ||
+        section.title.toLowerCase().includes("recommendations")
+      )) ||
+      (typeof section.id === "string" && (
+        section.id.toLowerCase().includes("observation") ||
+        section.id.toLowerCase().includes("auditor")
       ))
     )
   );
@@ -905,12 +903,7 @@ export function AuditorSectionReviewPanel({ section, review, tables = {}, values
   const isExternalCycle = review?.reportCategory === "external";
 
   if (!hasInternalData && !hasExternalData) {
-    const isPartE =
-      section.id === ACADEMIC_PART_E_SECTION_ID ||
-      String(section.title || "").toLowerCase().includes("part e");
-    const pendingText = isPartE
-      ? "IQAC has not approved your form yet. Part E audit observations, recommendations, and IQAC review remarks will be displayed here once your form is reviewed and approved by IQAC."
-      : `IQAC has not approved your form yet. ${section.title ? `${section.title} audit` : "Auditor"} observations, recommendations, and IQAC review remarks will be displayed here once your form is reviewed and approved by IQAC.`;
+    const pendingText = `IQAC has not approved your form yet. ${section?.title ? `${section.title} audit` : "Auditor"} observations, recommendations, and IQAC review remarks will be displayed here once your form is reviewed and approved by IQAC.`;
 
     return (
       <div style={styles.pendingIqacCard}>

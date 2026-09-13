@@ -137,7 +137,9 @@ export default function ResetPassword() {
         <div className="school-reset-card" style={s.card}>
           <div className="school-reset-left" style={s.left}>
             <h1 style={s.uniName}>Reset Password</h1>
-            <h1 style={s.uniName}>D. Y. Patil International University, Akurdi, Pune, Maharashtra</h1>
+            <h2 style={{ ...s.uniName, fontSize: "1.3rem", fontWeight: 500, opacity: 0.9 }}>
+              {sessionStorage.getItem("universityName") || localStorage.getItem("universityName") || "Faculty Appraisal System"}
+            </h2>
             <p style={s.desc}>
               Set a new password for your School Appraisal System account.
             </p>

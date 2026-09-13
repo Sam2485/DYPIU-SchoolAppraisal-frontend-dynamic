@@ -1,7 +1,7 @@
 import api from './client';
 
 const getSessionUniversityCode = () =>
-  sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || 'dypiu';
+  sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || '';
 
 const getSessionSchool = () =>
   sessionStorage.getItem("userSchool") || localStorage.getItem("userSchool") || sessionStorage.getItem("school") || localStorage.getItem("school");
@@ -10,7 +10,8 @@ export const fetchActiveSchema = async (auditType = 'academic', universityCode =
   try {
     const code = universityCode || getSessionUniversityCode();
     const sch = school || getSessionSchool();
-    const params = { auditType, universityCode: code };
+    const params = { auditType };
+    if (code) params.universityCode = code;
     if (sch) params.school = sch;
     const response = await api.get('/api/config/active', { params });
     return response.data;
