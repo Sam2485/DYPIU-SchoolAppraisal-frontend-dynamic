@@ -3,7 +3,6 @@ import universityLogo from "../../../assets/images/image.png";
 import iqacLogo from "../../../assets/images/IQAS.png";
 import { SIGN_OFF_FIELD } from "../../../api/submissions";
 import { formatDateDDMMYYYY } from "../../../utils/dateFormat";
-import AdministrativePartE from "./AdministrativePartE";
 import { getAttachmentUrl } from "../../../utils/attachment";
 
 const parseIfJson = (value) => {
@@ -260,18 +259,6 @@ export default function AdministrativeReportPanel({
                     key={`attachment-${block.id}`}
                     fields={[{ id: block.id, label: block.label }]}
                     values={data.fields}
-                  />
-                );
-              }
-
-              if (block.type === "part-e-schools") {
-                return (
-                  <AdministrativePartE
-                    key={`part-e-${index}`}
-                    value={data.fields[block.fieldId]}
-                    coursesOffered={data.tables.coursesOffered || []}
-                    readOnly
-                    showAllSchools
                   />
                 );
               }
