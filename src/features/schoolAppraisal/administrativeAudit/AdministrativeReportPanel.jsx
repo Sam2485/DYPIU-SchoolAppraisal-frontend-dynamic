@@ -154,15 +154,7 @@ const auditorDisplayKeyFor = (assignment = {}, index = 0) => {
   if (email) return `email:${type}:${email}`;
   return `assignment:${assignment.key || index}`;
 };
-const assignmentLabel = (value = "") => {
-  const labels = {
-    registrar: "Registrar",
-    hr: "HR",
-    "dean-student-welfare": "Dean Student Welfare",
-    "dean-placement": "Dean Placement",
-  };
-  return labels[value] || titleCase(value || "Assigned Review");
-};
+const assignmentLabel = (value = "") => titleCase(value || "Assigned Review");
 const groupAuditorAssignmentsForDisplay = (assignments = []) => {
   const groups = new Map();
   assignments.forEach((assignment, index) => {

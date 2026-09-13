@@ -148,21 +148,30 @@ const blocksFor = (section) =>
 
 const isOmittedReportText = (value) =>
   String(value || "").trim().toLowerCase() === "reviewers (vc & iqac) cannot create or submit audits";
-const ACADEMIC_PART_E_SECTION_ID = "part-e-observations";
-const ACADEMIC_PART_E_FIELD_IDS = ["auditObservations", "auditRecommendations", "auditDocumentation"];
+const isAuditorSection = (sec) =>
+  sec?.ownerRole === "auditor" ||
+  String(sec?.ownerRole || "").toLowerCase().includes("auditor") ||
+  sec?.isAuditorSection === true ||
+  sec?.auditorSection === true ||
+  (typeof sec?.title === "string" && (
+    sec.title.toLowerCase().includes("observation") ||
+    sec.title.toLowerCase().includes("recommendation")
+  ));
 const isAttachmentValue = (value) =>
   value &&
   typeof value === "object" &&
   !Array.isArray(value) &&
   (value.url || value.publicUrl || value.downloadUrl || value.name || value.fileName);
-const hasAcademicPartEValues = (values = {}) =>
-  ACADEMIC_PART_E_FIELD_IDS.some((fieldId) => {
-    const value = values[fieldId];
-    if (Array.isArray(value)) return value.length > 0;
-    if (isAttachmentValue(value)) return true;
-    if (value && typeof value === "object") return Object.keys(value).length > 0;
-    return String(value || "").trim().length > 0;
+const hasAcademicPartEValues = (values = {}) => {
+  if (!values || typeof values !== "object") return false;
+  return Object.entries(values).some(([k, v]) => {
+    if (k.startsWith("__") || k === "status" || k === "auditType") return false;
+    if (Array.isArray(v)) return v.length > 0;
+    if (isAttachmentValue(v)) return true;
+    if (v && typeof v === "object") return Object.keys(v).length > 0;
+    return typeof v === "string" && v.trim().length > 0;
   });
+};
 const normalizeStatus = (value = "") => String(value).trim().toLowerCase().replaceAll("_", "-");
 const isSubmittedAuditorAssignment = (assignment = {}) =>
   ["submitted", "completed", "auditor-completed", "approved"].includes(normalizeStatus(assignment.status)) ||
@@ -233,15 +242,7 @@ const auditorDisplayKeyFor = (assignment = {}, index = 0) => {
   if (email) return `email:${type}:${email}`;
   return `assignment:${assignment.key || index}`;
 };
-const assignmentLabel = (value = "") => {
-  const labels = {
-    registrar: "Registrar",
-    hr: "HR",
-    "dean-student-welfare": "Dean Student Welfare",
-    "dean-placement": "Dean Placement",
-  };
-  return labels[value] || titleCase(value || "Assigned Review");
-};
+const assignmentLabel = (value = "") => titleCase(value || "Assigned Review");
 const groupAuditorAssignmentsForDisplay = (assignments = []) => {
   const groups = new Map();
   assignments.forEach((assignment, index) => {
@@ -304,7 +305,7 @@ export default function AuditReportPanel({
           </div>
           {blocksFor(section).map((block, blockIndex) => {
             if (block.type === "fields") {
-              if (section.id === ACADEMIC_PART_E_SECTION_ID && submittedAuditorAssignments.length) {
+              if (isAuditorSection(section) && submittedAuditorAssignments.length) {
                 return (
                   <AuditorReportReviews
                     key={`auditor-reviews-${blockIndex}`}
@@ -316,7 +317,7 @@ export default function AuditReportPanel({
 
               const showPreviousInternalPartE =
                 isExternalReport &&
-                section.id === ACADEMIC_PART_E_SECTION_ID &&
+                isAuditorSection(section) &&
                 hasAcademicPartEValues(previousInternalValues);
 
               if (showPreviousInternalPartE) {
@@ -324,13 +325,13 @@ export default function AuditReportPanel({
                   <div key={`part-e-comparison-${blockIndex}`} style={styles.partEReportComparison}>
                     <div style={styles.partEReportBlock}>
                       <div style={styles.partEReportHeader}>
-                        <h3 style={styles.partEReportTitle}>Internal Auditor Part E - V1</h3>
+                        <h3 style={styles.partEReportTitle}>Internal Auditor Review</h3>
                         {previousInternalMeta && <span style={styles.partEReportMeta}>{previousInternalMeta}</span>}
                       </div>
                       <ReportFieldsTable fields={block.fields} values={previousInternalValues} />
                     </div>
                     <div style={styles.partEReportBlock}>
-                      <h3 style={styles.partEReportTitle}>External Auditor Part E - Current External Audit</h3>
+                      <h3 style={styles.partEReportTitle}>External Auditor Review - Current External Audit</h3>
                       <ReportFieldsTable fields={block.fields} values={values} />
                     </div>
                   </div>

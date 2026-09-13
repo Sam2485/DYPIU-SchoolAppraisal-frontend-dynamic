@@ -12,7 +12,7 @@ import { columnsWithSerial, serialColumnFor } from "./tableHelpers";
 import { scrollPageToTop } from "../../../utils/scrollToTop";
 import { SCHOOL_OPTIONS, canonicalSchoolCode } from "../userManagement/userManagementConfig";
 
-const DEFAULT_SCHOOL_ADDRESS = "Dr. D. Y. Patil International University, Sector 29, Pradhikaran, Akurdi, Pune - Maharashtra, INDIA 411044";
+const getDefaultAddress = () => sessionStorage.getItem("universityAddress") || "";
 
 const schoolFullNameFromCode = (code = "") => {
   return String(code || "").trim();
@@ -385,17 +385,18 @@ export default function AuditForm({
 }) {
   const auditType = schema.id.includes("administrative") ? "administrative" : "academic";
   const defaultSchoolName = useMemo(() => schoolFullNameFromCode(sessionStorage.getItem("school") || ""), []);
+  const defaultAddress = useMemo(() => getDefaultAddress(), []);
   const initialValues = useMemo(() => {
     const values = buildInitialValues(schema);
     if ("schoolName" in values) values.schoolName = defaultSchoolName;
-    if ("address" in values) values.address = DEFAULT_SCHOOL_ADDRESS;
+    if ("address" in values && defaultAddress) values.address = defaultAddress;
     return values;
-  }, [schema, defaultSchoolName]);
+  }, [schema, defaultSchoolName, defaultAddress]);
   const withSchoolDefaults = useCallback((fieldValues = {}) => ({
     ...fieldValues,
     ...("schoolName" in initialValues && !fieldValues.schoolName ? { schoolName: defaultSchoolName } : {}),
-    ...("address" in initialValues && !fieldValues.address ? { address: DEFAULT_SCHOOL_ADDRESS } : {}),
-  }), [initialValues, defaultSchoolName]);
+    ...("address" in initialValues && !fieldValues.address && defaultAddress ? { address: defaultAddress } : {}),
+  }), [initialValues, defaultSchoolName, defaultAddress]);
   const initialTables = useMemo(() => buildInitialTables(schema), [schema]);
   const [values, setValues] = useState(initialValues);
   const [tables, setTables] = useState(initialTables);

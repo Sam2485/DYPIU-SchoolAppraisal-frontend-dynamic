@@ -16,7 +16,6 @@ import AdministrativePartE from "./AdministrativePartE";
 import AppSidebar from "../components/AppSidebar";
 import UserProfileModal from "../components/UserProfileModal";
 import { AuditorSectionReviewPanel, buildAuditorSectionReview, isAuditorSection } from "../components/AuditSection";
-import { administrativeAuditMeta, administrativeAuditModules } from "./administrativeAuditConfig";
 import { getAttachmentUrl } from "../../../utils/attachment";
 import { scrollPageToTop } from "../../../utils/scrollToTop";
 import { fetchActiveSchema, fetchUniversityBranding } from "../../../api/config";
@@ -38,45 +37,20 @@ const normalizeHistoryDraft = (entry = {}, fallbackValues = {}, fallbackTables =
   };
 };
 
-const administrativeUserModules = [
-  ...administrativeAuditModules.filter((module) => module.id !== "section-f-observations-recommendations"),
-  {
-    id: "submission-status",
-    number: "",
-    title: "Submission Status",
-    owner: "system",
-  }
-];
-
 const normalizePost = (value = "") => {
   const normalized = String(value).trim().toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-  if (normalized === "hr" || normalized.includes("human resource")) return "hr";
-  if (normalized === "dsw" || normalized.includes("student welfare")) return "dean-student-welfare";
-  if (normalized === "dp" || normalized.includes("dean placement") || normalized === "placement") return "dean-placement";
-  if (normalized.includes("registrar")) return "registrar";
   return normalized.replaceAll(" ", "-");
 };
 
 const moduleOwnerPost = (module) => normalizePost(module.owner);
 
-const ADMIN_STATUS_ROLES = [
-  { key: "registrar", label: "Registrar", post: "registrar" },
-  { key: "hr", label: "HR", post: "hr" },
-  { key: "deanStudentWelfare", label: "Dean Student Welfare", post: "dean-student-welfare" },
-  { key: "deanPlacement", label: "Dean Placement", post: "dean-placement" },
-];
-
 const statusRoleForPost = (post) => {
   const norm = normalizePost(post);
-  return (
-    ADMIN_STATUS_ROLES.find(
-      (role) => role.post === post || role.post === norm || role.key === post || role.key === norm
-    ) || {
-      key: norm,
-      label: titleCase(post),
-      post: norm,
-    }
-  );
+  return {
+    key: norm,
+    label: titleCase(post),
+    post: norm,
+  };
 };
 const titleCase = (value = "") => String(value).replaceAll("-", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 const compactAcademicYear = (value = "") => String(value || "")
@@ -177,7 +151,7 @@ const moduleFieldsFor = (module) =>
 const moduleTablesFor = (module) =>
   moduleBlocksFor(module).flatMap((block) => (block.type === "tables" ? block.tables : []));
 
-const ensureDefaultTableRows = (tables = {}, modules = administrativeAuditModules) => {
+const ensureDefaultTableRows = (tables = {}, modules = []) => {
   const nextTables = { ...tables };
   modules.forEach((module) => {
     moduleTablesFor(module).forEach((table) => {
@@ -191,7 +165,7 @@ const ensureDefaultTableRows = (tables = {}, modules = administrativeAuditModule
   return nextTables;
 };
 
-const buildInitialData = (modules = administrativeAuditModules) => {
+const buildInitialData = (modules = []) => {
   const fields = {};
   const tables = {};
 
@@ -254,10 +228,10 @@ const storedAdministrativeStatusFor = (fields = {}) => (
 export default function AdministrativeAuditDashboard() {
   const navigate = useNavigate();
   const [academicYear, setAcademicYear] = useState(
-    sessionStorage.getItem("academicYear") ? compactAcademicYear(sessionStorage.getItem("academicYear")) : "2025-26"
+    sessionStorage.getItem("academicYear") ? compactAcademicYear(sessionStorage.getItem("academicYear")) : ""
   );
   const [activeAcademicYear, setActiveAcademicYear] = useState("");
-  const [availableYears, setAvailableYears] = useState(["2025-26", "2026-27"]);
+  const [availableYears, setAvailableYears] = useState([]);
 
   useEffect(() => {
     let isActive = true;
@@ -265,18 +239,18 @@ export default function AdministrativeAuditDashboard() {
       try {
         const { data } = await fetchCurrentAuditCycle();
         if (!isActive) return;
-        const activeLabel = data.activeYear || "2025-2026";
-        const formattedActive = compactAcademicYear(activeLabel);
+        const activeLabel = data.activeYear || "";
+        const formattedActive = activeLabel ? compactAcademicYear(activeLabel) : "";
         setActiveAcademicYear(formattedActive);
 
-        const rawYears = data.availableYears || [activeLabel];
-        const formatted = Array.from(new Set(rawYears.map(compactAcademicYear))).sort();
+        const rawYears = data.availableYears || (activeLabel ? [activeLabel] : []);
+        const formatted = Array.from(new Set(rawYears.map(compactAcademicYear))).filter(Boolean).sort();
         setAvailableYears(formatted);
 
         const stored = sessionStorage.getItem("academicYear");
         const selected = stored ? compactAcademicYear(stored) : formattedActive;
         setAcademicYear(selected);
-        sessionStorage.setItem("academicYear", selected);
+        if (selected) sessionStorage.setItem("academicYear", selected);
       } catch {
         // Fallback
       }
@@ -297,12 +271,14 @@ export default function AdministrativeAuditDashboard() {
 
   useEffect(() => {
     let isActive = true;
-    const universityCode = sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || "dypiu";
-    fetchUniversityBranding(universityCode)
-      .then((data) => {
-        if (isActive && data) setUniversityInfo(data);
-      })
-      .catch(() => {});
+    const universityCode = sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || "";
+    if (universityCode) {
+      fetchUniversityBranding(universityCode)
+        .then((data) => {
+          if (isActive && data) setUniversityInfo(data);
+        })
+        .catch(() => {});
+    }
     return () => {
       isActive = false;
     };
@@ -313,7 +289,7 @@ export default function AdministrativeAuditDashboard() {
     const loadDynamicAdminSchema = async () => {
       setSchemaLoading(true);
       try {
-        const universityCode = sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || "dypiu";
+        const universityCode = sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || "";
         const userPost = sessionStorage.getItem("post") || sessionStorage.getItem("designation") || "";
         const schema = await fetchActiveSchema("administrative", universityCode, userPost);
         if (!isActive) return;
@@ -353,7 +329,7 @@ export default function AdministrativeAuditDashboard() {
 
   const dynamicModules = useMemo(() => {
     if (!dynamicSchema || !Array.isArray(dynamicSchema.sections) || dynamicSchema.sections.length === 0) {
-      return administrativeUserModules;
+      return [];
     }
     const mapped = dynamicSchema.sections.map((sec, idx) => ({
       id: sec.idString || String(sec.id || `section-${idx + 1}`),
@@ -452,18 +428,15 @@ export default function AdministrativeAuditDashboard() {
         const norm = normalizePost(mod.owner);
         if (!seen.has(norm)) {
           seen.add(norm);
-          const predefined = ADMIN_STATUS_ROLES.find((r) => r.post === norm || r.key === norm);
-          schemaRoles.push(
-            predefined || {
-              key: norm,
-              label: titleCase(mod.owner),
-              post: norm,
-            }
-          );
+          schemaRoles.push({
+            key: norm,
+            label: titleCase(mod.owner),
+            post: norm,
+          });
         }
       }
     });
-    return schemaRoles.length > 0 ? schemaRoles : ADMIN_STATUS_ROLES;
+    return schemaRoles;
   }, [dynamicModules]);
 
   useEffect(() => {
@@ -716,18 +689,7 @@ export default function AdministrativeAuditDashboard() {
       version: workflow.version || undefined,
       sections: modules.map((module) => {
         const clean = String(module.number || "").trim().toUpperCase().replace(/^(PART|SECTION)[-\s_]*/i, "");
-        if (["A", "B", "C", "D", "E"].includes(clean)) return clean;
-        if (clean === "1") return "A";
-        if (clean === "2") return "B";
-        if (clean === "3") return "C";
-        if (clean === "4") return "D";
-        if (clean === "5") return "E";
-        const post = moduleOwnerPost(module);
-        if (post === "hr") return "B";
-        if (post === "dean-student-welfare") return "D";
-        if (post === "dean-placement") return "E";
-        if (post === "registrar") return clean === "3" ? "C" : "A";
-        return clean;
+        return clean || String(module.sectionKey || module.id || "").trim();
       }).filter(Boolean),
     };
   };
@@ -903,7 +865,13 @@ export default function AdministrativeAuditDashboard() {
           />
           <main className="admin-audit-main" style={styles.main}>
             <AdministrativeReportPanel
-              meta={{ ...administrativeAuditMeta, academicYear }}
+              meta={{
+                title: dynamicSchema?.title || "Internal Administrative Audit",
+                academicYear,
+                university: universityInfo?.universityName || sessionStorage.getItem("universityName") || "",
+                address: universityInfo?.address || "",
+                act: universityInfo?.act || "",
+              }}
               modules={dynamicModules}
               data={data}
               reportCategory={activeDraftData?.reportCategory || ""}
@@ -997,10 +965,10 @@ export default function AdministrativeAuditDashboard() {
             <div style={styles.headerContent}>
               <img src={universityInfo?.logoUrl || universityLogo} alt="University Logo" style={styles.logo} />
               <div>
-                <p style={styles.kicker}>{universityInfo?.universityName || administrativeAuditMeta.university}</p>
-                <h1 style={styles.title}>{dynamicSchema?.title || administrativeAuditMeta.title}</h1>
-                <p style={styles.meta}>{universityInfo?.address || administrativeAuditMeta.address}</p>
-                <p style={styles.meta}>{universityInfo?.act || administrativeAuditMeta.act}</p>
+                <p style={styles.kicker}>{universityInfo?.universityName || sessionStorage.getItem("universityName") || ""}</p>
+                <h1 style={styles.title}>{dynamicSchema?.title || "Internal Administrative Audit"}</h1>
+                {universityInfo?.address && <p style={styles.meta}>{universityInfo.address}</p>}
+                {universityInfo?.act && <p style={styles.meta}>{universityInfo.act}</p>}
                 <p style={styles.year}>Academic Year {academicYear}</p>
                 <p style={styles.cycleLabel}>{cycleLabelFor(workflow)}</p>
               </div>
@@ -1370,7 +1338,8 @@ function AttachmentField({
   );
 }
 
-function Sidebar({ activeModuleId, setActiveModuleId, profile, academicYear, currentAcademicYear, availableYears, onYearChange, onLogout, onOpenProfile, hasSchema, modules = administrativeUserModules }) {
+function Sidebar({ activeModuleId, setActiveModuleId, profile, academicYear, currentAcademicYear, availableYears, onYearChange, onLogout, onOpenProfile, hasSchema, modules = [] }) {
+  const dynamicRolesText = Array.from(new Set(modules.filter(m => m.owner && m.owner !== "system").map(m => titleCase(m.owner)))).join(" · ") || "Administrative Module";
   return (
     <AppSidebar
       title="Administrative Audit"
@@ -1381,7 +1350,7 @@ function Sidebar({ activeModuleId, setActiveModuleId, profile, academicYear, cur
       currentAcademicYear={currentAcademicYear}
       availableYears={availableYears}
       onYearChange={onYearChange}
-      roleText="Registrar · HR · DSW · Placement"
+      roleText={dynamicRolesText}
       items={hasSchema ? modules : []}
       activeId={activeModuleId}
       onChange={setActiveModuleId}
@@ -2084,7 +2053,7 @@ function SubmissionStatusPanel({
   storedSubmissionStatus = {},
   administrativeProgress = {},
   hasExistingSubmission = true,
-  roles = ADMIN_STATUS_ROLES,
+  roles = [],
   currentVersion = 1,
 }) {
   const [statusMap, setStatusMap] = useState({});

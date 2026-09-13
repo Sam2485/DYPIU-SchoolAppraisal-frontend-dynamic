@@ -437,7 +437,7 @@ export const SchemaManager = ({
                               {v.status}
                             </span>
                           </td>
-                          <td style={{ padding: '14px 18px' }}>{v.academicYear || '2025-26'}</td>
+                          <td style={{ padding: '14px 18px' }}>{v.academicYear || '-'}</td>
                           <td style={{ padding: '14px 18px' }}>{v.publishedBy || '-'}</td>
                           <td style={{ padding: '14px 18px' }}>
                             {v.publishedAt ? new Date(v.publishedAt).toLocaleDateString() : '-'}
@@ -672,7 +672,7 @@ export const SchemaManager = ({
                                 {v.status}
                               </span>
                             </td>
-                            <td style={{ padding: '12px 14px' }}>{v.academicYear || '2025-26'}</td>
+                            <td style={{ padding: '12px 14px' }}>{v.academicYear || '-'}</td>
                             <td style={{ padding: '12px 14px' }}>{v.publishedBy || '-'}</td>
                             <td style={{ padding: '12px 14px' }}>
                               {v.publishedAt ? new Date(v.publishedAt).toLocaleDateString() : '-'}
@@ -816,7 +816,7 @@ export const SchemaManager = ({
                   <input
                     type="text"
                     style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
-                    placeholder={isAdministrative ? 'e.g. University Administrative Appraisal Form 2025-26' : 'e.g. School of Engineering Appraisal 2025-26'}
+                    placeholder={isAdministrative ? 'e.g. University Administrative Appraisal Form' : 'e.g. School Appraisal Form'}
                     required
                     value={newSchemaForm.name}
                     onChange={(e) =>

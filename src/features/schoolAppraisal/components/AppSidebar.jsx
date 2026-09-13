@@ -22,9 +22,10 @@ export default function AppSidebar({
   badge = "SA",
   roleTitle,
   roleText,
-  academicYear = "2025-26",
+  academicYear = "",
   currentAcademicYear = "",
   availableYears = [],
+  supportEmail = sessionStorage.getItem("universitySupportEmail") || sessionStorage.getItem("supportEmail") || "",
   onYearChange,
   items,
   pinnedItems = [],
@@ -242,10 +243,12 @@ export default function AppSidebar({
         )}
       </nav>
 
-      <a className="app-sidebar__support" href="mailto:appraisal@dypiu.ac.in">
-        <span className="app-sidebar__support-icon"><MailIcon /></span>
-        <span><small>Need help?</small><strong>appraisal@dypiu.ac.in</strong></span>
-      </a>
+      {supportEmail && (
+        <a className="app-sidebar__support" href={`mailto:${supportEmail}`}>
+          <span className="app-sidebar__support-icon"><MailIcon /></span>
+          <span><small>Need help?</small><strong>{supportEmail}</strong></span>
+        </a>
+      )}
 
       <div
         className="app-sidebar__profile"
