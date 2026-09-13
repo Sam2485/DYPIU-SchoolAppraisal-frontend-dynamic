@@ -131,10 +131,10 @@ const uniqueAttachments = (values) => [...new Map(
   ])
 ).values()];
 
-const moduleBlocksFor = (module) =>
-  module.blocks || [
-    ...(module.fields?.length ? [{ type: "fields", fields: module.fields }] : []),
-    ...(module.tables?.length ? [{ type: "tables", tables: module.tables }] : []),
+const moduleBlocksFor = (module = {}) =>
+  module?.blocks || [
+    ...(module?.fields?.length ? [{ type: "fields", fields: module.fields }] : []),
+    ...(module?.tables?.length ? [{ type: "tables", tables: module.tables }] : []),
   ];
 
 const moduleFieldsFor = (module) =>
@@ -372,7 +372,7 @@ export default function AdministrativeAuditDashboard() {
   const profile = { ...getUserProfile(), avatarUrl: accountAvatarUrl, ...profileOverrides };
   const userPost = normalizePost(profile.post || profile.designation);
   const firstOwnedModule = dynamicModules.find((module) => !module.isAuditorSection && moduleOwnerPost(module) === userPost);
-  const [activeModuleId, setActiveModuleId] = useState(firstOwnedModule?.id || dynamicModules[0].id);
+  const [activeModuleId, setActiveModuleId] = useState(firstOwnedModule?.id || dynamicModules[0]?.id || "");
   const [reportMode, setReportMode] = useState(false);
   const [printReportAfterRender, setPrintReportAfterRender] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -394,7 +394,7 @@ export default function AdministrativeAuditDashboard() {
   const [activeDraftData, setActiveDraftData] = useState(null);
 
   const activeModule = useMemo(
-    () => dynamicModules.find((module) => module.id === activeModuleId) || dynamicModules[0],
+    () => dynamicModules.find((module) => module.id === activeModuleId) || dynamicModules[0] || null,
     [dynamicModules, activeModuleId],
   );
   const ownedModules = useMemo(
@@ -402,9 +402,9 @@ export default function AdministrativeAuditDashboard() {
     [dynamicModules, userPost],
   );
   const activeModuleIndex = dynamicModules.findIndex((module) => module.id === activeModuleId);
-  const isLastModule = activeModuleIndex === dynamicModules.length - 1;
+  const isLastModule = dynamicModules.length > 0 && activeModuleIndex === dynamicModules.length - 1;
   const finalOwnedModule = ownedModules[ownedModules.length - 1];
-  const canEditActiveModule = !activeModule?.isAuditorSection && moduleOwnerPost(activeModule) === userPost;
+  const canEditActiveModule = Boolean(activeModule && !activeModule.isAuditorSection && moduleOwnerPost(activeModule) === userPost);
   const backendAllowsContributionEdit =
     workflow.canEditContribution === true ||
     isEditableContributionStatus(workflow.contributionStatus || workflow.overallStatus);
@@ -413,8 +413,8 @@ export default function AdministrativeAuditDashboard() {
     isLockedContributionStatus(workflow.contributionStatus);
   const contributionLocked = contributionApproved || (!backendAllowsContributionEdit && isSubmitted);
   const readOnly = isHistoricalYear || !canEditActiveModule || backendBlocksContributionEdit || contributionLocked;
-  const isFinalOwnedModule = canEditActiveModule && activeModule.id === finalOwnedModule?.id;
-  const canWorkOnOwnedModule = canEditActiveModule && !backendBlocksContributionEdit && !contributionLocked;
+  const isFinalOwnedModule = Boolean(canEditActiveModule && activeModule?.id && activeModule.id === finalOwnedModule?.id);
+  const canWorkOnOwnedModule = Boolean(canEditActiveModule && !backendBlocksContributionEdit && !contributionLocked);
   const canSubmitPart = isSubmissionConfirmed(submissionConfirmation);
   const currentStatusRole = statusRoleForPost(userPost);
 
@@ -707,7 +707,7 @@ export default function AdministrativeAuditDashboard() {
       }));
       await saveDraft(currentPayload(), { isUpdate: hasExistingSubmission });
       setHasExistingSubmission(true);
-      setStatus(`Section ${activeModule.number || activeModule.title} draft saved successfully.`);
+      setStatus(`Section ${activeModule?.number || activeModule?.title || ""} draft saved successfully.`);
     } catch (error) {
       setStatus(getApiErrorMessage(error, "Could not save draft."));
     } finally {
@@ -737,7 +737,7 @@ export default function AdministrativeAuditDashboard() {
       setData(nextData);
       await saveDraft(currentPayload(), { isUpdate: hasExistingSubmission });
       setHasExistingSubmission(true);
-      setStatus(`Section ${activeModule.number || activeModule.title} draft saved successfully.`);
+      setStatus(`Section ${activeModule?.number || activeModule?.title || ""} draft saved successfully.`);
 
       if (nextModuleId && nextModuleId !== activeModuleId) {
         handleModuleChange(nextModuleId);
@@ -1010,9 +1010,9 @@ export default function AdministrativeAuditDashboard() {
             <div style={styles.moduleHead}>
               <div>
                 <h2 style={styles.moduleTitle}>
-                  {activeModule.number ? `${activeModule.number}. ${activeModule.title}` : activeModule.title}
+                  {activeModule?.number ? `${activeModule.number}. ${activeModule.title}` : (activeModule?.title || "")}
                 </h2>
-                {activeModule.note && <p style={styles.moduleNote}>{activeModule.note}</p>}
+                {activeModule?.note && <p style={styles.moduleNote}>{activeModule.note}</p>}
               </div>
               {activeModuleId !== "submission-status" && (
                 <span style={activeModule?.isAuditorSection ? { fontSize: "11px", fontWeight: 700, padding: "4px 10px", borderRadius: "6px", background: "#fef3c7", color: "#92400e", border: "1px solid #fcd34d" } : (canWorkOnOwnedModule ? styles.badge : styles.readOnlyBadge)}>
@@ -1023,7 +1023,7 @@ export default function AdministrativeAuditDashboard() {
 
             {!canEditActiveModule && activeModuleId !== "submission-status" && !activeModule?.isAuditorSection && (
               <div style={styles.ownershipNotice}>
-                This section can only be edited by {activeModule.owner}.
+                This section can only be edited by {activeModule?.owner || "the section owner"}.
               </div>
             )}
 

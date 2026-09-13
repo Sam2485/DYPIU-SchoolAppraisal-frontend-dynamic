@@ -174,8 +174,13 @@ const normalizeAcademicYear = (value = "") => {
     : Number(match[2]);
   return `${startYear}-${endYear}`;
 };
-const nextAcademicYearFor = (value) => {
-  const [startYear, endYear] = normalizeAcademicYear(value).split("-").map(Number);
+const nextAcademicYearFor = (value = "") => {
+  if (!value) return "";
+  const normalized = normalizeAcademicYear(value);
+  const match = String(normalized).match(/(\d{4})\D+(\d{4})/);
+  if (!match) return String(value || "");
+  const startYear = Number(match[1]);
+  const endYear = Number(match[2]);
   return `${startYear + 1}-${endYear + 1}`;
 };
 const reportVersionForCategory = (category = "", fallbackVersion = 1) => {
@@ -184,12 +189,24 @@ const reportVersionForCategory = (category = "", fallbackVersion = 1) => {
   if (normalized === "external") return 2;
   return Number(fallbackVersion || 1);
 };
-const compactAcademicYear = (value) => {
-  const [startYear, endYear] = normalizeAcademicYear(value).split("-");
+const compactAcademicYear = (value = "") => {
+  if (!value) return "";
+  const normalized = normalizeAcademicYear(value);
+  const match = String(normalized).match(/(\d{4})\D+(\d{2,4})/);
+  if (!match) return String(normalized || value || "");
+  const startYear = match[1];
+  const endYear = match[2];
   return `${startYear}-${endYear.slice(-2)}`;
 };
-const academicYearPeriod = (value) => {
-  const [startYear, endYear] = normalizeAcademicYear(value).split("-");
+const academicYearPeriod = (value = "") => {
+  if (!value) return "";
+  const normalized = normalizeAcademicYear(value);
+  const match = String(normalized).match(/(\d{4})\D+(\d{2,4})/);
+  if (!match) return String(value || "");
+  const startYear = match[1];
+  const endYear = match[2].length === 2
+    ? `${String(startYear).slice(0, 2)}${match[2]}`
+    : match[2];
   return `July, ${startYear} - June, ${endYear}`;
 };
 const hasAuditorAssignment = (submission = {}) => Boolean(
@@ -437,14 +454,20 @@ const resolveTableColumns = (table = {}) => {
 
 const isReviewRemarkField = (f) => {
   if (!f) return false;
-  if (f.kind === "review") return true;
+  if (f.kind === "review" || f.isReviewField === true) return true;
   const key = String(f.fieldKey || f.idString || f.id || "").toLowerCase();
   const label = String(f.label || "").toLowerCase();
   if (
     key === "reviewremarks" ||
     key === "review_remarks" ||
     key.includes("reviewremark") ||
-    key.includes("review_remark")
+    key.includes("review_remark") ||
+    key === "auditobservations" ||
+    key === "audit_observations" ||
+    key.includes("auditobservation") ||
+    key.includes("audit_observation") ||
+    key === "auditrecommendations" ||
+    key === "audit_recommendations"
   ) {
     return true;
   }
@@ -452,7 +475,11 @@ const isReviewRemarkField = (f) => {
     label.includes("review remark") ||
     label.includes("review remarks") ||
     label.includes("review observation") ||
-    label.includes("review observations")
+    label.includes("review observations") ||
+    label.includes("audit observation") ||
+    label.includes("audit observations") ||
+    label.includes("audit recommendation") ||
+    label.includes("audit recommendations")
   ) {
     return true;
   }
@@ -640,34 +667,73 @@ const getAuditorSectionFieldKeys = (sections = [], auditType) => {
   const keys = new Set([
     "remarks",
     "reviewRemarks",
+    "review_remarks",
+    "reviewRemark",
+    "review_remark",
     "auditObservations",
     "auditRecommendations",
     "auditDocumentation",
+    "observations",
+    "auditorObservations",
+    "auditorRecommendations",
   ]);
 
   (sections || []).forEach((sec) => {
-    if (isAuditorSection(sec, auditType)) {
-      (sec.fields || []).forEach((f) => {
+    const isAudSec = isAuditorSection(sec, auditType);
+    const registerField = (f) => {
+      if (!f) return;
+      if (isAudSec || isReviewRemarkField(f)) {
         if (f.id != null) keys.add(String(f.id));
         if (f.rawId != null) keys.add(String(f.rawId));
         if (f.fieldKey) keys.add(String(f.fieldKey));
         if (f.idString) keys.add(String(f.idString));
         if (f.label) keys.add(String(f.label));
-      });
-      (sec.blocks || []).forEach((b) => {
-        if (b.type === "fields" && Array.isArray(b.fields)) {
-          b.fields.forEach((f) => {
-            if (f.id != null) keys.add(String(f.id));
-            if (f.rawId != null) keys.add(String(f.rawId));
-            if (f.fieldKey) keys.add(String(f.fieldKey));
-            if (f.idString) keys.add(String(f.idString));
-            if (f.label) keys.add(String(f.label));
-          });
-        }
-      });
-    }
+        if (f.key) keys.add(String(f.key));
+      }
+    };
+    (sec.fields || []).forEach(registerField);
+    (sec.blocks || []).forEach((b) => {
+      if (b.type === "fields" && Array.isArray(b.fields)) {
+        b.fields.forEach(registerField);
+      }
+    });
   });
   return keys;
+};
+
+const getAuditorSectionTableKeys = (sections = [], auditType) => {
+  const keys = new Set(["auditortable1", "auditRecords"]);
+  (sections || []).forEach((sec) => {
+    const isAudSec = isAuditorSection(sec, auditType);
+    const registerTable = (t) => {
+      if (!t) return;
+      if (isAudSec || String(t.ownerRole || "").toLowerCase().includes("auditor")) {
+        if (t.id != null) keys.add(String(t.id));
+        if (t.rawId != null) keys.add(String(t.rawId));
+        if (t.tableKey) keys.add(String(t.tableKey));
+        if (t.idString) keys.add(String(t.idString));
+        if (t.title) keys.add(String(t.title));
+      }
+    };
+    (sec.tables || []).forEach(registerTable);
+    (sec.blocks || []).flatMap((b) => (b.type === "tables" && Array.isArray(b.tables) ? b.tables : [])).forEach(registerTable);
+  });
+  return keys;
+};
+
+const clearAuditorSectionTables = (tables = {}, sections = [], auditType = "academic") => {
+  const next = { ...(tables || {}) };
+  const keysToClear = getAuditorSectionTableKeys(sections, auditType);
+  const normalizeKey = (k) => String(k || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const normalizedTargets = new Set(Array.from(keysToClear).map(normalizeKey).filter(Boolean));
+
+  Object.keys(next).forEach((k) => {
+    const norm = normalizeKey(k);
+    if (keysToClear.has(k) || normalizedTargets.has(norm) || norm.includes("auditor")) {
+      delete next[k];
+    }
+  });
+  return next;
 };
 
 const clearAuditorSectionValues = (values = {}, sections = [], auditType = "academic") => {
@@ -677,15 +743,29 @@ const clearAuditorSectionValues = (values = {}, sections = [], auditType = "acad
   const normalizedTargets = new Set(Array.from(keysToClear).map(normalizeKey).filter(Boolean));
 
   Object.keys(next).forEach((k) => {
-    if (keysToClear.has(k) || normalizedTargets.has(normalizeKey(k))) {
+    const norm = normalizeKey(k);
+    if (
+      keysToClear.has(k) ||
+      normalizedTargets.has(norm) ||
+      norm.includes("auditobservation") ||
+      norm.includes("auditrecommendation") ||
+      norm.includes("reviewremark") ||
+      norm.includes("auditorobservation")
+    ) {
       delete next[k];
     }
+  });
+
+  keysToClear.forEach((k) => {
+    next[k] = "";
   });
 
   next.auditObservations = "";
   next.auditRecommendations = "";
   next.auditDocumentation = [];
   next.remarks = "";
+  next.reviewRemarks = "";
+  next.review_remarks = "";
   return next;
 };
 
@@ -1867,7 +1947,7 @@ const normalizeSubmission = (submission = {}) => {
   // all-zero progress object (no live assignments on this submission yet), which must NOT fall
   // through to recomputing from the merged (possibly ancestor-polluted) list.
   const hasBackendAuditorProgress = Object.keys(backendAuditorProgress).length > 0;
-  const auditorProgress = (hasBackendAuditorProgress && Number(backendAuditorProgress.total || 0) === auditorAssignments.length)
+  const auditorProgress = hasBackendAuditorProgress
     ? {
         total: Number(backendAuditorProgress.total || backendAuditorProgress.required || 0),
         submitted: Number(backendAuditorProgress.submitted || backendAuditorProgress.completed || 0),
@@ -5399,26 +5479,23 @@ function FullFormReview({
     academicPartEValuesMatch(submission?.values, previousInternalReport?.values);
   const currentUserAssignments = auditorAssignmentsForCurrentUser(submission, currentProfile);
   const isAdministrative = submission.auditType === "administrative";
-  let currentAssignmentValues;
-  let currentAssignmentAttachments;
+  let currentAssignmentValues = null;
+  let currentAssignmentAttachments = [];
   if (isAdministrative) {
-    const activeAssignment = currentUserAssignments[0];
-    if (activeAssignment) {
-      const assignmentValues = safeObjectValue(activeAssignment.values);
-      currentAssignmentValues = {
-        auditObservations: assignmentValues.auditObservations !== undefined ? assignmentValues.auditObservations : "",
-        auditRecommendations: assignmentValues.auditRecommendations !== undefined ? assignmentValues.auditRecommendations : "",
-        auditDocumentation: assignmentValues.auditDocumentation !== undefined ? assignmentValues.auditDocumentation : "",
-      };
+    const activeAssignment = currentUserAssignments.find(
+      (assignment) => hasAcademicPartEValues(safeObjectValue(assignment.values))
+    ) || currentUserAssignments[0];
+    if (activeAssignment && hasAcademicPartEValues(safeObjectValue(activeAssignment.values))) {
+      currentAssignmentValues = safeObjectValue(activeAssignment.values);
       currentAssignmentAttachments = arrayValue(activeAssignment.attachments);
     } else {
       currentAssignmentValues = null;
-      currentAssignmentAttachments = null;
+      currentAssignmentAttachments = [];
     }
   } else {
     currentAssignmentValues = currentUserAssignments
       .map((assignment) => safeObjectValue(assignment.values))
-      .find(hasAcademicPartEValues);
+      .find(hasAcademicPartEValues) || null;
     currentAssignmentAttachments = uniqueAttachments(
       currentUserAssignments.flatMap((assignment) => [
         ...arrayValue(assignment.attachments).filter(isAttachmentValue),
@@ -5430,13 +5507,17 @@ function FullFormReview({
     canEditAuditorSection &&
     !auditorCorrectionMode &&
     !currentAssignmentValues;
-  const initialDraftValues = currentAssignmentValues
-    ? { ...(submission.values || {}), ...currentAssignmentValues }
+  const baseClearedValues = clearAuditorSectionValues(submission.values, sections, submission.auditType);
+  const initialDraftValues = canEditAuditorSection
+    ? {
+        ...baseClearedValues,
+        ...(currentAssignmentValues || {}),
+      }
     : shouldClearCopiedExternalPartE || shouldClearFreshAuditorDraft
-      ? clearAuditorSectionValues(submission.values, sections, submission.auditType)
+      ? baseClearedValues
       : submission.values || {};
-  const initialDraftAttachments = currentAssignmentValues
-    ? currentAssignmentAttachments
+  const initialDraftAttachments = canEditAuditorSection
+    ? (currentAssignmentAttachments || [])
     : shouldClearCopiedExternalPartE || shouldClearFreshAuditorDraft
       ? []
       : submission.attachments || [];
@@ -5469,8 +5550,8 @@ function FullFormReview({
     .map((assignment) => safeObjectValue(assignment.tables || assignment.tablesData))
     .find((tables) => Object.keys(tables).length > 0);
 
-  const baseTables = { ...(submission.tables || {}) };
-  if (!currentAssignmentTables && canEditAuditorSection) {
+  const baseTables = clearAuditorSectionTables(submission.tables || {}, sections, submission.auditType);
+  if (canEditAuditorSection) {
     auditorTableKeys.forEach((key) => {
       delete baseTables[key];
     });
@@ -5492,7 +5573,27 @@ function FullFormReview({
   const [draftTables, setDraftTables] = useState(
     initialDraftTables
   );
-  const [reviewRemarks, setReviewRemarks] = useState(reviewRemarksForDisplay(submission));
+  const [reviewRemarks, setReviewRemarks] = useState(
+    canEditAuditorSection
+      ? (currentUserAssignments.find((a) => a.remarks)?.remarks || "")
+      : reviewRemarksForDisplay(submission)
+  );
+
+  useEffect(() => {
+    setDraftValues(initialDraftValues);
+    setDraftAttachments(initialDraftAttachments);
+    setDraftTables(initialDraftTables);
+    setReviewRemarks(
+      canEditAuditorSection
+        ? (currentUserAssignments.find((a) => a.remarks)?.remarks || "")
+        : reviewRemarksForDisplay(submission)
+    );
+  }, [
+    submission.id,
+    submission.version,
+    sections.length,
+    canEditAuditorSection,
+  ]);
   const [activeSectionIndex, setActiveSectionIndex] = useState(0);
   const [reportMode, setReportMode] = useState(false);
 
@@ -5521,7 +5622,14 @@ function FullFormReview({
       const normalizedAuditorKeys = new Set(Array.from(auditorKeys).map(normalizeKey).filter(Boolean));
 
       Object.entries(submission.values || {}).forEach(([k, val]) => {
-        const isAuditorField = auditorKeys.has(k) || normalizedAuditorKeys.has(normalizeKey(k));
+        const norm = normalizeKey(k);
+        const isAuditorField =
+          auditorKeys.has(k) ||
+          normalizedAuditorKeys.has(norm) ||
+          norm.includes("auditobservation") ||
+          norm.includes("auditrecommendation") ||
+          norm.includes("reviewremark") ||
+          norm.includes("auditorobservation");
         if (!isAuditorField && effectiveValues[k] === undefined) {
           effectiveValues[k] = val;
         }
@@ -5841,6 +5949,7 @@ function FullFormReview({
         formData={submittedForm}
         auditType={submission.auditType}
         reportCategory={submission.reportCategory || (isExternalSubmission ? "external" : "internal")}
+        submissionStatus={submission.status}
         activeSectionIndex={activeSectionIndex}
         editableSection={canEditAuditorSection && activeSectionIsAuditorOwned}
         onFieldChange={handleAuditorFieldChange}
@@ -6135,6 +6244,7 @@ function SubmittedFormViewer({
   formData,
   auditType,
   reportCategory,
+  submissionStatus = "",
   activeSectionIndex,
   editableSection,
   onFieldChange,
@@ -6349,7 +6459,10 @@ function SubmittedFormViewer({
         }
       });
 
-    if (list.length === 0 && isExternalCycle) {
+    const isCompleted = ["external_auditor_completed", "external-auditor-completed", "approved", "final"].includes(
+      normalizeStatus(submissionStatus)
+    );
+    if (list.length === 0 && isExternalCycle && auditType !== "administrative" && isCompleted) {
       const hasAuditorSignOff = Boolean(currentAuditorSignOff?.name || currentAuditorSignOff?.date);
       const hasAuditorRemarks = Boolean(
         (formData?.values?.remarks && String(formData.values.remarks).trim()) ||
@@ -6382,7 +6495,7 @@ function SubmittedFormViewer({
     }
 
     return list;
-  }, [auditorAssignments, versionHistory, isExternalCycle, formData, sectionTables]);
+  }, [auditorAssignments, versionHistory, isExternalCycle, formData, sectionTables, auditType, submissionStatus]);
 
   const peerAuditorType = isExternalCycle ? "external" : "internal";
   const submittedPeerAuditorAssignments = useMemo(() => {
@@ -7281,8 +7394,15 @@ function AuditorProgressPanel({ submission, compact = false, directoryUsers = []
   // (see the comment there); prefer it over recomputing from the merged auditorAssignments feed,
   // which can include a prior cycle's already-completed rows.
   const backendProgress = submission.auditorProgress || {};
-  const progress = (backendProgress.total && backendProgress.total === visibleAssignments.length)
-    ? backendProgress
+  const hasBackendTotal = typeof backendProgress.total === "number" || typeof backendProgress.required === "number";
+  const progress = hasBackendTotal
+    ? {
+        total: Number(backendProgress.total || backendProgress.required || 0),
+        submitted: Number(backendProgress.submitted || backendProgress.completed || 0),
+        pending: Number(backendProgress.pending || 0),
+        allSubmitted: Boolean(backendProgress.allSubmitted || backendProgress.allAuditorsSubmitted),
+        byPost: arrayValue(backendProgress.byPost || backendProgress.posts),
+      }
     : buildAuditorProgress(visibleAssignments);
   if (!progress.total) return null;
 
