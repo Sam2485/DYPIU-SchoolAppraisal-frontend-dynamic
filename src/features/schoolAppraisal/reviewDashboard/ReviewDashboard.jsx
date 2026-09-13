@@ -31,7 +31,6 @@ import { columnsWithSerial, serialColumnFor, numberedRowFor, withSerialNumbers }
 import AuditTable from "../components/AuditTable";
 import UserProfileModal from "../components/UserProfileModal";
 import AdministrativeReportPanel from "../administrativeAudit/AdministrativeReportPanel";
-import AdministrativePartE from "../administrativeAudit/AdministrativePartE";
 import UserManagementPanel from "../userManagement/UserManagementPanel";
 import {
   ADMINISTRATIVE_POSTS,
@@ -6584,17 +6583,6 @@ function SubmittedFormViewer({
                       key={`${activeSection.id}-attachment-${block.id}`}
                       fields={[{ id: block.id, label: block.label }]}
                       values={formData.values}
-                    />
-                  );
-                }
-
-                if (block.type === "part-e-schools") {
-                  return (
-                    <AdministrativePartE
-                      key={`${activeSection.id}-part-e-${blockIndex}`}
-                      value={formData.values[block.fieldId]}
-                      coursesOffered={formData.tables.coursesOffered || []}
-                      readOnly
                     />
                   );
                 }

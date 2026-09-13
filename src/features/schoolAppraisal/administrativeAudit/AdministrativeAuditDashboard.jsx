@@ -12,7 +12,6 @@ import SubmissionConfirmation from "../components/SubmissionConfirmation";
 import { emptySubmissionConfirmation, isSubmissionConfirmed } from "../components/submissionConfirmationState";
 import { columnsWithSerial, serialColumnFor } from "../components/tableHelpers";
 import AdministrativeReportPanel from "./AdministrativeReportPanel";
-import AdministrativePartE from "./AdministrativePartE";
 import AppSidebar from "../components/AppSidebar";
 import UserProfileModal from "../components/UserProfileModal";
 import { AuditorSectionReviewPanel, buildAuditorSectionReview, isAuditorSection } from "../components/AuditSection";
@@ -143,7 +142,6 @@ const moduleFieldsFor = (module) =>
     .flatMap((block) => {
       if (block.type === "fields") return block.fields;
       if (block.type === "attachment-field") return [{ id: block.id, initialValue: [] }];
-      if (block.type === "part-e-schools") return [{ id: block.fieldId, initialValue: [] }];
       return [];
     })
     .filter((field) => field.kind !== "heading");
@@ -1066,20 +1064,6 @@ export default function AdministrativeAuditDashboard() {
                       label={block.label}
                       value={data.fields[block.id]}
                       onChange={(value) => setFieldValue(block.id, value)}
-                      onUploadAttachment={uploadFormAttachments}
-                      onDeleteAttachment={deleteFormAttachment}
-                      readOnly={readOnly}
-                    />
-                  );
-                }
-
-                if (block.type === "part-e-schools") {
-                  return (
-                    <AdministrativePartE
-                      key={`part-e-${index}`}
-                      value={data.fields[block.fieldId]}
-                      coursesOffered={data.tables.coursesOffered || []}
-                      onChange={(value) => setFieldValue(block.fieldId, value)}
                       onUploadAttachment={uploadFormAttachments}
                       onDeleteAttachment={deleteFormAttachment}
                       readOnly={readOnly}
