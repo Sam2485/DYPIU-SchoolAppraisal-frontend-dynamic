@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 export default defineConfig(({ mode }) => ({
   root: fileURLToPath(new URL('.', import.meta.url)),
-  base: mode === 'vm' ? '/AAA/' : '/',
+  base: process.env.VITE_APP_BASE || '/',
   plugins: [react()],
   server: {
     port: 5173,

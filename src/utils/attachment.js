@@ -45,14 +45,14 @@ export const getAttachmentUrl = (url, filename) => {
   // Resolve API Base URL consistently with src/api/client.js
   const runtime = globalThis.__APP_CONFIG__?.VITE_API_BASE_URL;
   let apiBaseUrl = "";
-  if (runtime && !runtime.startsWith("/AAA")) {
-    apiBaseUrl = runtime;
+  if (runtime && runtime.trim() !== "" && !runtime.startsWith("/AAA")) {
+    apiBaseUrl = runtime.trim();
   } else {
     const envUrl = import.meta.env.VITE_API_BASE_URL;
-    if (envUrl && !envUrl.startsWith("/AAA")) {
-      apiBaseUrl = envUrl;
+    if (envUrl && envUrl.trim() !== "" && !envUrl.startsWith("/AAA")) {
+      apiBaseUrl = envUrl.trim();
     } else {
-      apiBaseUrl = import.meta.env.DEV ? "" : "http://localhost:9000";
+      apiBaseUrl = "";
     }
   }
 

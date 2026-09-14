@@ -66,7 +66,8 @@ function AuthenticatedHistoryBoundary() {
 }
 
 export default function App() {
-  const basename = import.meta.env.MODE === 'vm' ? '/AAA' : '';
+  const isAaaPath = typeof window !== 'undefined' && (window.location.pathname === '/AAA' || window.location.pathname.startsWith('/AAA/'));
+  const basename = isAaaPath ? '/AAA' : '';
   return (
     <BrowserRouter basename={basename}>
       <AppShell />

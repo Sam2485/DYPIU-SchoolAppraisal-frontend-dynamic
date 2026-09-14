@@ -1,12 +1,31 @@
-.git
-.agents
-.codex
-.env
-.env.*
-!.env.example
-node_modules
-dist
+# Ignore Git and Environment
+**/.git
+**/.gitignore
+**/.env*
+
+# Ignore Dependencies and Build Outputs
+node_modules/
+dist/
+dist-ssr/
+
+# Ignore Markdown Documentation & Reports
+*.md
+!README.md
+
+# Ignore IDE and OS Files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Ignore Logs
+logs/
 *.log
-.vscode
-.idea
-README.md
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Ignore Serena MCP
+.serena/
+serena/

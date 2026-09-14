@@ -2,19 +2,26 @@ import axios from "axios";
 
 const getApiBaseUrl = () => {
   const runtime = globalThis.__APP_CONFIG__?.VITE_API_BASE_URL;
-  if (runtime && !runtime.startsWith("/AAA")) {
-    return runtime;
+  if (runtime && runtime.trim() !== "" && !runtime.startsWith("/AAA")) {
+    return runtime.trim();
   }
   const envUrl = import.meta.env.VITE_API_BASE_URL;
-  if (envUrl && !envUrl.startsWith("/AAA")) {
-    return envUrl;
+  if (envUrl && envUrl.trim() !== "" && !envUrl.startsWith("/AAA")) {
+    return envUrl.trim();
   }
-  // In development, empty string leverages Vite's dev proxy (/api -> http://localhost:9000)
-  return import.meta.env.DEV ? "" : "http://localhost:9000";
+  // Default to empty string for same-origin relative URLs (/api/...).
+  // This enables the app to run seamlessly across both local (10.100.0.23:3003)
+  // and public (150.129.156.37:3003) networks via Nginx reverse proxy.
+  return "";
 };
 
 const apiBaseUrl = getApiBaseUrl();
-const loginPath = import.meta.env.MODE === "vm" ? "/AAA/login" : "/login";
+const getLoginPath = () => {
+  if (typeof window !== "undefined" && (window.location.pathname === "/AAA" || window.location.pathname.startsWith("/AAA/"))) {
+    return "/AAA/login";
+  }
+  return "/login";
+};
 
 const apiClient = axios.create({
   baseURL: apiBaseUrl,
@@ -121,8 +128,9 @@ export const clearAuthState = () => {
 };
 
 const redirectToLogin = () => {
-  if (globalThis.location?.pathname !== loginPath) {
-    globalThis.location.replace(loginPath);
+  const targetLogin = getLoginPath();
+  if (globalThis.location?.pathname !== targetLogin) {
+    globalThis.location.replace(targetLogin);
   }
 };
 
