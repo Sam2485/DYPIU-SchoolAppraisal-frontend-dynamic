@@ -2211,6 +2211,26 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
     () => mapUsersByPost(usersForCategory(directoryUsers, "administrative")),
     [directoryUsers]
   );
+  const currentAcademicYearCompact = compactAcademicYear(academicYear || "");
+  const currentYearAcademicSubmissions = useMemo(
+    () => (submissions.academic || []).filter((submission) => compactAcademicYear(submission.auditCycle || currentAcademicYearCompact) === currentAcademicYearCompact),
+    [submissions.academic, currentAcademicYearCompact]
+  );
+  const currentYearAdministrativeSubmissions = useMemo(
+    () => (submissions.administrative || []).filter((submission) => compactAcademicYear(submission.auditCycle || currentAcademicYearCompact) === currentAcademicYearCompact),
+    [submissions.administrative, currentAcademicYearCompact]
+  );
+
+  const incompleteWorkflows = useMemo(() => {
+    return getIncompleteWorkflowItems({
+      academicSubmissions: currentYearAcademicSubmissions,
+      administrativeSubmissions: currentYearAdministrativeSubmissions,
+      directorsBySchool: directorsBySchoolForAvatars,
+      adminUsersByPost: adminUsersByPostForAvatars,
+      currentAcademicYear: academicYear,
+    });
+  }, [currentYearAcademicSubmissions, currentYearAdministrativeSubmissions, directorsBySchoolForAvatars, adminUsersByPostForAvatars, academicYear]);
+
   const resolveSubmitterAvatar = (submission) => {
     if (!submission) return "";
     if (submission.auditType === "administrative") {
@@ -3489,6 +3509,7 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
             currentAcademicYear={academicYear}
             nextAcademicYear={nextAcademicYearFor(academicYear)}
             loading={startingAcademicYear}
+            incompleteWorkflows={incompleteWorkflows}
             onConfirm={handleStartNextAcademicYear}
             onCancel={() => setShowNextYearModal(false)}
           />
@@ -4017,6 +4038,393 @@ function pendingApproveCount(allSubmissions = [], auditorType) {
     isAuditorCompleted(submission) &&
     !isApprovedReport(submission)
   ).length;
+}
+
+function getIncompleteWorkflowItems({
+  academicSubmissions = [],
+  administrativeSubmissions = [],
+  directorsBySchool = {},
+  adminUsersByPost = {},
+  currentAcademicYear = "",
+}) {
+  const incomplete = [];
+
+  // --- ACADEMIC SUBMISSIONS ---
+  const allSchoolsMap = new Map();
+  Object.entries(directorsBySchool || {}).forEach(([code, director]) => {
+    if (!code) return;
+    allSchoolsMap.set(code, {
+      code,
+      name: director?.school || schoolLabelFor(code) || code,
+      directorName: director?.name || "-",
+      directorEmail: director?.email || "-",
+    });
+  });
+
+  academicSubmissions.forEach((sub) => {
+    const code = canonicalSchoolCode(sub.school) || String(sub.school || "").trim().toUpperCase();
+    if (!code) return;
+    const existing = allSchoolsMap.get(code);
+    if (!existing) {
+      allSchoolsMap.set(code, {
+        code,
+        name: sub.school || schoolLabelFor(code) || code,
+        directorName: sub.submittedBy || "-",
+        directorEmail: "",
+      });
+    } else if (existing.directorName === "-" && sub.submittedBy) {
+      existing.directorName = sub.submittedBy;
+    }
+  });
+
+  allSchoolsMap.forEach((school) => {
+    const subs = academicSubmissions.filter((s) => {
+      const c = canonicalSchoolCode(s.school) || String(s.school || "").trim().toUpperCase();
+      return c === school.code || assignmentMatches(s.school, school.code, schoolAliasesFor);
+    });
+
+    const internalSub = subs.find(
+      (s) => resolvedAuditorTypeFor(s) === "internal" || normalizeUserRole(s.reportCategory) === "internal"
+    );
+    const externalSub = subs.find(
+      (s) => resolvedAuditorTypeFor(s) === "external" || normalizeUserRole(s.reportCategory) === "external"
+    );
+
+    // 1. Check Internal Cycle
+    if (!internalSub) {
+      incomplete.push({
+        id: `academic-${school.code}-internal-unsubmitted`,
+        category: "Academic",
+        target: school.name,
+        stuckWithName: school.directorName !== "-" ? school.directorName : "Director",
+        post: "Director",
+        cycle: "Internal Cycle",
+        stage: "Form Not Submitted",
+        reason: "Director has not filled or submitted the Internal Cycle appraisal form",
+      });
+    } else if (normalizeStatus(internalSub.status) === "draft" || !getSubmitterSignOff(internalSub.values).date) {
+      incomplete.push({
+        id: `academic-${school.code}-internal-draft`,
+        category: "Academic",
+        target: school.name,
+        stuckWithName: (school.directorName !== "-" ? school.directorName : internalSub.submittedBy) || "Director",
+        post: "Director",
+        cycle: "Internal Cycle",
+        stage: "Form In Draft",
+        reason: "Internal Cycle form is in draft; not yet submitted by Director",
+      });
+    } else if (isAuditorCorrectionRequested(internalSub)) {
+      incomplete.push({
+        id: `academic-${school.code}-internal-correction`,
+        category: "Academic",
+        target: school.name,
+        stuckWithName: internalSub.auditorCorrectionRequested ? "Internal Auditor" : ((school.directorName !== "-" ? school.directorName : internalSub.submittedBy) || "Director"),
+        post: internalSub.auditorCorrectionRequested ? "Internal Auditor" : "Director",
+        cycle: "Internal Cycle",
+        stage: "Correction Pending",
+        reason: internalSub.auditorCorrectionMessage || "Form returned for correction",
+      });
+    } else if (!hasAuditorAssignment(internalSub) && !isApprovedReport(internalSub)) {
+      incomplete.push({
+        id: `academic-${school.code}-internal-unassigned`,
+        category: "Academic",
+        target: school.name,
+        stuckWithName: "IQAC",
+        post: "IQAC Reviewer",
+        cycle: "Internal Cycle",
+        stage: "Pending Forwarding",
+        reason: "Form submitted by Director; pending IQAC to forward to Internal Auditor",
+      });
+    } else if (!isAuditorCompleted(internalSub)) {
+      const pendingAuditors = (internalSub.auditorAssignments || [])
+        .filter((a) => normalizeUserRole(a.auditorType || a.type || "").includes("internal") || !normalizeUserRole(a.auditorType || a.type || "").includes("external"))
+        .filter((a) => !auditorAssignmentSubmitted(a));
+      const names = pendingAuditors.map((a) => a.auditorName || a.auditorEmail).filter((n) => n && n !== "-").join(", ");
+      incomplete.push({
+        id: `academic-${school.code}-internal-auditor-pending`,
+        category: "Academic",
+        target: school.name,
+        stuckWithName: names || internalSub.forwardedToAuditorName || "Internal Auditor",
+        post: "Internal Auditor",
+        cycle: "Internal Cycle",
+        stage: "Auditor Review Pending",
+        reason: names ? `Internal Auditor review pending: ${names}` : "Internal Auditor has not submitted review",
+      });
+    } else if (!isApprovedReport(internalSub)) {
+      incomplete.push({
+        id: `academic-${school.code}-internal-approval-pending`,
+        category: "Academic",
+        target: school.name,
+        stuckWithName: "IQAC",
+        post: "IQAC Reviewer",
+        cycle: "Internal Cycle",
+        stage: "IQAC Approval Pending",
+        reason: "Internal Auditor review completed; pending IQAC approval",
+      });
+    } else {
+      // Internal Cycle is approved! Check External Cycle:
+      const externalStarted = Boolean(internalSub.hasNextCycle || externalSub);
+      if (externalSub) {
+        const isExtDraft = normalizeStatus(externalSub.status) === "draft" || isFreshCycleSuccessor(externalSub) || !getSubmitterSignOff(externalSub.values).date;
+        if (isExtDraft) {
+          incomplete.push({
+            id: `academic-${school.code}-external-unsubmitted`,
+            category: "Academic",
+            target: school.name,
+            stuckWithName: (school.directorName !== "-" ? school.directorName : externalSub.submittedBy) || "Director",
+            post: "Director",
+            cycle: "External Cycle",
+            stage: "Form Not Submitted",
+            reason: "External Cycle started; Director has not filled or submitted External Cycle form",
+          });
+        } else if (isAuditorCorrectionRequested(externalSub)) {
+          incomplete.push({
+            id: `academic-${school.code}-external-correction`,
+            category: "Academic",
+            target: school.name,
+            stuckWithName: externalSub.auditorCorrectionRequested ? "External Auditor" : ((school.directorName !== "-" ? school.directorName : externalSub.submittedBy) || "Director"),
+            post: externalSub.auditorCorrectionRequested ? "External Auditor" : "Director",
+            cycle: "External Cycle",
+            stage: "Correction Pending",
+            reason: externalSub.auditorCorrectionMessage || "External Cycle form returned for correction",
+          });
+        } else if (!hasAuditorAssignment(externalSub) && !isApprovedReport(externalSub)) {
+          incomplete.push({
+            id: `academic-${school.code}-external-unassigned`,
+            category: "Academic",
+            target: school.name,
+            stuckWithName: "IQAC",
+            post: "IQAC Reviewer",
+            cycle: "External Cycle",
+            stage: "Pending Forwarding",
+            reason: "External Cycle form submitted by Director; pending IQAC to forward to External Auditor",
+          });
+        } else if (!isAuditorCompleted(externalSub)) {
+          const pendingExtAuditors = (externalSub.auditorAssignments || [])
+            .filter((a) => normalizeUserRole(a.auditorType || a.type || "").includes("external") || !normalizeUserRole(a.auditorType || a.type || "").includes("internal"))
+            .filter((a) => !auditorAssignmentSubmitted(a));
+          const extNames = pendingExtAuditors.map((a) => a.auditorName || a.auditorEmail).filter((n) => n && n !== "-").join(", ");
+          incomplete.push({
+            id: `academic-${school.code}-external-auditor-pending`,
+            category: "Academic",
+            target: school.name,
+            stuckWithName: extNames || externalSub.forwardedToAuditorName || "External Auditor",
+            post: "External Auditor",
+            cycle: "External Cycle",
+            stage: "Auditor Review Pending",
+            reason: extNames ? `External Auditor review pending: ${extNames}` : "External Auditor has not submitted review",
+          });
+        } else if (!isApprovedReport(externalSub)) {
+          incomplete.push({
+            id: `academic-${school.code}-external-approval-pending`,
+            category: "Academic",
+            target: school.name,
+            stuckWithName: "IQAC",
+            post: "IQAC Reviewer",
+            cycle: "External Cycle",
+            stage: "IQAC Approval Pending",
+            reason: "External Auditor review completed; pending IQAC final approval",
+          });
+        }
+      } else if (externalStarted) {
+        incomplete.push({
+          id: `academic-${school.code}-external-unfiled`,
+          category: "Academic",
+          target: school.name,
+          stuckWithName: school.directorName !== "-" ? school.directorName : "Director",
+          post: "Director",
+          cycle: "External Cycle",
+          stage: "Form Not Submitted",
+          reason: "External Cycle started; Director has not filled or submitted External Cycle form",
+        });
+      } else {
+        incomplete.push({
+          id: `academic-${school.code}-external-not-started`,
+          category: "Academic",
+          target: school.name,
+          stuckWithName: "IQAC",
+          post: "IQAC Reviewer",
+          cycle: "External Cycle",
+          stage: "External Cycle Not Started",
+          reason: "Internal Cycle approved; External Cycle has not been started yet",
+        });
+      }
+    }
+  });
+
+  // --- ADMINISTRATIVE SUBMISSIONS ---
+  const allAdminPostsMap = new Map();
+  Object.entries(adminUsersByPost || {}).forEach(([postCode, adminUser]) => {
+    if (!postCode) return;
+    allAdminPostsMap.set(postCode, {
+      code: postCode,
+      label: ADMINISTRATIVE_POSTS.find((p) => p.value === postCode)?.label || postCode,
+      name: adminUser?.name || "Administrative Authority",
+      email: adminUser?.email || "-",
+    });
+  });
+
+  administrativeSubmissions.forEach((sub) => {
+    administrativeSubmittedPostsFor(sub).forEach((p) => {
+      const postCode = canonicalAdministrativePost(p) || p;
+      if (!postCode) return;
+      if (!allAdminPostsMap.has(postCode)) {
+        allAdminPostsMap.set(postCode, {
+          code: postCode,
+          label: ADMINISTRATIVE_POSTS.find((opt) => opt.value === postCode)?.label || postCode,
+          name: sub.submittedBy || "Administrative Authority",
+          email: "-",
+        });
+      }
+    });
+  });
+
+  const internalAdminSubs = administrativeSubmissions.filter(
+    (s) => resolvedAuditorTypeFor(s) === "internal" || normalizeUserRole(s.reportCategory) === "internal"
+  );
+  const externalAdminSubs = administrativeSubmissions.filter(
+    (s) => resolvedAuditorTypeFor(s) === "external" || normalizeUserRole(s.reportCategory) === "external"
+  );
+  const adminExternalStarted =
+    externalAdminSubs.length > 0 ||
+    internalAdminSubs.some((s) => s.hasNextCycle);
+
+  allAdminPostsMap.forEach((postInfo, postCode) => {
+    const postSubmittedInternal = internalAdminSubs.some((s) =>
+      administrativeSubmittedPostsFor(s).some((p) => (canonicalAdministrativePost(p) || p) === postCode)
+    );
+
+    if (!postSubmittedInternal) {
+      incomplete.push({
+        id: `admin-${postCode}-internal-unsubmitted`,
+        category: "Administrative",
+        target: postInfo.label,
+        stuckWithName: postInfo.name,
+        post: postInfo.label,
+        cycle: "Internal Cycle",
+        stage: "Form Section Not Submitted",
+        reason: `Form section has not been submitted by ${postInfo.name}`,
+      });
+    } else {
+      const sub = internalAdminSubs.find((s) =>
+        administrativeSubmittedPostsFor(s).some((p) => (canonicalAdministrativePost(p) || p) === postCode)
+      );
+      if (sub) {
+        const isUnassigned = administrativeUnassignedPostsFor(sub).some(
+          (p) => (canonicalAdministrativePost(p) || p) === postCode
+        );
+        if (isUnassigned && !isApprovedReport(sub)) {
+          incomplete.push({
+            id: `admin-${postCode}-internal-unassigned`,
+            category: "Administrative",
+            target: postInfo.label,
+            stuckWithName: "IQAC",
+            post: "IQAC Reviewer",
+            cycle: "Internal Cycle",
+            stage: "Pending Forwarding",
+            reason: "Section submitted; pending IQAC to forward to Auditor",
+          });
+        } else {
+          const postAssignments = (sub.auditorAssignments || []).filter(
+            (a) => (canonicalAdministrativePost(a.post) || a.post) === postCode
+          );
+          const pendingAuditors = postAssignments.filter((a) => !auditorAssignmentSubmitted(a));
+          if (pendingAuditors.length > 0) {
+            const names = pendingAuditors.map((a) => a.auditorName || a.auditorEmail).filter((n) => n && n !== "-").join(", ");
+            incomplete.push({
+              id: `admin-${postCode}-internal-auditor-pending`,
+              category: "Administrative",
+              target: postInfo.label,
+              stuckWithName: names || "Internal Auditor",
+              post: "Internal Auditor",
+              cycle: "Internal Cycle",
+              stage: "Auditor Review Pending",
+              reason: names ? `Internal Auditor review pending: ${names}` : "Auditor has not submitted review",
+            });
+          } else if (!isApprovedReport(sub)) {
+            incomplete.push({
+              id: `admin-${postCode}-internal-approval-pending`,
+              category: "Administrative",
+              target: postInfo.label,
+              stuckWithName: "IQAC",
+              post: "IQAC Reviewer",
+              cycle: "Internal Cycle",
+              stage: "IQAC Approval Pending",
+              reason: "Auditor review completed; pending IQAC approval",
+            });
+          } else if (adminExternalStarted) {
+            const postSubmittedExternal = externalAdminSubs.some((s) =>
+              administrativeSubmittedPostsFor(s).some((p) => (canonicalAdministrativePost(p) || p) === postCode)
+            );
+            if (!postSubmittedExternal) {
+              incomplete.push({
+                id: `admin-${postCode}-external-unsubmitted`,
+                category: "Administrative",
+                target: postInfo.label,
+                stuckWithName: postInfo.name,
+                post: postInfo.label,
+                cycle: "External Cycle",
+                stage: "Form Section Not Submitted",
+                reason: `External cycle form section has not been submitted by ${postInfo.name}`,
+              });
+            } else {
+              const extSub = externalAdminSubs.find((s) =>
+                administrativeSubmittedPostsFor(s).some((p) => (canonicalAdministrativePost(p) || p) === postCode)
+              );
+              if (extSub) {
+                const isExtUnassigned = administrativeUnassignedPostsFor(extSub).some(
+                  (p) => (canonicalAdministrativePost(p) || p) === postCode
+                );
+                if (isExtUnassigned && !isApprovedReport(extSub)) {
+                  incomplete.push({
+                    id: `admin-${postCode}-external-unassigned`,
+                    category: "Administrative",
+                    target: postInfo.label,
+                    stuckWithName: "IQAC",
+                    post: "IQAC Reviewer",
+                    cycle: "External Cycle",
+                    stage: "Pending Forwarding",
+                    reason: "External section submitted; pending IQAC to forward to External Auditor",
+                  });
+                } else {
+                  const extAssignments = (extSub.auditorAssignments || []).filter(
+                    (a) => (canonicalAdministrativePost(a.post) || a.post) === postCode
+                  );
+                  const pendingExt = extAssignments.filter((a) => !auditorAssignmentSubmitted(a));
+                  if (pendingExt.length > 0) {
+                    const extNames = pendingExt.map((a) => a.auditorName || a.auditorEmail).filter((n) => n && n !== "-").join(", ");
+                    incomplete.push({
+                      id: `admin-${postCode}-external-auditor-pending`,
+                      category: "Administrative",
+                      target: postInfo.label,
+                      stuckWithName: extNames || "External Auditor",
+                      post: "External Auditor",
+                      cycle: "External Cycle",
+                      stage: "Auditor Review Pending",
+                      reason: extNames ? `External Auditor review pending: ${extNames}` : "External Auditor review pending",
+                    });
+                  } else if (!isApprovedReport(extSub)) {
+                    incomplete.push({
+                      id: `admin-${postCode}-external-approval-pending`,
+                      category: "Administrative",
+                      target: postInfo.label,
+                      stuckWithName: "IQAC",
+                      post: "IQAC Reviewer",
+                      cycle: "External Cycle",
+                      stage: "IQAC Approval Pending",
+                      reason: "External review completed; pending IQAC final approval",
+                    });
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+
+  return incomplete;
 }
 
 // Whether a submission counts as "submitted" for a given auditor-type track is about the
@@ -6362,10 +6770,22 @@ function SubmittedFormViewer({
 
     const addAssignment = (assignment, fallbackMeta = {}) => {
       if (!assignment) return;
-      const assignedVals = safeObjectValue(assignment.values || assignment.valuesData);
+      if (!auditorAssignmentSubmitted(assignment)) return;
+
+      const assignedVals = safeObjectValue(
+        assignment.values ||
+        assignment.valuesData ||
+        assignment.reviewValues ||
+        assignment.reviewValuesData
+      );
       const effectiveVals = Object.keys(assignedVals).length > 0 ? assignedVals : safeObjectValue(fallbackMeta.values);
 
-      const assignedTbls = safeObjectValue(assignment.tables || (assignment.tablesData ? safeJsonParse(assignment.tablesData, {}) : {}));
+      const assignedTbls = safeObjectValue(
+        assignment.tables ||
+        (assignment.tablesData ? safeJsonParse(assignment.tablesData, {}) : null) ||
+        (assignment.reviewTablesData ? safeJsonParse(assignment.reviewTablesData, {}) : null) ||
+        assignment.reviewTables
+      );
       const effectiveTbls = Object.keys(assignedTbls).length > 0 ? assignedTbls : safeObjectValue(fallbackMeta.tables);
 
       const effectiveRemarks = assignment.remarks || assignment.auditObservations || fallbackMeta.remarks || effectiveVals.remarks || effectiveVals.auditObservations || effectiveVals.reviewRemarks || "";
@@ -6409,11 +6829,10 @@ function SubmittedFormViewer({
     (auditorAssignments || [])
       .filter((a) => {
         const type = normalizeUserRole(a.auditorType || a.type || "");
-        if (type.includes("external")) return true;
-        if (isExternalCycle && !type.includes("internal")) return true;
-        return false;
+        if (!type.includes("external") && !(isExternalCycle && !type.includes("internal"))) return false;
+        return auditorAssignmentSubmitted(a);
       })
-      .forEach((a) => addAssignment(a, fallbackExternalMeta));
+      .forEach((a) => addAssignment(a));
 
     (versionHistory || [])
       .filter((entry) => String(entry.reportCategory || "").toLowerCase() === "external")
@@ -6500,11 +6919,12 @@ function SubmittedFormViewer({
   const peerAuditorType = isExternalCycle ? "external" : "internal";
   const submittedPeerAuditorAssignments = useMemo(() => {
     const sourceList = isExternalCycle
-      ? allFilledExternalAssignments
+      ? allFilledExternalAssignments.filter(auditorAssignmentSubmitted)
       : submittedAuditorAssignments.filter((a) =>
           normalizeUserRole(a.auditorType || a.type || "").includes("internal")
         );
     return sourceList.filter((assignment) => {
+      if (!auditorAssignmentSubmitted(assignment)) return false;
       const assignmentEmail = normalizeAuditAssignment(assignment.auditorEmail || assignment.email || "");
       if (assignment.key && currentAssignmentKeys.size) return !currentAssignmentKeys.has(assignment.key);
       if (assignment.auditorId && currentAssignmentIds.size) return !currentAssignmentIds.has(String(assignment.auditorId));
@@ -6986,7 +7406,8 @@ function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType,
   const visibleFields = (fields || []).filter((field) => field.kind !== "heading");
   const headerFields = visibleFields.filter((f) => !isReviewRemarkField(f));
   const reviewRemarkFields = visibleFields.filter((f) => isReviewRemarkField(f));
-  const displayAssignments = groupAuditorAssignmentsForDisplay(assignments);
+  const displayAssignments = groupAuditorAssignmentsForDisplay(assignments).filter(auditorAssignmentSubmitted);
+  if (!displayAssignments.length) return null;
   const uniqueTables = useMemo(() => {
     const seen = new Set();
     return (tables || []).filter((table) => {
@@ -7478,45 +7899,167 @@ function StatusBadge({ status }) {
   );
 }
 
-function NextAcademicYearModal({ currentAcademicYear, nextAcademicYear, loading, onConfirm, onCancel }) {
+function NextAcademicYearModal({ currentAcademicYear, nextAcademicYear, loading, incompleteWorkflows = [], onConfirm, onCancel }) {
+  const hasIncomplete = incompleteWorkflows.length > 0;
+
   return (
     <div style={styles.modalBackdrop} onClick={loading ? undefined : onCancel}>
       <div
-        style={styles.nextYearModal}
+        style={{
+          ...styles.nextYearModal,
+          width: hasIncomplete ? "min(820px, 95vw)" : styles.nextYearModal.width,
+          maxHeight: "90vh",
+        }}
         onClick={(event) => event.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="next-academic-year-title"
       >
         <div style={styles.nextYearHeader}>
-          <span style={styles.forwardHeaderIcon}>AY</span>
-          <div>
+          <span style={{
+            ...styles.forwardHeaderIcon,
+            background: hasIncomplete ? "#fef2f2" : "#eff6ff",
+            color: hasIncomplete ? "#dc2626" : "#2563eb",
+            borderColor: hasIncomplete ? "#fecaca" : "#bfdbfe",
+          }}>
+            {hasIncomplete ? "⚠️" : "AY"}
+          </span>
+          <div style={{ flex: 1 }}>
             <p style={styles.kicker}>Academic year transition</p>
             <h3 id="next-academic-year-title" style={styles.forwardModalTitle}>Start {nextAcademicYear}</h3>
             <p style={styles.modalMeta}>Current academic year: {currentAcademicYear}</p>
           </div>
-        </div>
-
-        <div style={styles.nextYearWarning}>
-          Active forms will restart from the beginning for Directors and Administrative authorities.
-          Approved reports and version history will remain unchanged.
-        </div>
-
-        <div style={styles.nextYearChecklist}>
-          <span>Blank active Academic and Administrative forms</span>
-          <span>Clear active auditor assignments and current remarks</span>
-          <span>Preserve Previous Reports and approved audit history</span>
-        </div>
-
-        <div style={styles.forwardFooter}>
-          <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={loading}>
-            Cancel
-          </button>
-          <button type="button" className="btn btn-primary" onClick={onConfirm} disabled={loading} aria-busy={loading}>
-            {loading && <InlineSpinner label="Starting next academic year" />}
-            {loading ? "Starting..." : `Confirm ${nextAcademicYear}`}
+          <button
+            type="button"
+            style={styles.iconCloseButton}
+            onClick={onCancel}
+            aria-label="Close dialog"
+            disabled={loading}
+          >
+            ×
           </button>
         </div>
+
+        {hasIncomplete ? (
+          <>
+            <div style={{
+              margin: "0 24px",
+              border: "1px solid #fecaca",
+              borderRadius: 8,
+              color: "#991b1b",
+              background: "#fef2f2",
+              padding: "12px 16px",
+              fontSize: 13,
+              lineHeight: 1.5,
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 13.5, marginBottom: 4 }}>
+                <span>⚠️ Warning: Incomplete Appraisal Workflow{incompleteWorkflows.length > 1 ? "s" : ""} ({incompleteWorkflows.length})</span>
+              </div>
+              <div>
+                Are you sure you want to start the next academic year (<strong>{nextAcademicYear}</strong>)?
+                The appraisal workflow has not been completed for the following form(s).
+                Starting a new year will reset active forms and clear unsubmitted data.
+              </div>
+            </div>
+
+            <div style={{
+              margin: "0 24px",
+              maxHeight: 280,
+              overflowY: "auto",
+              border: "1px solid #e2e8f0",
+              borderRadius: 8,
+              background: "#fff",
+            }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, textAlign: "left" }}>
+                <thead>
+                  <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0", color: "#475569", fontWeight: 700 }}>
+                    <th style={{ padding: "9px 12px" }}>School / Section</th>
+                    <th style={{ padding: "9px 12px" }}>Cycle</th>
+                    <th style={{ padding: "9px 12px" }}>Pending With (Person & Post)</th>
+                    <th style={{ padding: "9px 12px" }}>Stage & Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {incompleteWorkflows.map((item, idx) => (
+                    <tr key={item.id || idx} style={{ borderBottom: "1px solid #f1f5f9", background: idx % 2 === 0 ? "#fff" : "#fafafa" }}>
+                      <td style={{ padding: "9px 12px", verticalAlign: "top" }}>
+                        <div style={{ fontWeight: 650, color: "#0f172a" }}>{item.target}</div>
+                        <span style={{ fontSize: 11, color: "#64748b" }}>{item.category}</span>
+                      </td>
+                      <td style={{ padding: "9px 12px", verticalAlign: "top" }}>
+                        <span style={{
+                          display: "inline-block",
+                          padding: "2px 7px",
+                          borderRadius: 10,
+                          fontSize: 10.5,
+                          fontWeight: 700,
+                          background: item.cycle.includes("External") ? "#f3e8ff" : "#e0f2fe",
+                          color: item.cycle.includes("External") ? "#6b21a8" : "#0369a1",
+                          border: `1px solid ${item.cycle.includes("External") ? "#d8b4fe" : "#bae6fd"}`,
+                          whiteSpace: "nowrap",
+                        }}>
+                          {item.cycle}
+                        </span>
+                      </td>
+                      <td style={{ padding: "9px 12px", verticalAlign: "top" }}>
+                        <div style={{ fontWeight: 600, color: "#1e293b" }}>{item.stuckWithName}</div>
+                        <div style={{ fontSize: 11, color: "#64748b" }}>{item.post}</div>
+                      </td>
+                      <td style={{ padding: "9px 12px", verticalAlign: "top" }}>
+                        <div style={{ fontWeight: 600, color: "#b45309" }}>{item.stage}</div>
+                        <div style={{ fontSize: 11, color: "#475569", marginTop: 2 }}>{item.reason}</div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ margin: "0 24px", color: "#64748b", fontSize: 12, lineHeight: 1.5 }}>
+              Active forms will restart from the beginning for Directors and Administrative authorities. Approved reports and version history will remain preserved.
+            </div>
+
+            <div style={styles.forwardFooter}>
+              <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={loading}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={onConfirm}
+                disabled={loading}
+                aria-busy={loading}
+                style={{ background: "#dc2626", borderColor: "#b91c1c" }}
+              >
+                {loading && <InlineSpinner label="Starting next academic year" />}
+                {loading ? "Starting..." : `Proceed & Start ${nextAcademicYear} Anyway`}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={styles.nextYearWarning}>
+              Active forms will restart from the beginning for Directors and Administrative authorities.
+              Approved reports and version history will remain unchanged.
+            </div>
+
+            <div style={styles.nextYearChecklist}>
+              <span>Blank active Academic and Administrative forms</span>
+              <span>Clear active auditor assignments and current remarks</span>
+              <span>Preserve Previous Reports and approved audit history</span>
+            </div>
+
+            <div style={styles.forwardFooter}>
+              <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={loading}>
+                Cancel
+              </button>
+              <button type="button" className="btn btn-primary" onClick={onConfirm} disabled={loading} aria-busy={loading}>
+                {loading && <InlineSpinner label="Starting next academic year" />}
+                {loading ? "Starting..." : `Confirm ${nextAcademicYear}`}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
