@@ -23,6 +23,7 @@ This project is configured with **Serena MCP** to minimize token consumption and
 - Never search or re-analyze the codebase to understand architecture, stack, or conventions.
 - Retrieve durable project context on demand via `read_memory`:
   - `core`: Root map, invariants, and memory graph.
+  - `system_overview`: Multi-repo layout, frontends, microservices backend, ports, and links.
   - `tech_stack`: React 19, Vite, routing, packages, and language server setup.
   - `architecture`: Page vs feature breakdown, dynamic form AST, API gateway routing.
   - `conventions`: Code styles, hook naming, role-based security, auto-save patterns.

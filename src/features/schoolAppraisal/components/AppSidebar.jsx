@@ -103,9 +103,9 @@ export default function AppSidebar({
               value={academicYear}
               onChange={(e) => onYearChange(e.target.value)}
               style={{
-                backgroundColor: "rgba(255, 255, 255, 0.15)",
-                color: "#ffffff",
-                border: "1px solid rgba(255, 255, 255, 0.3)",
+                backgroundColor: "#ffffff",
+                color: "#1e293b",
+                border: "1px solid #cbd5e1",
                 borderRadius: "6px",
                 padding: "3px 8px",
                 fontSize: "12px",
@@ -116,7 +116,7 @@ export default function AppSidebar({
               title="Select Academic Year"
             >
               {availableYears.map((yr) => (
-                <option key={yr} value={yr} style={{ backgroundColor: "#1e293b", color: "#ffffff" }}>
+                <option key={yr} value={yr} style={{ backgroundColor: "#ffffff", color: "#1e293b" }}>
                   {yr}
                 </option>
               ))}
@@ -134,58 +134,62 @@ export default function AppSidebar({
       </div>
 
       <nav className="app-sidebar__nav" aria-label="Appraisal sections" ref={dropdownRef}>
-        <button
-          type="button"
-          className="app-sidebar__nav-label"
-          onClick={() => setIsOpen((open) => !open)}
-          aria-expanded={isOpen}
-          aria-controls="appraisal-section-menu"
-        >
-          <span>Appraisal form</span>
-        </button>
-        <div className={`app-sidebar__dropdown${isOpen ? " is-open" : ""}`}>
-          <button
-            type="button"
-            className={`app-sidebar__select-card${activeItem ? "" : " is-placeholder"}`}
-            onClick={() => setIsOpen((open) => !open)}
-            aria-haspopup="listbox"
-            aria-expanded={isOpen}
-          >
-            <span className="app-sidebar__select-icon">
-              {activeItem?.id === "overview" || activeItem?.id === "summary" ? <SummaryIcon /> : <ClipboardIcon />}
-            </span>
-            <span className="app-sidebar__select-copy">
-              <small>{activeItem?.number ? `Section ${activeItem.number}` : activeItem ? "Overview" : "Appraisal form"}</small>
-              <strong>{activeItem?.title || "Browse sections"}</strong>
-            </span>
-            <span className="app-sidebar__chevron"><ChevronIcon /></span>
-          </button>
+        {items.length > 0 && (
+          <>
+            <button
+              type="button"
+              className="app-sidebar__nav-label"
+              onClick={() => setIsOpen((open) => !open)}
+              aria-expanded={isOpen}
+              aria-controls="appraisal-section-menu"
+            >
+              <span>Appraisal form</span>
+            </button>
+            <div className={`app-sidebar__dropdown${isOpen ? " is-open" : ""}`}>
+              <button
+                type="button"
+                className={`app-sidebar__select-card${activeItem ? "" : " is-placeholder"}`}
+                onClick={() => setIsOpen((open) => !open)}
+                aria-haspopup="listbox"
+                aria-expanded={isOpen}
+              >
+                <span className="app-sidebar__select-icon">
+                  {activeItem?.id === "overview" || activeItem?.id === "summary" ? <SummaryIcon /> : <ClipboardIcon />}
+                </span>
+                <span className="app-sidebar__select-copy">
+                  <small>{activeItem?.number ? `Section ${activeItem.number}` : activeItem ? "Overview" : "Appraisal form"}</small>
+                  <strong>{activeItem?.title || "Browse sections"}</strong>
+                </span>
+                <span className="app-sidebar__chevron"><ChevronIcon /></span>
+              </button>
 
-          {isOpen && (
-            <div id="appraisal-section-menu" className="app-sidebar__menu" role="listbox" aria-label="Appraisal form sections">
-              {items.map((item) => {
-                const selected = item.id === activeId;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    role="option"
-                    aria-selected={selected}
-                    className={`app-sidebar__menu-item${selected ? " is-selected" : ""}`}
-                    onClick={() => selectSection(item.id)}
-                  >
-                    <span className="app-sidebar__menu-number">{item.id === "overview" || item.id === "summary" ? <SummaryIcon /> : <ClipboardIcon />}</span>
-                    <span className="app-sidebar__menu-copy">
-                      {item.number && <small>Section {item.number}</small>}
-                      <span>{item.title}</span>
-                    </span>
-                    {selected && <span className="app-sidebar__menu-check">{"\u2713"}</span>}
-                  </button>
-                );
-              })}
+              {isOpen && (
+                <div id="appraisal-section-menu" className="app-sidebar__menu" role="listbox" aria-label="Appraisal form sections">
+                  {items.map((item) => {
+                    const selected = item.id === activeId;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        role="option"
+                        aria-selected={selected}
+                        className={`app-sidebar__menu-item${selected ? " is-selected" : ""}`}
+                        onClick={() => selectSection(item.id)}
+                      >
+                        <span className="app-sidebar__menu-number">{item.id === "overview" || item.id === "summary" ? <SummaryIcon /> : <ClipboardIcon />}</span>
+                        <span className="app-sidebar__menu-copy">
+                          {item.number && <small>Section {item.number}</small>}
+                          <span>{item.title}</span>
+                        </span>
+                        {selected && <span className="app-sidebar__menu-check">{"\u2713"}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </>
+        )}
         {pinnedItems.length > 0 && (
           <div className="app-sidebar__pinned-list" aria-label="Pinned appraisal sections">
             {pinnedItems.map((item) => {
@@ -209,7 +213,7 @@ export default function AppSidebar({
             })}
           </div>
         )}
-        <span className="app-sidebar__nav-hint">Jump to any section at any time</span>
+        {items.length > 0 && <span className="app-sidebar__nav-hint">Jump to any section at any time</span>}
 
         {actionGroups.length > 0 && (
           <div className="app-sidebar__action-groups">

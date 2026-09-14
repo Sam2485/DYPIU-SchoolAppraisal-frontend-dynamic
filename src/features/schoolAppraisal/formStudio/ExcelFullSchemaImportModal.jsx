@@ -713,7 +713,7 @@ export const ExcelFullSchemaImportModal = ({
                   padding: '9px 18px',
                   borderRadius: '8px',
                   border: 'none',
-                  background: '#4f46e5',
+                  background: '#2563eb',
                   color: '#fff',
                   fontWeight: 700,
                   fontSize: '13px',
@@ -721,7 +721,7 @@ export const ExcelFullSchemaImportModal = ({
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '8px',
-                  boxShadow: '0 2px 4px rgba(79,70,229,0.25)',
+                  boxShadow: '0 2px 4px rgba(37,99,235,0.25)',
                 }}
                 onClick={() => fileInputRef.current?.click()}
               >
@@ -756,9 +756,9 @@ export const ExcelFullSchemaImportModal = ({
                 style={{
                   padding: '8px 14px',
                   borderRadius: '8px',
-                  border: '1px solid #c7d2fe',
-                  background: '#eef2ff',
-                  color: '#4338ca',
+                  border: '1px solid #bfdbfe',
+                  background: '#eff6ff',
+                  color: '#1d4ed8',
                   fontWeight: 700,
                   fontSize: '12.5px',
                   cursor: 'pointer',
@@ -854,9 +854,9 @@ export const ExcelFullSchemaImportModal = ({
                       style={{
                         padding: '10px 12px',
                         borderRadius: '8px',
-                        border: activeSectionIndex === sIdx ? '1.5px solid #4f46e5' : '1px solid #e2e8f0',
-                        background: activeSectionIndex === sIdx ? '#eef2ff' : '#fff',
-                        color: activeSectionIndex === sIdx ? '#4338ca' : '#1e293b',
+                        border: activeSectionIndex === sIdx ? '1.5px solid #2563eb' : '1px solid #e2e8f0',
+                        background: activeSectionIndex === sIdx ? '#eff6ff' : '#fff',
+                        color: activeSectionIndex === sIdx ? '#1d4ed8' : '#1e293b',
                         fontWeight: 700,
                         fontSize: '12.5px',
                         textAlign: 'left',
@@ -878,7 +878,7 @@ export const ExcelFullSchemaImportModal = ({
                           fontSize: '10.5px',
                           padding: '2px 6px',
                           borderRadius: '10px',
-                          background: activeSectionIndex === sIdx ? '#c7d2fe' : '#f1f5f9',
+                          background: activeSectionIndex === sIdx ? '#bfdbfe' : '#f1f5f9',
                           color: activeSectionIndex === sIdx ? '#312e81' : '#64748b',
                           fontWeight: 700,
                         }}
@@ -956,7 +956,7 @@ export const ExcelFullSchemaImportModal = ({
                           padding: '7px 14px',
                           borderRadius: '8px 8px 0 0',
                           border: 'none',
-                          background: activeTableIndex === tIdx ? '#4f46e5' : '#f8fafc',
+                          background: activeTableIndex === tIdx ? '#2563eb' : '#f8fafc',
                           color: activeTableIndex === tIdx ? '#fff' : '#475569',
                           fontWeight: 700,
                           fontSize: '12.5px',
@@ -1114,9 +1114,9 @@ export const ExcelFullSchemaImportModal = ({
                 style={{
                   padding: '8px 18px',
                   borderRadius: '7px',
-                  border: '1px solid #c7d2fe',
-                  background: '#eef2ff',
-                  color: '#4338ca',
+                  border: '1px solid #bfdbfe',
+                  background: '#eff6ff',
+                  color: '#1d4ed8',
                   fontWeight: 700,
                   fontSize: '13px',
                   cursor: 'pointer',
@@ -1171,7 +1171,7 @@ export const ExcelFullSchemaImportModal = ({
                 padding: '8px 22px',
                 borderRadius: '8px',
                 border: 'none',
-                background: parsedSections.length === 0 || importing ? '#94a3b8' : '#4f46e5',
+                background: parsedSections.length === 0 || importing ? '#94a3b8' : '#2563eb',
                 color: '#fff',
                 fontWeight: 700,
                 fontSize: '13px',
@@ -1179,7 +1179,7 @@ export const ExcelFullSchemaImportModal = ({
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '8px',
-                boxShadow: parsedSections.length > 0 && !importing ? '0 2px 4px rgba(79,70,229,0.25)' : 'none',
+                boxShadow: parsedSections.length > 0 && !importing ? '0 2px 4px rgba(37,99,235,0.25)' : 'none',
               }}
               onClick={handleExecuteImport}
               disabled={parsedSections.length === 0 || importing}

@@ -980,15 +980,15 @@ export const ExcelTableImportModal = ({
                                   borderRadius: '6px',
                                   border:
                                     field.fieldType === 'ATTACHMENT'
-                                      ? '1.5px solid #818cf8'
+                                      ? '1.5px solid #60a5fa'
                                       : field.fieldType === 'DATE'
-                                      ? '1.5px solid #38bdf8'
+                                      ? '1.5px solid #60a5fa'
                                       : field.fieldType === 'NUMBER'
                                       ? '1.5px solid #34d399'
                                       : '1px solid #cbd5e1',
                                   background:
                                     field.fieldType === 'ATTACHMENT'
-                                      ? '#eef2ff'
+                                      ? '#eff6ff'
                                       : field.fieldType === 'DATE'
                                       ? '#f0f9ff'
                                       : field.fieldType === 'NUMBER'
@@ -1023,7 +1023,7 @@ export const ExcelTableImportModal = ({
                                   title="Comma-separated dropdown options"
                                 />
                               ) : field.fieldType === 'ATTACHMENT' ? (
-                                <span style={{ fontSize: '11.5px', color: '#4f46e5', fontWeight: 600 }}>
+                                <span style={{ fontSize: '11.5px', color: '#2563eb', fontWeight: 600 }}>
                                   📎 File/PDF upload enabled
                                 </span>
                               ) : field.fieldType === 'DATE' ? (

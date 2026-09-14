@@ -3,8 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { clearAuthState, getApiErrorMessage } from "../../../api/client";
 import { SIGN_OFF_FIELD, buildSubmissionPayload, deleteAttachment, fetchMyDraft, normalizeDraft, saveDraft, uploadAttachments, fetchAdministrativeStatus, submitAdministrativePart, fetchCurrentAuditCycle, fetchSubmissionSnapshots } from "../../../api/submissions";
 import { fetchCurrentUser } from "../../../api/users";
-import universityLogo from "../../../assets/images/image.png";
-import iqacLogo from "../../../assets/images/IQAS.png";
 import AuditTable from "../components/AuditTable";
 import { TableButtonGroup } from "../components/TableButtonGroup";
 import { partitionTablesByButtons } from "../utils/tableButtonHelpers";
@@ -981,7 +979,9 @@ export default function AdministrativeAuditDashboard() {
             <>
           <header className="admin-audit-header audit-form__header" style={styles.header}>
             <div style={styles.headerContent}>
-              <img src={universityInfo?.logoUrl || universityLogo} alt="University Logo" style={styles.logo} />
+              {(getAttachmentUrl(universityInfo?.logoUrl || sessionStorage.getItem("universityLogo")) || "") && (
+                <img src={getAttachmentUrl(universityInfo?.logoUrl || sessionStorage.getItem("universityLogo"))} alt="University Logo" style={styles.logo} />
+              )}
               <div>
                 <p style={styles.kicker}>{universityInfo?.universityName || sessionStorage.getItem("universityName") || ""}</p>
                 <h1 style={styles.title}>{dynamicSchema?.title || "Internal Administrative Audit"}</h1>
@@ -992,7 +992,9 @@ export default function AdministrativeAuditDashboard() {
               </div>
             </div>
             <div style={styles.headerRight}>
-              <img src={universityInfo?.iqacLogoUrl || iqacLogo} alt="IQAC Logo" style={styles.headerIqacLogo} />
+              {(getAttachmentUrl(universityInfo?.iqacLogoUrl || sessionStorage.getItem("iqacLogo")) || "") && (
+                <img src={getAttachmentUrl(universityInfo?.iqacLogoUrl || sessionStorage.getItem("iqacLogo"))} alt="IQAC Logo" style={styles.headerIqacLogo} />
+              )}
               <div className="admin-audit-actions" style={styles.headerActions}>
                 <button type="button" className="btn btn-secondary" onClick={resetActiveModule} disabled={readOnly || loadingDraft || savingDraft}>
                   Reset Section
@@ -1508,7 +1510,7 @@ const styles = {
     width: 42,
     height: 42,
     borderRadius: 12,
-    background: "linear-gradient(135deg,#0ea5e9,#2563eb)",
+    background: "linear-gradient(135deg,#3b82f6,#2563eb)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1652,7 +1654,7 @@ const styles = {
   },
   main: {
     flex: 1,
-    padding: "28px 30px 40px",
+    padding: "28px 30px 40px 24px",
     overflowX: "auto",
   },
   header: {
@@ -1662,9 +1664,9 @@ const styles = {
     gap: 18,
     padding: "24px 26px",
     border: "1px solid #e2e8f0",
-    borderRadius: 16,
+    borderRadius: 8,
     background: "#fff",
-    boxShadow: "0 10px 35px rgba(15,23,42,0.055)",
+    boxShadow: "none",
   },
   headerContent: {
     display: "flex",

@@ -337,7 +337,7 @@ const styles = {
     width: 40,
     height: 40,
     borderRadius: 12,
-    background: "linear-gradient(135deg,#0ea5e9,#2563eb)",
+    background: "linear-gradient(135deg,#3b82f6,#2563eb)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -488,7 +488,7 @@ const styles = {
     minHeight: "100vh",
     flex: 1,
     background: "#f5f7fb",
-    padding: "28px 30px 40px",
+    padding: "28px 30px 40px 24px",
     overflowX: "auto",
   },
   modalBackdrop: {

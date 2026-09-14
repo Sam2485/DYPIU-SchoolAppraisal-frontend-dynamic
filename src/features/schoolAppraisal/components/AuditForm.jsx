@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getApiErrorMessage } from "../../../api/client";
 import { buildSubmissionPayload, deleteAttachment, fetchMyDraft, fetchSubmissionSnapshots, normalizeDraft, saveDraft, signOffProfileFromSession, submitDraft, uploadAttachments, withSubmitterSignOff } from "../../../api/submissions";
-import universityLogo from "../../../assets/images/image.png";
-import iqacLogo from "../../../assets/images/IQAS.png";
+import { fetchUniversityBranding } from "../../../api/config";
+import { getAttachmentUrl } from "../../../utils/attachment";
 import AuditReportPanel from "./AuditReportPanel";
 import AuditSection from "./AuditSection";
 import { InlineSpinner, LoadingState, SkeletonList } from "./LoadingState";
@@ -411,6 +411,31 @@ export default function AuditForm({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [academicPartEReview, setAcademicPartEReview] = useState(null);
   const [printReportAfterRender, setPrintReportAfterRender] = useState(false);
+  const [universityInfo, setUniversityInfo] = useState(null);
+
+  useEffect(() => {
+    let isActive = true;
+    const universityCode = sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || "";
+    if (universityCode) {
+      fetchUniversityBranding(universityCode)
+        .then((data) => {
+          if (isActive && data) {
+            setUniversityInfo(data);
+            if (data.logoUrl) sessionStorage.setItem("universityLogo", data.logoUrl);
+            if (data.iqacLogoUrl) sessionStorage.setItem("iqacLogo", data.iqacLogoUrl);
+            if (data.universityName) sessionStorage.setItem("universityName", data.universityName);
+            if (data.address) sessionStorage.setItem("universityAddress", data.address);
+          }
+        })
+        .catch(() => {});
+    }
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  const resolvedUniversityLogo = getAttachmentUrl(universityInfo?.logoUrl || sessionStorage.getItem("universityLogo")) || "";
+  const resolvedIqacLogo = getAttachmentUrl(universityInfo?.iqacLogoUrl || sessionStorage.getItem("iqacLogo")) || "";
   const activeSectionIndex = Math.max(
     0,
     schema.sections.findIndex((section) =>
@@ -692,11 +717,11 @@ export default function AuditForm({
     <form className="audit-form" style={styles.form} onSubmit={(event) => event.preventDefault()}>
       <header className="audit-form__header" style={styles.header}>
         <div style={styles.headerContent}>
-          <div style={styles.logoWrap}><img src={universityLogo} alt="DYPIU Logo" style={styles.logo} /></div>
+          <div style={styles.logoWrap}>{resolvedUniversityLogo && <img src={resolvedUniversityLogo} alt="University Logo" style={styles.logo} />}</div>
           <div style={styles.headerCopy}>
-            <p style={styles.kicker}>{schema.header.university}</p>
+            <p style={styles.kicker}>{universityInfo?.universityName || schema.header.university}</p>
             <h1 style={styles.title}>{schema.title}</h1>
-            <p style={styles.meta}>{schema.header.address}</p>
+            <p style={styles.meta}>{universityInfo?.address || schema.header.address}</p>
             <div style={styles.headerMetaRow}>
               <span style={styles.year}>Academic Year {academicYear}</span>
               <span style={isHistoricalYear ? styles.readOnlyPill : isSubmitted ? styles.readOnlyPill : styles.draftPill}>
@@ -706,7 +731,7 @@ export default function AuditForm({
           </div>
         </div>
         <div style={styles.headerRight}>
-          <img src={iqacLogo} alt="IQAC Logo" style={styles.headerIqacLogo} />
+          {resolvedIqacLogo && <img src={resolvedIqacLogo} alt="IQAC Logo" style={styles.headerIqacLogo} />}
           <div style={styles.actions}>
             <button type="button" className="btn btn-secondary" onClick={handleClear} disabled={readOnly}>
               Clear
@@ -848,9 +873,9 @@ const styles = {
     gap: 18,
     padding: "24px 26px 28px",
     border: "1px solid #e2e8f0",
-    borderRadius: 16,
+    borderRadius: 8,
     background: "#fff",
-    boxShadow: "0 10px 35px rgba(15, 23, 42, 0.055)",
+    boxShadow: "none",
     overflow: "hidden",
   },
   headerContent: {
@@ -903,7 +928,7 @@ const styles = {
   draftPill: { padding: "4px 8px", borderRadius: 999, color: "#0369a1", background: "#e0f2fe", fontSize: 9.5, fontWeight: 700, letterSpacing: ".03em", textTransform: "uppercase" },
   readOnlyPill: { padding: "4px 8px", borderRadius: 999, color: "#475569", background: "#e2e8f0", fontSize: 9.5, fontWeight: 700, letterSpacing: ".03em", textTransform: "uppercase" },
   progressTrack: { position: "absolute", left: 0, right: 0, bottom: 0, height: 4, background: "#eff6ff" },
-  progressBar: { display: "block", height: "100%", borderRadius: "0 4px 4px 0", background: "linear-gradient(90deg, #2563eb, #38bdf8)", transition: "width .3s ease" },
+  progressBar: { display: "block", height: "100%", borderRadius: "0 4px 4px 0", background: "linear-gradient(90deg, #2563eb, #60a5fa)", transition: "width .3s ease" },
   headerRight: {
     display: "flex",
     flexDirection: "column",
