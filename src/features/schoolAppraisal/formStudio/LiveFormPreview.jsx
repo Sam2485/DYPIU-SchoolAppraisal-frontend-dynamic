@@ -1114,7 +1114,7 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                           {rows.length} {rows.length === 1 ? 'row' : 'rows'}
                         </span>
                         {isRepeatable && (
-                          <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '5px', background: '#e0e7ff', color: '#3730a3' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '5px', background: '#dbeafe', color: '#1e40af' }}>
                             Dynamic Rows
                           </span>
                         )}
@@ -1550,7 +1550,7 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
 
             {/* Modal Body */}
             <div style={{ padding: '20px', overflowY: 'auto', flex: 1, background: '#090d16' }}>
-              <pre style={{ margin: 0, color: '#38bdf8', fontSize: '12px', fontFamily: 'Consolas, Monaco, monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+              <pre style={{ margin: 0, color: '#60a5fa', fontSize: '12px', fontFamily: 'Consolas, Monaco, monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                 {JSON.stringify({ valuesData, tablesData }, null, 2)}
               </pre>
             </div>

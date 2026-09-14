@@ -1,6 +1,4 @@
 import { columnsWithSerial, serialColumnFor } from "./tableHelpers";
-import universityLogo from "../../../assets/images/image.png";
-import iqacLogo from "../../../assets/images/IQAS.png";
 import { SIGN_OFF_FIELD } from "../../../api/submissions";
 import { formatDateDDMMYYYY } from "../../../utils/dateFormat";
 import { getAttachmentUrl } from "../../../utils/attachment";
@@ -284,11 +282,13 @@ export default function AuditReportPanel({
 }) {
   const isExternalReport = String(reportCategory).toLowerCase() === "external";
   const submittedAuditorAssignments = auditorAssignments.filter(isSubmittedAuditorAssignment);
+  const resolvedUniversityLogo = getAttachmentUrl(sessionStorage.getItem("universityLogo")) || "";
+  const resolvedIqacLogo = getAttachmentUrl(sessionStorage.getItem("iqacLogo")) || "";
 
   return (
     <div className="generated-report" style={styles.panel}>
       <header className="generated-report__cover" style={styles.header}>
-        <img src={getAttachmentUrl(sessionStorage.getItem("universityLogo")) || universityLogo} alt="University Logo" style={styles.logo} />
+        {resolvedUniversityLogo && <img src={resolvedUniversityLogo} alt="University Logo" style={styles.logo} />}
         <div style={styles.headerText}>
           <p style={styles.kicker}>{sessionStorage.getItem("universityName") || schema.header.university}</p>
           <h1 style={styles.title}>{schema.title}</h1>
@@ -297,7 +297,7 @@ export default function AuditReportPanel({
           <p style={styles.year}>Academic Year {schema.academicYear}</p>
         </div>
         <div className="generated-report__document-meta" style={styles.documentMeta}>
-          <img src={getAttachmentUrl(sessionStorage.getItem("iqacLogo")) || iqacLogo} alt="IQAC Logo" style={styles.documentLogo} />
+          {resolvedIqacLogo && <img src={resolvedIqacLogo} alt="IQAC Logo" style={styles.documentLogo} />}
           <span style={styles.generatedDate}>Prepared {formatDateDDMMYYYY(new Date())}</span>
         </div>
       </header>
@@ -659,7 +659,7 @@ const styles = {
     background: "#fff",
   },
   sectionHeading: { display: "flex", alignItems: "center", gap: 10, marginBottom: 14, paddingBottom: 12, borderBottom: "1px solid #e2e8f0" },
-  sectionNumber: { width: 34, height: 34, display: "grid", placeItems: "center", flex: "0 0 34px", borderRadius: 9, color: "#fff", background: "#1e293b", fontSize: 11, fontWeight: 800 },
+  sectionNumber: { width: 34, height: 34, display: "grid", placeItems: "center", flex: "0 0 34px", borderRadius: 9, color: "#fff", background: "#2563eb", fontSize: 11, fontWeight: 800 },
   sectionTitle: {
     margin: 0,
     color: "#0f172a",

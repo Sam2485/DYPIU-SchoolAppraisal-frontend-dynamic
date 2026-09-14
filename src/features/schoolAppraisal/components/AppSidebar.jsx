@@ -103,9 +103,9 @@ export default function AppSidebar({
               value={academicYear}
               onChange={(e) => onYearChange(e.target.value)}
               style={{
-                backgroundColor: "rgba(255, 255, 255, 0.15)",
-                color: "#ffffff",
-                border: "1px solid rgba(255, 255, 255, 0.3)",
+                backgroundColor: "#ffffff",
+                color: "#1e293b",
+                border: "1px solid #cbd5e1",
                 borderRadius: "6px",
                 padding: "3px 8px",
                 fontSize: "12px",
@@ -116,7 +116,7 @@ export default function AppSidebar({
               title="Select Academic Year"
             >
               {availableYears.map((yr) => (
-                <option key={yr} value={yr} style={{ backgroundColor: "#1e293b", color: "#ffffff" }}>
+                <option key={yr} value={yr} style={{ backgroundColor: "#ffffff", color: "#1e293b" }}>
                   {yr}
                 </option>
               ))}

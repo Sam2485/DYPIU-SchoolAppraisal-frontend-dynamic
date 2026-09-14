@@ -22,8 +22,6 @@ import {
 } from "../../../api/submissions";
 import { fetchActiveSchema, fetchSchemaByVersion, fetchUniversityBranding } from "../../../api/config";
 import { fetchCurrentUser, fetchUsers } from "../../../api/users";
-import universityLogo from "../../../assets/images/image.png";
-import iqacLogo from "../../../assets/images/IQAS.png";
 import AppSidebar from "../components/AppSidebar";
 import AuditReportPanel from "../components/AuditReportPanel";
 import { InlineSpinner, LoadingState, SkeletonList } from "../components/LoadingState";
@@ -2131,8 +2129,8 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
     };
   }, []);
 
-  const resolvedUniversityLogo = getAttachmentUrl(universityInfo?.logoUrl || sessionStorage.getItem("universityLogo")) || universityLogo;
-  const resolvedIqacLogo = getAttachmentUrl(universityInfo?.iqacLogoUrl || sessionStorage.getItem("iqacLogo")) || iqacLogo;
+  const resolvedUniversityLogo = getAttachmentUrl(universityInfo?.logoUrl || sessionStorage.getItem("universityLogo")) || "";
+  const resolvedIqacLogo = getAttachmentUrl(universityInfo?.iqacLogoUrl || sessionStorage.getItem("iqacLogo")) || "";
 
   const setDashboardRouteState = useCallback((viewId, { submissionId = "", replace = false } = {}) => {
     const nextParams = new URLSearchParams(searchParams);
@@ -3354,7 +3352,7 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
             <header style={styles.header}>
               <div style={styles.headerContent}>
                 <div style={styles.logoWrap}>
-                  <img src={resolvedUniversityLogo} alt="University Logo" style={styles.logo} />
+                  {resolvedUniversityLogo && <img src={resolvedUniversityLogo} alt="University Logo" style={styles.logo} />}
                 </div>
                 <div>
                   <p style={styles.kicker}>{universityInfo?.universityName || sessionStorage.getItem("universityName") || ""}</p>
@@ -3362,7 +3360,7 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
                   <p style={styles.meta}>School Appraisal Review - Academic Year {academicYearPeriod(academicYear)}</p>
                 </div>
               </div>
-              <img src={resolvedIqacLogo} alt="IQAC Logo" style={styles.headerIqacLogo} />
+              {resolvedIqacLogo && <img src={resolvedIqacLogo} alt="IQAC Logo" style={styles.headerIqacLogo} />}
             </header>
           )}
 
@@ -3588,7 +3586,7 @@ function OverviewPanel({ metrics, submissions, loading, onOpen }) {
             <span style={styles.overviewHeroPill}>{schoolProgress.length} Schools</span>
           </div>
         </div>
-        <div style={{ ...styles.approvalRing, background: `conic-gradient(#38bdf8 ${approvalRate}%, rgba(255,255,255,.16) 0)` }}>
+        <div style={{ ...styles.approvalRing, background: `conic-gradient(#0d9488 ${approvalRate}%, #e2e8f0 0)` }}>
           <div style={styles.approvalRingInner}>
             <strong>{approvalRate}%</strong>
             <span>approved</span>
@@ -8665,7 +8663,7 @@ const styles = {
     minHeight: "100vh",
     flex: 1,
     background: "#f5f7fb",
-    padding: "28px 30px 40px",
+    padding: "28px 30px 40px 24px",
     overflowX: "hidden",
   },
   header: {
@@ -8741,19 +8739,20 @@ const styles = {
     gap: 28,
     minHeight: 190,
     padding: "28px 32px",
-    borderRadius: 18,
-    color: "#fff",
-    background: "linear-gradient(125deg, #17233b 0%, #1e3a5f 58%, #2563eb 100%)",
-    boxShadow: "0 18px 40px rgba(15, 23, 42, .14)",
+    borderRadius: 8,
+    color: "#0f172a",
+    background: "#ffffff",
+    border: "1px solid #e2e8f0",
+    boxShadow: "none",
   },
   overviewHeroCopy: { position: "relative", zIndex: 1, maxWidth: 720 },
-  overviewEyebrow: { display: "block", marginBottom: 8, color: "#7dd3fc", fontSize: 10, fontWeight: 800, letterSpacing: ".12em", textTransform: "uppercase" },
-  overviewTitle: { margin: "0 0 9px", color: "#fff", fontSize: 24, fontWeight: 750, letterSpacing: "-.025em" },
-  overviewDescription: { maxWidth: 640, margin: 0, color: "#cbd5e1", fontSize: 12.5, lineHeight: 1.6 },
+  overviewEyebrow: { display: "block", marginBottom: 8, color: "#2563eb", fontSize: 10, fontWeight: 800, letterSpacing: ".12em", textTransform: "uppercase" },
+  overviewTitle: { margin: "0 0 9px", color: "#0f172a", fontSize: 24, fontWeight: 750, letterSpacing: "-.025em" },
+  overviewDescription: { maxWidth: 640, margin: 0, color: "#64748b", fontSize: 12.5, lineHeight: 1.6 },
   overviewHeroPills: { display: "flex", flexWrap: "wrap", gap: 8, marginTop: 18 },
-  overviewHeroPill: { padding: "6px 9px", border: "1px solid rgba(255,255,255,.16)", borderRadius: 999, color: "#e0f2fe", background: "rgba(255,255,255,.08)", fontSize: 10, fontWeight: 700 },
-  approvalRing: { position: "relative", zIndex: 1, width: 118, height: 118, flex: "0 0 118px", display: "grid", placeItems: "center", borderRadius: "50%", boxShadow: "0 12px 30px rgba(15,23,42,.24)" },
-  approvalRingInner: { width: 88, height: 88, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", borderRadius: "50%", color: "#fff", background: "#17233b" },
+  overviewHeroPill: { padding: "6px 9px", border: "1px solid #bfdbfe", borderRadius: 999, color: "#1d4ed8", background: "#eff6ff", fontSize: 10, fontWeight: 700 },
+  approvalRing: { position: "relative", zIndex: 1, width: 118, height: 118, flex: "0 0 118px", display: "grid", placeItems: "center", borderRadius: "50%", boxShadow: "0 4px 14px rgba(15,23,42,.08)" },
+  approvalRingInner: { width: 88, height: 88, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", borderRadius: "50%", color: "#0f172a", background: "#ffffff", border: "1px solid #e2e8f0" },
   iqacOverviewHeader: {
     display: "flex",
     alignItems: "flex-start",
@@ -8790,8 +8789,8 @@ const styles = {
     display: "grid",
     placeItems: "center",
     flexShrink: 0,
-    background: "#eef2ff",
-    color: "#4338ca",
+    background: "#eff6ff",
+    color: "#1d4ed8",
   },
   iqacDateStrong: {
     display: "block",
@@ -9096,15 +9095,15 @@ const styles = {
   metricCard: {
     position: "relative",
     overflow: "hidden",
-    border: "1px solid #e5eaf2",
-    borderRadius: 14,
+    border: "1px solid #e2e8f0",
+    borderRadius: 8,
     background: "#fff",
     padding: "17px 18px",
     display: "flex",
     flexDirection: "column",
     gap: 8,
     color: "#64748b",
-    boxShadow: "0 8px 24px rgba(15, 23, 42, .035)",
+    boxShadow: "none",
   },
   metricTopRow: { display: "flex", alignItems: "center", gap: 8 },
   metricIndicator: { width: 24, height: 24, display: "grid", placeItems: "center", borderRadius: 7 },
@@ -9173,7 +9172,7 @@ const styles = {
     placeItems: "center",
     borderRadius: 8,
     color: "#fff",
-    background: "linear-gradient(135deg, #2563eb, #0ea5e9)",
+    background: "linear-gradient(135deg, #2563eb, #3b82f6)",
     fontSize: 9,
     fontWeight: 800,
   },
@@ -9333,7 +9332,7 @@ const styles = {
     placeItems: "center",
     overflow: "hidden",
     color: "#fff",
-    background: "linear-gradient(135deg, #2563eb, #0ea5e9)",
+    background: "linear-gradient(135deg, #2563eb, #3b82f6)",
     fontSize: 12,
     fontWeight: 900,
   },
@@ -9411,17 +9410,17 @@ const styles = {
   auditorProgressPanel: {
     display: "grid",
     gap: 10,
-    border: "1px solid #c7d2fe",
+    border: "1px solid #bfdbfe",
     borderRadius: 8,
-    background: "#eef2ff",
+    background: "#eff6ff",
     padding: "12px 14px",
   },
   auditorProgressCompact: {
     display: "grid",
     gap: 8,
-    border: "1px solid #c7d2fe",
+    border: "1px solid #bfdbfe",
     borderRadius: 8,
-    background: "#eef2ff",
+    background: "#eff6ff",
     padding: "10px 12px",
   },
   auditorProgressHeader: {
@@ -9432,14 +9431,14 @@ const styles = {
   },
   auditorProgressTitle: {
     display: "block",
-    color: "#3730a3",
+    color: "#1e40af",
     fontSize: 12,
     fontWeight: 850,
   },
   auditorProgressSubtext: {
     display: "block",
     marginTop: 2,
-    color: "#4f46e5",
+    color: "#2563eb",
     fontSize: 11,
     fontWeight: 700,
   },
@@ -9467,13 +9466,13 @@ const styles = {
     height: 7,
     overflow: "hidden",
     borderRadius: 999,
-    background: "#c7d2fe",
+    background: "#bfdbfe",
   },
   auditorProgressBar: {
     display: "block",
     height: "100%",
     borderRadius: 999,
-    background: "#4f46e5",
+    background: "#2563eb",
   },
   auditorPostGrid: {
     display: "grid",
@@ -9485,7 +9484,7 @@ const styles = {
     alignItems: "center",
     justifyContent: "space-between",
     gap: 8,
-    border: "1px solid rgba(79, 70, 229, .18)",
+    border: "1px solid rgba(37, 99, 235, .18)",
     borderRadius: 8,
     background: "rgba(255, 255, 255, .72)",
     padding: "8px 10px",
@@ -9502,7 +9501,7 @@ const styles = {
     gridTemplateColumns: "minmax(180px, 1fr) auto minmax(180px, .9fr)",
     alignItems: "center",
     gap: 10,
-    border: "1px solid rgba(79, 70, 229, .16)",
+    border: "1px solid rgba(37, 99, 235, .16)",
     borderRadius: 8,
     background: "rgba(255, 255, 255, .82)",
     padding: "9px 10px",
@@ -9736,7 +9735,7 @@ const styles = {
     overflow: "hidden",
     display: "grid",
     placeItems: "center",
-    background: "#eef2ff",
+    background: "#eff6ff",
   },
   fullReviewAvatarImg: {
     width: "100%",
@@ -9825,9 +9824,9 @@ const styles = {
     background: "#f59e0b",
   },
   historyReference: {
-    border: "1px solid #c7d2fe",
+    border: "1px solid #bfdbfe",
     borderRadius: 8,
-    background: "#eef2ff",
+    background: "#eff6ff",
     overflow: "hidden",
   },
   historyReferenceSummary: {
@@ -9842,7 +9841,7 @@ const styles = {
     fontWeight: 800,
   },
   historyReferenceMeta: {
-    color: "#6366f1",
+    color: "#3b82f6",
     fontSize: 11,
     fontWeight: 700,
   },
@@ -9851,7 +9850,7 @@ const styles = {
     flexDirection: "column",
     gap: 12,
     padding: 14,
-    borderTop: "1px solid #c7d2fe",
+    borderTop: "1px solid #bfdbfe",
     background: "#f8faff",
   },
   fullReviewActions: {
@@ -9944,7 +9943,7 @@ const styles = {
     placeItems: "center",
     borderRadius: 15,
     color: "#fff",
-    background: "linear-gradient(135deg, #2563eb, #0ea5e9)",
+    background: "linear-gradient(135deg, #2563eb, #3b82f6)",
     fontSize: 12,
     fontWeight: 950,
     boxShadow: "0 14px 30px rgba(37, 99, 235, .28)",
@@ -10194,7 +10193,7 @@ const styles = {
     placeItems: "center",
     borderRadius: 12,
     color: "#fff",
-    background: "linear-gradient(135deg, #2563eb, #0ea5e9)",
+    background: "linear-gradient(135deg, #2563eb, #3b82f6)",
     fontSize: 11,
     fontWeight: 900,
   },
@@ -10587,10 +10586,10 @@ const styles = {
   },
   readOnlyTh: {
     padding: "10px 11px",
-    borderBottom: "1px solid #334155",
-    borderRight: "1px solid #3a465b",
-    background: "#1e293b",
-    color: "#f8fafc",
+    borderBottom: "1px solid #e2e8f0",
+    borderRight: "1px solid #e2e8f0",
+    background: "#f8fafc",
+    color: "#1e293b",
     fontSize: 11.5,
     fontWeight: 700,
     letterSpacing: ".025em",

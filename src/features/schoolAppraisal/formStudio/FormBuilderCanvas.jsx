@@ -845,9 +845,9 @@ export const FormBuilderCanvas = ({
             style={{
               padding: '7px 14px',
               borderRadius: '7px',
-              border: '1px solid #c7d2fe',
-              background: '#eef2ff',
-              color: '#4338ca',
+              border: '1px solid #bfdbfe',
+              background: '#eff6ff',
+              color: '#1d4ed8',
               fontWeight: 700,
               fontSize: '13px',
               cursor: 'pointer',
@@ -1132,7 +1132,7 @@ export const FormBuilderCanvas = ({
                   </div>
                   <button
                     type="button"
-                    style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #c7d2fe', background: '#eef2ff', color: '#4338ca', fontWeight: 700, fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #bfdbfe', background: '#eff6ff', color: '#1d4ed8', fontWeight: 700, fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                     onClick={handleOpenAddTableButton}
                   >
                     <span>➕ Add Table Button</span>
@@ -1164,7 +1164,7 @@ export const FormBuilderCanvas = ({
                           <div
                             key={btn.id}
                             style={{
-                              border: '1.5px solid #c7d2fe',
+                              border: '1.5px solid #bfdbfe',
                               borderRadius: '10px',
                               background: '#f8faff',
                               padding: '14px',
@@ -1212,8 +1212,8 @@ export const FormBuilderCanvas = ({
                                       fontSize: '10.5px',
                                       fontWeight: 700,
                                       padding: '2px 6px',
-                                      background: '#e0e7ff',
-                                      color: '#3730a3',
+                                      background: '#dbeafe',
+                                      color: '#1e40af',
                                       borderRadius: '4px',
                                     }}
                                   >
@@ -1223,10 +1223,10 @@ export const FormBuilderCanvas = ({
                               </div>
                             </div>
 
-                            <div style={{ borderTop: '1px solid #e0e7ff', paddingTop: '8px', fontSize: '11.5px', color: '#64748b' }}>
+                            <div style={{ borderTop: '1px solid #dbeafe', paddingTop: '8px', fontSize: '11.5px', color: '#64748b' }}>
                               <span>Assigned: <strong>{assignedTables.length} table(s)</strong></span>
                               {assignedTables.length > 0 && (
-                                <span style={{ marginLeft: '4px', color: '#4338ca' }}>
+                                <span style={{ marginLeft: '4px', color: '#1d4ed8' }}>
                                   ({assignedTables.map((t) => t.title || t.tableKey).slice(0, 2).join(', ')}
                                   {assignedTables.length > 2 ? ` +${assignedTables.length - 2} more` : ''})
                                 </span>

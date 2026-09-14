@@ -557,9 +557,9 @@ export const SchemaManager = ({
                             fontWeight: 600,
                             padding: '3px 8px',
                             borderRadius: '6px',
-                            background: schoolInfo.isAll ? '#f1f5f9' : '#e0e7ff',
-                            color: schoolInfo.isAll ? '#475569' : '#3730a3',
-                            border: `1px solid ${schoolInfo.isAll ? '#e2e8f0' : '#c7d2fe'}`,
+                            background: schoolInfo.isAll ? '#f1f5f9' : '#dbeafe',
+                            color: schoolInfo.isAll ? '#475569' : '#1e40af',
+                            border: `1px solid ${schoolInfo.isAll ? '#e2e8f0' : '#bfdbfe'}`,
                           }}
                         >
                           {schoolInfo.label}
