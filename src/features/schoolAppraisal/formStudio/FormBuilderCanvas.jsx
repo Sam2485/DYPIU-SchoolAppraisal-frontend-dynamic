@@ -121,11 +121,12 @@ export const FormBuilderCanvas = ({
   const [tableButtonModal, setTableButtonModal] = useState({
     show: false,
     isEdit: false,
+    newOptionText: '',
     data: {
       id: null,
       label: '',
       dropdownLabel: '',
-      dropdownOptionsString: '',
+      dropdownOptions: [],
       assignedTableKeys: [],
     },
   });
@@ -273,30 +274,74 @@ export const FormBuilderCanvas = ({
     setTableButtonModal({
       show: true,
       isEdit: false,
+      newOptionText: '',
       data: {
         id: null,
         label: '',
         dropdownLabel: '',
-        dropdownOptionsString: '',
+        dropdownOptions: [],
         assignedTableKeys: [],
       },
     });
   };
 
   const handleOpenEditTableButton = (btn) => {
+    const opts = Array.isArray(btn.dropdownOptions)
+      ? [...btn.dropdownOptions]
+      : typeof btn.dropdownOptions === 'string'
+      ? btn.dropdownOptions.split(',').map((s) => s.trim()).filter(Boolean)
+      : [];
+
     setTableButtonModal({
       show: true,
       isEdit: true,
+      newOptionText: '',
       data: {
         id: btn.id,
         label: btn.label || '',
         dropdownLabel: btn.dropdownLabel || '',
-        dropdownOptionsString: Array.isArray(btn.dropdownOptions)
-          ? btn.dropdownOptions.join(', ')
-          : (btn.dropdownOptions || ''),
+        dropdownOptions: opts,
         assignedTableKeys: Array.isArray(btn.assignedTableKeys) ? [...btn.assignedTableKeys] : [],
       },
     });
+  };
+
+  const handleAddDropdownOption = (e) => {
+    e?.preventDefault?.();
+    const text = (tableButtonModal.newOptionText || '').trim();
+    if (!text) return;
+
+    const incoming = text
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const existing = tableButtonModal.data.dropdownOptions || [];
+    const toAdd = incoming.filter((item) => !existing.includes(item));
+
+    if (toAdd.length === 0) {
+      alert('Option already added.');
+      return;
+    }
+
+    setTableButtonModal((prev) => ({
+      ...prev,
+      newOptionText: '',
+      data: {
+        ...prev.data,
+        dropdownOptions: [...existing, ...toAdd],
+      },
+    }));
+  };
+
+  const handleRemoveDropdownOption = (optionToRemove) => {
+    setTableButtonModal((prev) => ({
+      ...prev,
+      data: {
+        ...prev.data,
+        dropdownOptions: (prev.data.dropdownOptions || []).filter((opt) => opt !== optionToRemove),
+      },
+    }));
   };
 
   const handleToggleAssignTable = (tableKey) => {
@@ -341,17 +386,21 @@ export const FormBuilderCanvas = ({
     if (!currentSection) return;
 
     const currentButtons = normalizeTableButtons(currentSection.tableButtons);
-    const opts = tableButtonModal.data.dropdownOptionsString
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
+    let opts = [...(tableButtonModal.data.dropdownOptions || [])];
+
+    if (tableButtonModal.newOptionText && tableButtonModal.newOptionText.trim()) {
+      const extra = tableButtonModal.newOptionText.split(',').map((s) => s.trim()).filter(Boolean);
+      extra.forEach((opt) => {
+        if (!opts.includes(opt)) opts.push(opt);
+      });
+    }
 
     if (!tableButtonModal.data.label.trim()) {
       alert('Please enter a button label (e.g. Add School Data).');
       return;
     }
     if (opts.length === 0) {
-      alert('Please provide at least one dropdown option (e.g. SOD, SOEMR).');
+      alert('Please add at least one dropdown option using "+ Add Option".');
       return;
     }
     if (tableButtonModal.data.assignedTableKeys.length === 0) {
@@ -2131,50 +2180,154 @@ export const FormBuilderCanvas = ({
                   </small>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontWeight: 650, fontSize: '13px', marginBottom: '4px', color: '#1e293b' }}>
-                      Dropdown Label*
+                <div>
+                  <label style={{ display: 'block', fontWeight: 650, fontSize: '13px', marginBottom: '4px', color: '#1e293b' }}>
+                    Dropdown Label*
+                  </label>
+                  <input
+                    type="text"
+                    style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                    placeholder="e.g. Select School, Department, Category"
+                    required
+                    value={tableButtonModal.data.dropdownLabel}
+                    onChange={(e) =>
+                      setTableButtonModal({
+                        ...tableButtonModal,
+                        data: { ...tableButtonModal.data, dropdownLabel: e.target.value },
+                      })
+                    }
+                  />
+                  <small style={{ color: '#64748b', fontSize: '11.5px', marginTop: '2px', display: 'block' }}>
+                    Title shown above the instance switcher dropdown in the form (e.g. "Select School").
+                  </small>
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <label style={{ fontWeight: 650, fontSize: '13px', color: '#1e293b' }}>
+                      Dropdown Options* ({tableButtonModal.data.dropdownOptions?.length || 0} added)
                     </label>
-                    <input
-                      type="text"
-                      style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
-                      placeholder="e.g. Select School, Department, Category"
-                      required
-                      value={tableButtonModal.data.dropdownLabel}
-                      onChange={(e) =>
-                        setTableButtonModal({
-                          ...tableButtonModal,
-                          data: { ...tableButtonModal.data, dropdownLabel: e.target.value },
-                        })
-                      }
-                    />
-                    <small style={{ color: '#64748b', fontSize: '11.5px', marginTop: '2px', display: 'block' }}>
-                      Title shown above the instance switcher dropdown.
-                    </small>
+                    {tableButtonModal.data.dropdownOptions?.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setTableButtonModal((prev) => ({
+                            ...prev,
+                            data: { ...prev.data, dropdownOptions: [] },
+                          }))
+                        }
+                        style={{ border: 'none', background: 'transparent', color: '#dc2626', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                      >
+                        Clear all options
+                      </button>
+                    )}
                   </div>
 
-                  <div>
-                    <label style={{ display: 'block', fontWeight: 650, fontSize: '13px', marginBottom: '4px', color: '#1e293b' }}>
-                      Dropdown Options* (Comma-separated)
-                    </label>
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
                     <input
                       type="text"
-                      style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
-                      placeholder="e.g. SOD, SOEMR, SOE, SOL, SOM"
-                      required
-                      value={tableButtonModal.data.dropdownOptionsString}
+                      style={{ flex: 1, height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                      placeholder="Type option name (e.g. SOD, SOEMR) and click Add Option..."
+                      value={tableButtonModal.newOptionText || ''}
                       onChange={(e) =>
                         setTableButtonModal({
                           ...tableButtonModal,
-                          data: { ...tableButtonModal.data, dropdownOptionsString: e.target.value },
+                          newOptionText: e.target.value,
                         })
                       }
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddDropdownOption(e);
+                        }
+                      }}
                     />
-                    <small style={{ color: '#64748b', fontSize: '11.5px', marginTop: '2px', display: 'block' }}>
-                      Allowed values users can add and switch between.
-                    </small>
+                    <button
+                      type="button"
+                      onClick={handleAddDropdownOption}
+                      style={{
+                        padding: '0 16px',
+                        height: '38px',
+                        borderRadius: '7px',
+                        border: '1px solid #93c5fd',
+                        background: '#eff6ff',
+                        color: '#1d4ed8',
+                        fontWeight: 700,
+                        fontSize: '12.5px',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      <span>➕ Add Option</span>
+                    </button>
                   </div>
+
+                  {/* Pills List */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '6px',
+                      padding: '8px 10px',
+                      background: '#f8fafc',
+                      borderRadius: '8px',
+                      border: '1px solid #e2e8f0',
+                      minHeight: '44px',
+                      alignItems: 'center',
+                    }}
+                  >
+                    {(!tableButtonModal.data.dropdownOptions || tableButtonModal.data.dropdownOptions.length === 0) ? (
+                      <span style={{ color: '#94a3b8', fontSize: '12px' }}>
+                        No options added yet. Type an option above and click "+ Add Option".
+                      </span>
+                    ) : (
+                      tableButtonModal.data.dropdownOptions.map((opt, idx) => (
+                        <span
+                          key={`${opt}-${idx}`}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '4px 10px',
+                            background: '#eff6ff',
+                            border: '1px solid #bfdbfe',
+                            color: '#1e40af',
+                            borderRadius: '999px',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                          }}
+                        >
+                          <span>{opt}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveDropdownOption(opt)}
+                            style={{
+                              border: 'none',
+                              background: 'transparent',
+                              color: '#64748b',
+                              cursor: 'pointer',
+                              fontSize: '13px',
+                              padding: 0,
+                              display: 'flex',
+                              alignItems: 'center',
+                              lineHeight: 1,
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.color = '#ef4444'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.color = '#64748b'; }}
+                            title={`Remove ${opt}`}
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      ))
+                    )}
+                  </div>
+                  <small style={{ color: '#64748b', fontSize: '11.5px', marginTop: '4px', display: 'block' }}>
+                    Allowed values users can add and switch between in the form.
+                  </small>
                 </div>
 
                 <div>
