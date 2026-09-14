@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { UsersIcon, IconBadge, EmptyState, InfoBadgeIcon, ErrorState } from './StudioIcons';
 import {
   getUniversityPosts,
   createUniversityPost,
@@ -96,14 +97,17 @@ export const PostManager = ({ selectedUniversity }) => {
   };
 
   return (
-    <div className="post-manager-container">
-      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-        <div>
-          <h2 className="fw-bold text-dark mb-1" style={{ fontSize: '22px' }}>👔 University Administrative Posts</h2>
-          <p className="text-muted mb-0" style={{ fontSize: '13.5px' }}>
-            Configure administrative posts & offices (Registrar, HR, Dean Student Welfare, CFO, etc.) for{' '}
-            <strong className="text-primary">{selectedUniversity?.name || 'Your University'}</strong>.
-          </p>
+    <div className="post-manager-container" style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '24px' }}>
+      <div className="d-flex justify-content-between align-items-flex-start mb-4 flex-wrap gap-3">
+        <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+          <IconBadge tone="indigo" icon={<UsersIcon />} />
+          <div>
+            <h2 className="fw-bold text-dark mb-1" style={{ fontSize: '20px' }}>University Administrative Posts</h2>
+            <p className="text-muted mb-0" style={{ fontSize: '13px' }}>
+              Configure administrative posts & offices (Registrar, HR, Dean Student Welfare, CFO, etc.) for{' '}
+              <strong className="text-primary">{selectedUniversity?.name || 'Your University'}</strong>.
+            </p>
+          </div>
         </div>
         <button
           type="button"
@@ -115,8 +119,12 @@ export const PostManager = ({ selectedUniversity }) => {
         </button>
       </div>
 
-      <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '10px 14px', marginTop: '14px', marginBottom: '20px', fontSize: '11.5px', lineHeight: '1.5', color: '#334155', wordBreak: 'break-word' }}>
-        <strong>ℹ️ Role of Administrative Posts:</strong> In the Administrative flow, there is <strong>one unified form</strong> divided into sections. Each section is assigned to one of these posts. Administrative users mapped to a post will fill only their assigned section(s).
+      <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '14px 16px', marginBottom: '20px', wordBreak: 'break-word' }}>
+        <span style={{ width: '26px', height: '26px', flexShrink: 0, borderRadius: '50%', background: '#2563eb', color: '#fff', display: 'grid', placeItems: 'center' }}><InfoBadgeIcon size={15} /></span>
+        <div style={{ fontSize: '12px', lineHeight: '1.55', color: '#334155' }}>
+          <strong style={{ display: 'block', color: '#1e3a8a', fontSize: '12.5px', marginBottom: '2px' }}>Role of Administrative Posts</strong>
+          In the Administrative flow, there is <strong>one unified form</strong> divided into sections. Each section is assigned to one of these posts. Administrative users mapped to a post will fill only their assigned section(s).
+        </div>
       </div>
 
       {loading ? (
@@ -125,8 +133,15 @@ export const PostManager = ({ selectedUniversity }) => {
           <p className="text-muted mt-2">Loading configured administrative posts...</p>
         </div>
       ) : error ? (
-        <div className="alert alert-danger p-3 rounded">{error}</div>
-      ) : posts.length === 0 ? null : (
+        <ErrorState title="Unable to load administrative posts right now" message={error} onRetry={loadPosts} />
+      ) : posts.length === 0 ? (
+        <EmptyState
+          tone="indigo"
+          icon={<UsersIcon size={30} />}
+          title="No administrative posts configured yet"
+          description={`Click on "Add New Administrative Post" to set up posts such as Registrar, HR, Dean Student Welfare, CFO, etc. for ${selectedUniversity?.name || 'this university'}.`}
+        />
+      ) : (
         <div className="card" style={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: 'none', background: '#fff', overflow: 'hidden' }}>
           <div style={{ padding: '14px 18px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontWeight: 700, color: '#0f172a' }}>Configured Posts ({posts.length})</span>

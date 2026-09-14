@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { GraduationCapIcon, BuildingIcon, IconBadge, EmptyState, InfoBadgeIcon, TipBadgeIcon } from './StudioIcons';
 import {
   getSchemas,
   getSchemaDetails,
@@ -286,21 +287,24 @@ export const SchemaManager = ({
   };
 
   return (
-    <div className="form-studio-container">
+    <div className="form-studio-container" style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '24px' }}>
       {/* Header section with instructions & actions */}
-      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-        <div>
-          <h2 className="fw-bold text-dark mb-1" style={{ fontSize: '22px' }}>
-            {isAdministrative
-              ? 'Single University Administrative Form'
-              : 'Academic Appraisal Form Schemas'}
-          </h2>
-          <p className="text-muted mb-0" style={{ fontSize: '13.5px' }}>
-            {isAdministrative
-              ? `Manage and version the single unified administrative appraisal form for `
-              : `Design, version, copy, and assign institutional appraisal forms across academic schools for `}
-            <strong className="text-primary">{selectedUniversity?.name || 'Your University'}</strong>.
-          </p>
+      <div className="d-flex justify-content-between align-items-flex-start mb-4 flex-wrap gap-3">
+        <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+          <IconBadge tone={isAdministrative ? 'indigo' : 'emerald'} icon={isAdministrative ? <BuildingIcon /> : <GraduationCapIcon />} />
+          <div>
+            <h2 className="fw-bold text-dark mb-1" style={{ fontSize: '20px' }}>
+              {isAdministrative
+                ? 'Single University Administrative Form'
+                : 'Academic Appraisal Form Schemas'}
+            </h2>
+            <p className="text-muted mb-0" style={{ fontSize: '13px' }}>
+              {isAdministrative
+                ? `Manage and version the single unified administrative appraisal form for `
+                : `Design, version, copy, and assign institutional appraisal forms across academic schools for `}
+              <strong className="text-primary">{selectedUniversity?.name || 'Your University'}</strong>.
+            </p>
+          </div>
         </div>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           {schemas.length > 0 && (
@@ -328,13 +332,21 @@ export const SchemaManager = ({
 
       {/* Info card describing the specific workflow rules */}
       {isAdministrative ? (
-        <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '10px 14px', marginTop: '14px', marginBottom: '20px', fontSize: '11.5px', lineHeight: '1.5', color: '#334155', wordBreak: 'break-word' }}>
-          <strong>ℹ️ Single Form Paradigm (Administrative Flow):</strong> Administration has <strong>ONE single form overall</strong> for the university. The single form is divided into sections (e.g. Part A, Part B, Part C), and each section is assigned to a specific Administrative Post (e.g. Registrar, HR, Dean Student Welfare). Administrative users mapped to a post will fill only their assigned section(s). <em>(No "Copy Table" is needed since there is only one form.)</em>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '14px 16px', marginBottom: '20px', wordBreak: 'break-word' }}>
+          <span style={{ width: '26px', height: '26px', flexShrink: 0, borderRadius: '50%', background: '#2563eb', color: '#fff', display: 'grid', placeItems: 'center' }}><InfoBadgeIcon size={15} /></span>
+          <div style={{ fontSize: '12px', lineHeight: '1.55', color: '#334155' }}>
+            <strong style={{ display: 'block', color: '#1e3a8a', fontSize: '12.5px', marginBottom: '2px' }}>Single Form Paradigm (Administrative Flow)</strong>
+            Administration has <strong>ONE single form overall</strong> for the university. The single form is divided into sections (e.g. Part A, Part B, Part C), and each section is assigned to a specific Administrative Post (e.g. Registrar, HR, Dean Student Welfare). Administrative users mapped to a post will fill only their assigned section(s). <em>(No "Copy Table" is needed since there is only one form.)</em>
+          </div>
         </div>
       ) : (
-        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '10px 14px', marginTop: '14px', marginBottom: '20px', fontSize: '11.5px', lineHeight: '1.5', color: '#166534', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', wordBreak: 'break-word' }}>
-          <div>
-            <strong>💡 School-Level Form Flexibility (Academic Flow):</strong> Within this university, schools can either share the <em>same form</em> (Condition 2), or have <em>different custom forms</em> (Condition 1). Use <strong>"📋 Copy Form"</strong> to quickly duplicate any existing form and customize columns without rebuilding from scratch!
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '14px 16px', marginBottom: '20px', wordBreak: 'break-word' }}>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+            <span style={{ width: '26px', height: '26px', flexShrink: 0, borderRadius: '50%', background: '#059669', color: '#fff', display: 'grid', placeItems: 'center' }}><TipBadgeIcon size={14} /></span>
+            <div style={{ fontSize: '12px', lineHeight: '1.55', color: '#166534' }}>
+              <strong style={{ display: 'block', color: '#166534', fontSize: '12.5px', marginBottom: '2px' }}>School-Level Form Flexibility (Academic Flow)</strong>
+              Within this university, schools can either share the <em>same form</em> (Condition 2), or have <em>different custom forms</em> (Condition 1). Use <strong>"📋 Copy Form"</strong> to quickly duplicate any existing form and customize columns without rebuilding from scratch!
+            </div>
           </div>
           <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', background: '#dcfce7', color: '#15803d', borderRadius: '6px', flexShrink: 0 }}>
             {universitySchools.length} Schools Configured
@@ -347,7 +359,18 @@ export const SchemaManager = ({
           <div className="spinner-border text-primary" role="status"></div>
           <p className="text-muted mt-2">Loading appraisal schemas...</p>
         </div>
-      ) : schemas.length === 0 ? null : isAdministrative ? (
+      ) : schemas.length === 0 ? (
+        <EmptyState
+          tone={isAdministrative ? 'indigo' : 'emerald'}
+          icon={isAdministrative ? <BuildingIcon size={30} /> : <GraduationCapIcon size={30} />}
+          title={isAdministrative ? 'No administrative form created yet' : 'No academic schemas added yet'}
+          description={
+            isAdministrative
+              ? `Click on "Create Single Administrative Form" to set up the unified appraisal form for ${selectedUniversity?.name || 'this university'}.`
+              : `Click on "Create New Form Schema" to design the first academic appraisal form for ${selectedUniversity?.name || 'this university'}.`
+          }
+        />
+      ) : isAdministrative ? (
         /* Single Administrative Form View (Streamlined, no school clutter) */
         <div>
           {selectedSchema && (
