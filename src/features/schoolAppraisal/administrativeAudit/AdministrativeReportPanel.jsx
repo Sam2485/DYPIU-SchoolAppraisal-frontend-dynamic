@@ -4,6 +4,11 @@ import iqacLogo from "../../../assets/images/IQAS.png";
 import { SIGN_OFF_FIELD } from "../../../api/submissions";
 import { formatDateDDMMYYYY } from "../../../utils/dateFormat";
 import { getAttachmentUrl } from "../../../utils/attachment";
+import {
+  partitionTablesByButtons,
+  getActiveInstancesForButton,
+  getScopedTableRows,
+} from "../utils/tableButtonHelpers";
 
 const parseIfJson = (value) => {
   if (typeof value === "string" && (value.trim().startsWith("[") || value.trim().startsWith("{"))) {
@@ -267,14 +272,22 @@ export default function AdministrativeReportPanel({
                 return null;
               }
 
-              return block.tables.map((table) => {
+              const { unassignedTables, buttonGroups } = partitionTablesByButtons(
+                block.tables,
+                module.tableButtons
+              );
+
+              const renderSingleAdminReportTable = (table, instance = null) => {
                 const columns = resolveTableColumns(table);
                 const tableKey = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
-                const rows = getTableRows(data.tables, table);
+                const displayTitle = instance ? `${table.title || ''} (${instance})` : table.title;
+                const rows = instance
+                  ? (getScopedTableRows(data.tables, table, instance) || getTableRows(data.tables, table))
+                  : getTableRows(data.tables, table);
 
                 return (
-                  <div className="generated-report__table-block" key={table.id || tableKey} style={styles.tableBlock}>
-                    <h4 className="generated-report__table-title" style={styles.tableTitle}>{table.title}</h4>
+                  <div className="generated-report__table-block" key={instance ? `${table.id || tableKey}_${instance}` : (table.id || tableKey)} style={styles.tableBlock}>
+                    <h4 className="generated-report__table-title" style={styles.tableTitle}>{displayTitle}</h4>
                     {!!table.notes?.length && (
                       <div style={styles.notes}>
                         {table.notes.map((note) => (
@@ -304,7 +317,7 @@ export default function AdministrativeReportPanel({
                         </thead>
                         <tbody>
                           {rows.map((row, rowIndex) => (
-                            <tr key={`${table.id || tableKey}-${rowIndex}`}>
+                            <tr key={`${table.id || tableKey}-${instance || 'main'}-${rowIndex}`}>
                               {columns.map((column) => {
                                 const isSerial = Boolean(serialColumnFor([column]));
                                 return (
@@ -326,7 +339,24 @@ export default function AdministrativeReportPanel({
                     </div>
                   </div>
                 );
-              });
+              };
+
+              return (
+                <>
+                  {/* 1. Permanent / Unassigned Tables */}
+                  {unassignedTables.map((table) => renderSingleAdminReportTable(table))}
+
+                  {/* 2. Button-Assigned Tables per instance */}
+                  {buttonGroups.map(({ button, tables: assignedTables }) => {
+                    const instances = getActiveInstancesForButton(button, data.fields, data.tables);
+                    if (instances.length === 0) return null;
+
+                    return instances.map((instance) =>
+                      assignedTables.map((tbl) => renderSingleAdminReportTable(tbl, instance))
+                    );
+                  })}
+                </>
+              );
             })}
           </section>
         ))}

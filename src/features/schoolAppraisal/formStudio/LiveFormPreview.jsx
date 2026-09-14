@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getVersionTree } from './formStudioApi';
+import { TableButtonGroup } from '../components/TableButtonGroup';
+import { partitionTablesByButtons } from '../utils/tableButtonHelpers';
 
 const isReviewRemarkField = (f) => {
   if (!f) return false;
@@ -1055,252 +1057,282 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
               );
             })()}
 
-            {/* Dynamic Tables in Current Section */}
-            {currentSection.tables && currentSection.tables.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                {currentSection.tables.map((tbl, tIdx) => {
-                  const tKey = tbl.tableKey || tbl.idString || `table_${tIdx}`;
-                  const rows = tablesData[tKey] || [];
-                  const columns = tbl.columns && tbl.columns.length > 0
-                    ? tbl.columns
-                    : tbl.fields?.map((f) => f.label || f.fieldKey) || [];
+            {/* Dynamic Tables & Button-Triggered Groups in Current Section */}
+            {(() => {
+              if (!currentSection.tables || currentSection.tables.length === 0) {
+                return (
+                  <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '32px', textAlign: 'center', color: '#64748b' }}>
+                    <p style={{ margin: 0, fontSize: '14px' }}>No tables configured in this section.</p>
+                  </div>
+                );
+              }
 
-                  const isRepeatable = tbl.isRepeatable !== false;
+              const renderLivePreviewTable = (tbl, overrideKey) => {
+                const tKey = overrideKey || tbl.scopedKey || tbl.tableKey || tbl.idString || `table_${tbl.id || 0}`;
+                const rows = tablesData[tKey] || [];
+                const columns = tbl.columns && tbl.columns.length > 0
+                  ? tbl.columns
+                  : tbl.fields?.map((f) => f.label || f.fieldKey) || [];
+                const isRepeatable = tbl.isRepeatable !== false;
 
-                  return (
-                    <div
-                      key={tbl.id || tKey}
-                      style={{
-                        background: '#ffffff',
-                        borderRadius: '14px',
-                        border: '1px solid #e2e8f0',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      {/* Table Header Strip */}
+                return (
+                  <div
+                    key={tbl.id ? `${tbl.id}_${tKey}` : tKey}
+                    style={{
+                      background: '#ffffff',
+                      borderRadius: '14px',
+                      border: '1px solid #e2e8f0',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {/* Table Header Strip */}
+                    <div style={{
+                      padding: '14px 20px',
+                      background: '#f8fafc',
+                      borderBottom: '1px solid #e2e8f0',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: '10px',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '17px' }}>📊</span>
+                        <div>
+                          <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: '#1e293b' }}>
+                            {tbl.title || 'Table'}
+                          </h4>
+                          {tbl.description && (
+                            <span style={{ fontSize: '12px', color: '#64748b' }}>{tbl.description}</span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '5px', background: '#f1f5f9', color: '#475569' }}>
+                          {rows.length} {rows.length === 1 ? 'row' : 'rows'}
+                        </span>
+                        {isRepeatable && (
+                          <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '5px', background: '#e0e7ff', color: '#3730a3' }}>
+                            Dynamic Rows
+                          </span>
+                        )}
+                        {rows.length > 0 && !isSectionLockedInCurrentRole && (
+                          <button
+                            type="button"
+                            onClick={() => handleClearTable(tKey)}
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: '6px',
+                              border: '1px solid #fecaca',
+                              background: '#fff',
+                              color: '#dc2626',
+                              fontSize: '11.5px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                            }}
+                            title="Clear table rows"
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Table Container */}
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
+                        <thead>
+                          <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>
+                            {columns.map((col, cIdx) => (
+                              <th
+                                key={cIdx}
+                                style={{
+                                  padding: '12px 14px',
+                                  fontWeight: 700,
+                                  borderRight: '1px solid #e2e8f0',
+                                  fontSize: '12.5px',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span>{col}</span>
+                                </div>
+                              </th>
+                            ))}
+                            {isRepeatable && !isSectionLockedInCurrentRole && (
+                              <th style={{ width: '65px', padding: '12px 14px', textAlign: 'center', fontWeight: 700, fontSize: '12px' }}>
+                                Action
+                              </th>
+                            )}
+                          </tr>
+                        </thead>
+
+                        <tbody>
+                          {rows.length === 0 ? (
+                            <tr>
+                              <td
+                                colSpan={columns.length + (isRepeatable && !isSectionLockedInCurrentRole ? 1 : 0)}
+                                style={{ textAlign: 'center', padding: '36px 20px', background: '#fafbfc' }}
+                              >
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                  <div style={{ fontSize: '28px', opacity: 0.6 }}>📋</div>
+                                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#64748b' }}>
+                                    No records entered yet
+                                  </span>
+                                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                                    Click the button below to add your first record in this table.
+                                  </span>
+                                  {isRepeatable && !isSectionLockedInCurrentRole && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleAddRow(tKey, columns)}
+                                      style={{
+                                        marginTop: '6px',
+                                        padding: '7px 16px',
+                                        borderRadius: '7px',
+                                        border: '1px solid #93c5fd',
+                                        background: '#eff6ff',
+                                        color: '#1d4ed8',
+                                        fontWeight: 700,
+                                        fontSize: '12.5px',
+                                        cursor: 'pointer',
+                                      }}
+                                    >
+                                      + Add First Row
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ) : (
+                            rows.map((row, rIdx) => (
+                              <tr
+                                key={rIdx}
+                                style={{
+                                  borderBottom: '1px solid #f1f5f9',
+                                  background: rIdx % 2 === 1 ? '#fafcff' : '#ffffff',
+                                  transition: 'background 0.1s ease',
+                                }}
+                              >
+                                {columns.map((col, cIdx) => (
+                                  <td
+                                    key={cIdx}
+                                    style={{
+                                      padding: '8px 10px',
+                                      borderRight: '1px solid #f1f5f9',
+                                      verticalAlign: 'middle',
+                                    }}
+                                  >
+                                    <PreviewTableCell
+                                      tableKey={tKey}
+                                      rowIndex={rIdx}
+                                      colName={col}
+                                      cellVal={row[col]}
+                                      tbl={tbl}
+                                      isLocked={isSectionLockedInCurrentRole}
+                                      onCellChange={handleCellChange}
+                                    />
+                                  </td>
+                                ))}
+
+                                {isRepeatable && !isSectionLockedInCurrentRole && (
+                                  <td style={{ textAlign: 'center', padding: '6px 8px' }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteRow(tKey, rIdx, columns)}
+                                      style={{
+                                        padding: '4px 8px',
+                                        borderRadius: '6px',
+                                        border: '1px solid #fecaca',
+                                        background: '#fff',
+                                        color: '#dc2626',
+                                        cursor: 'pointer',
+                                        fontWeight: 700,
+                                        fontSize: '12px',
+                                      }}
+                                      title="Delete Row"
+                                    >
+                                      ✕
+                                    </button>
+                                  </td>
+                                )}
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Table Footer Action */}
+                    {isRepeatable && !isSectionLockedInCurrentRole && (
                       <div style={{
-                        padding: '14px 20px',
-                        background: '#f8fafc',
-                        borderBottom: '1px solid #e2e8f0',
+                        padding: '10px 20px',
+                        background: '#fafbfc',
+                        borderTop: '1px solid #e2e8f0',
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
-                        flexWrap: 'wrap',
-                        gap: '10px',
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <span style={{ fontSize: '17px' }}>📊</span>
-                          <div>
-                            <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: '#1e293b' }}>
-                              {tbl.title || `Table ${currentSection.number ? currentSection.number + '.' : ''}${tIdx + 1}`}
-                            </h4>
-                            {tbl.description && (
-                              <span style={{ fontSize: '12px', color: '#64748b' }}>{tbl.description}</span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '5px', background: '#f1f5f9', color: '#475569' }}>
-                            {rows.length} {rows.length === 1 ? 'row' : 'rows'}
-                          </span>
-                          {isRepeatable && (
-                            <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '5px', background: '#e0e7ff', color: '#3730a3' }}>
-                              Dynamic Rows
-                            </span>
-                          )}
-                          {rows.length > 0 && !isSectionLockedInCurrentRole && (
-                            <button
-                              type="button"
-                              onClick={() => handleClearTable(tKey)}
-                              style={{
-                                padding: '4px 8px',
-                                borderRadius: '6px',
-                                border: '1px solid #fecaca',
-                                background: '#fff',
-                                color: '#dc2626',
-                                fontSize: '11.5px',
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                              }}
-                              title="Clear table rows"
-                            >
-                              Clear
-                            </button>
-                          )}
-                        </div>
+                        <span style={{ fontSize: '12px', color: '#64748b' }}>
+                          {rows.length} {rows.length === 1 ? 'row entered' : 'rows entered'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleAddRow(tKey, columns)}
+                          style={{
+                            padding: '7px 16px',
+                            borderRadius: '7px',
+                            border: '1px solid #93c5fd',
+                            background: '#eff6ff',
+                            color: '#1d4ed8',
+                            fontWeight: 700,
+                            fontSize: '12.5px',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                          }}
+                        >
+                          <span>+</span>
+                          <span>Add Row</span>
+                        </button>
                       </div>
+                    )}
+                  </div>
+                );
+              };
 
-                      {/* Table Container */}
-                      <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
-                          <thead>
-                            <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>
-                              {columns.map((col, cIdx) => (
-                                <th
-                                  key={cIdx}
-                                  style={{
-                                    padding: '12px 14px',
-                                    fontWeight: 700,
-                                    borderRight: '1px solid #e2e8f0',
-                                    fontSize: '12.5px',
-                                    whiteSpace: 'nowrap',
-                                  }}
-                                >
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span>{col}</span>
-                                  </div>
-                                </th>
-                              ))}
-                              {isRepeatable && !isSectionLockedInCurrentRole && (
-                                <th style={{ width: '65px', padding: '12px 14px', textAlign: 'center', fontWeight: 700, fontSize: '12px' }}>
-                                  Action
-                                </th>
-                              )}
-                            </tr>
-                          </thead>
+              const { unassignedTables, buttonGroups } = partitionTablesByButtons(
+                currentSection.tables,
+                currentSection.tableButtons
+              );
 
-                          <tbody>
-                            {rows.length === 0 ? (
-                              <tr>
-                                <td
-                                  colSpan={columns.length + (isRepeatable && !isSectionLockedInCurrentRole ? 1 : 0)}
-                                  style={{ textAlign: 'center', padding: '36px 20px', background: '#fafbfc' }}
-                                >
-                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                                    <div style={{ fontSize: '28px', opacity: 0.6 }}>📋</div>
-                                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#64748b' }}>
-                                      No records entered yet
-                                    </span>
-                                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>
-                                      Click the button below to add your first record in this table.
-                                    </span>
-                                    {isRepeatable && !isSectionLockedInCurrentRole && (
-                                      <button
-                                        type="button"
-                                        onClick={() => handleAddRow(tKey, columns)}
-                                        style={{
-                                          marginTop: '6px',
-                                          padding: '7px 16px',
-                                          borderRadius: '7px',
-                                          border: '1px solid #93c5fd',
-                                          background: '#eff6ff',
-                                          color: '#1d4ed8',
-                                          fontWeight: 700,
-                                          fontSize: '12.5px',
-                                          cursor: 'pointer',
-                                        }}
-                                      >
-                                        + Add First Row
-                                      </button>
-                                    )}
-                                  </div>
-                                </td>
-                              </tr>
-                            ) : (
-                              rows.map((row, rIdx) => (
-                                <tr
-                                  key={rIdx}
-                                  style={{
-                                    borderBottom: '1px solid #f1f5f9',
-                                    background: rIdx % 2 === 1 ? '#fafcff' : '#ffffff',
-                                    transition: 'background 0.1s ease',
-                                  }}
-                                >
-                                  {columns.map((col, cIdx) => (
-                                    <td
-                                      key={cIdx}
-                                      style={{
-                                        padding: '8px 10px',
-                                        borderRight: '1px solid #f1f5f9',
-                                        verticalAlign: 'middle',
-                                      }}
-                                    >
-                                      <PreviewTableCell
-                                        tableKey={tKey}
-                                        rowIndex={rIdx}
-                                        colName={col}
-                                        cellVal={row[col]}
-                                        tbl={tbl}
-                                        isLocked={isSectionLockedInCurrentRole}
-                                        onCellChange={handleCellChange}
-                                      />
-                                    </td>
-                                  ))}
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                  {/* 1. Permanent / Unassigned Tables */}
+                  {unassignedTables.map((tbl, tIdx) => renderLivePreviewTable(tbl))}
 
-                                  {isRepeatable && !isSectionLockedInCurrentRole && (
-                                    <td style={{ textAlign: 'center', padding: '6px 8px' }}>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleDeleteRow(tKey, rIdx, columns)}
-                                        style={{
-                                          padding: '4px 8px',
-                                          borderRadius: '6px',
-                                          border: '1px solid #fecaca',
-                                          background: '#fff',
-                                          color: '#dc2626',
-                                          cursor: 'pointer',
-                                          fontWeight: 700,
-                                          fontSize: '12px',
-                                        }}
-                                        title="Delete Row"
-                                      >
-                                        ✕
-                                      </button>
-                                    </td>
-                                  )}
-                                </tr>
-                              ))
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      {/* Table Footer Action */}
-                      {isRepeatable && !isSectionLockedInCurrentRole && (
-                        <div style={{
-                          padding: '10px 20px',
-                          background: '#fafbfc',
-                          borderTop: '1px solid #e2e8f0',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                        }}>
-                          <span style={{ fontSize: '12px', color: '#64748b' }}>
-                            {rows.length} {rows.length === 1 ? 'row entered' : 'rows entered'}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleAddRow(tKey, columns)}
-                            style={{
-                              padding: '7px 16px',
-                              borderRadius: '7px',
-                              border: '1px solid #93c5fd',
-                              background: '#eff6ff',
-                              color: '#1d4ed8',
-                              fontWeight: 700,
-                              fontSize: '12.5px',
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                            }}
-                          >
-                            <span>+</span>
-                            <span>Add Row</span>
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '32px', textAlign: 'center', color: '#64748b' }}>
-                <p style={{ margin: 0, fontSize: '14px' }}>No tables configured in this section.</p>
-              </div>
-            )}
+                  {/* 2. Button-Triggered Table Groups */}
+                  {buttonGroups.map(({ button, tables }) => (
+                    <TableButtonGroup
+                      key={button.id}
+                      button={button}
+                      tables={tables}
+                      valuesData={valuesData}
+                      tablesData={tablesData}
+                      onValueChange={(key, val) => setValuesData((prev) => ({ ...prev, [key]: val }))}
+                      onTableChange={(scopedKey, newRows) => setTablesData((prev) => ({ ...prev, [scopedKey]: newRows }))}
+                      renderTable={(scopedTable, scopedKey) =>
+                        renderLivePreviewTable(scopedTable, scopedKey)
+                      }
+                      readOnly={isSectionLockedInCurrentRole}
+                    />
+                  ))}
+                </div>
+              );
+            })()}
 
             {/* Review Remarks / Bottom Auditor Fields */}
             {(() => {

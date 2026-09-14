@@ -6,6 +6,8 @@ import { fetchCurrentUser } from "../../../api/users";
 import universityLogo from "../../../assets/images/image.png";
 import iqacLogo from "../../../assets/images/IQAS.png";
 import AuditTable from "../components/AuditTable";
+import { TableButtonGroup } from "../components/TableButtonGroup";
+import { partitionTablesByButtons } from "../utils/tableButtonHelpers";
 import DateInput from "../components/DateInput";
 import { InlineSpinner, LoadingState, SkeletonList } from "../components/LoadingState";
 import SubmissionConfirmation from "../components/SubmissionConfirmation";
@@ -336,6 +338,7 @@ export default function AdministrativeAuditDashboard() {
       owner: sec.ownerRole || 'registrar',
       isAuditorSection: sec.ownerRole === 'auditor' || sec.isAuditorSection === true,
       note: sec.description || '',
+      tableButtons: sec.tableButtons,
       blocks: [
         ...(sec.fields?.length ? [{ type: 'fields', fields: sec.fields.map((f) => ({
           id: f.fieldKey || f.idString || String(f.id),
@@ -345,7 +348,7 @@ export default function AdministrativeAuditDashboard() {
           required: f.isRequired,
           placeholder: f.placeholder,
         })) }] : []),
-        ...(sec.tables?.length ? [{ type: 'tables', tables: sec.tables.map((t) => ({
+        ...(sec.tables?.length ? [{ type: 'tables', tableButtons: sec.tableButtons, tables: sec.tables.map((t) => ({
           id: t.tableKey || t.idString || String(t.id),
           title: t.title,
           isRepeatable: t.isRepeatable ?? true,
@@ -579,39 +582,45 @@ export default function AdministrativeAuditDashboard() {
     }));
   };
 
-  const setTableRows = (table, rows) => {
+  const setTableRows = (tableOrKey, rows) => {
+    const tableKey = typeof tableOrKey === 'string' ? tableOrKey : (tableOrKey?.scopedKey || tableOrKey?.id);
+    const cols = typeof tableOrKey === 'object' ? tableOrKey?.columns : null;
     setData((current) => ({
       ...current,
       tables: {
         ...current.tables,
-        [table.id]: normalizeRows(table.columns, rows.length ? rows : [emptyRowFor(table.columns, 0)]),
+        [tableKey]: cols?.length ? normalizeRows(cols, rows.length ? rows : [emptyRowFor(cols, 0)]) : rows,
       },
       lastSavedAt: new Date().toISOString(),
     }));
   };
 
-  const addRow = (table) => {
+  const addRow = (table, overrideKey) => {
+    const tableKey = overrideKey || (typeof table === 'string' ? table : (table?.scopedKey || table?.id));
+    const cols = typeof table === 'object' ? table?.columns : [];
     setData((current) => ({
       ...current,
       tables: {
         ...current.tables,
-        [table.id]: [
-          ...(current.tables[table.id] || []),
-          emptyRowFor(table.columns, current.tables[table.id]?.length || 0),
+        [tableKey]: [
+          ...(current.tables[tableKey] || []),
+          emptyRowFor(cols, current.tables[tableKey]?.length || 0),
         ],
       },
       lastSavedAt: new Date().toISOString(),
     }));
   };
 
-  const deleteLastRow = (table) => {
+  const deleteLastRow = (table, overrideKey) => {
+    const tableKey = overrideKey || (typeof table === 'string' ? table : (table?.scopedKey || table?.id));
+    const cols = typeof table === 'object' ? table?.columns : [];
     setData((current) => {
-      const nextRows = (current.tables[table.id] || []).slice(0, -1);
+      const nextRows = (current.tables[tableKey] || []).slice(0, -1);
       return {
         ...current,
         tables: {
           ...current.tables,
-          [table.id]: normalizeRows(table.columns, nextRows.length ? nextRows : [emptyRowFor(table.columns, 0)]),
+          [tableKey]: cols?.length ? normalizeRows(cols, nextRows.length ? nextRows : [emptyRowFor(cols, 0)]) : nextRows,
         },
         lastSavedAt: new Date().toISOString(),
       };
@@ -1073,20 +1082,52 @@ export default function AdministrativeAuditDashboard() {
 
                 return (
                   <div key={`tables-${index}`} style={styles.tables}>
-                    {block.tables.map((table) => (
-                      <AuditTable
-                        key={table.id}
-                        table={table}
-                        rows={data.tables[table.id] || []}
-                        onCellChange={setCellValue}
-                        onRowsChange={setTableRows}
-                        onAddRow={addRow}
-                        onDeleteLastRow={deleteLastRow}
-                        onUploadAttachment={uploadFormAttachments}
-                        onDeleteAttachment={deleteFormAttachment}
-                        readOnly={readOnly}
-                      />
-                    ))}
+                    {(() => {
+                      const { unassignedTables, buttonGroups } = partitionTablesByButtons(
+                        block.tables,
+                        block.tableButtons || activeModule?.tableButtons
+                      );
+
+                      const renderAdminTable = (table, overrideKey) => {
+                        const tableKey = overrideKey || table.scopedKey || table.id;
+                        return (
+                          <AuditTable
+                            key={table.id ? `${table.id}_${tableKey}` : tableKey}
+                            table={table}
+                            rows={data.tables[tableKey] || []}
+                            onCellChange={(rowIndex, column, value) => setCellValue(tableKey, rowIndex, column, value)}
+                            onRowsChange={(rows) => setTableRows(tableKey, rows)}
+                            onAddRow={(t) => addRow(t, tableKey)}
+                            onDeleteLastRow={(t) => deleteLastRow(t, tableKey)}
+                            onUploadAttachment={uploadFormAttachments}
+                            onDeleteAttachment={deleteFormAttachment}
+                            readOnly={readOnly}
+                          />
+                        );
+                      };
+
+                      return (
+                        <>
+                          {/* 1. Permanent / Unassigned Tables */}
+                          {unassignedTables.map((table) => renderAdminTable(table))}
+
+                          {/* 2. Button-Triggered Table Groups */}
+                          {buttonGroups.map(({ button, tables: assignedTables }) => (
+                            <TableButtonGroup
+                              key={button.id}
+                              button={button}
+                              tables={assignedTables}
+                              valuesData={data.fields}
+                              tablesData={data.tables}
+                              onValueChange={(key, val) => setFieldValue(key, val)}
+                              onTableChange={(scopedKey, newRows) => setTableRows(scopedKey, newRows)}
+                              renderTable={(scopedTable, scopedKey) => renderAdminTable(scopedTable, scopedKey)}
+                              readOnly={readOnly}
+                            />
+                          ))}
+                        </>
+                      );
+                    })()}
                   </div>
                 );
               })

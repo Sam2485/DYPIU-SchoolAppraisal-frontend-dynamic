@@ -20,6 +20,10 @@ import {
 } from './formStudioApi';
 import { ExcelTableImportModal } from './ExcelTableImportModal';
 import { ExcelFullSchemaImportModal } from './ExcelFullSchemaImportModal';
+import {
+  normalizeTableButtons,
+  isTableAssignedToButton,
+} from '../utils/tableButtonHelpers';
 
 const isReviewRemarkField = (f) => {
   if (!f) return false;
@@ -110,6 +114,19 @@ export const FormBuilderCanvas = ({
       isRequired: false,
       placeholder: '',
       optionsString: '',
+    },
+  });
+
+  // Dynamic Table Button Modal State (Repeater Groups)
+  const [tableButtonModal, setTableButtonModal] = useState({
+    show: false,
+    isEdit: false,
+    data: {
+      id: null,
+      label: '',
+      dropdownLabel: '',
+      dropdownOptionsString: '',
+      assignedTableKeys: [],
     },
   });
 
@@ -248,6 +265,157 @@ export const FormBuilderCanvas = ({
       console.error('Failed to reorder sections:', err);
       alert('Failed to save section order: ' + err.message);
       await loadTree();
+    }
+  };
+
+  // Dynamic Table Button Handlers (Repeater Groups)
+  const handleOpenAddTableButton = () => {
+    setTableButtonModal({
+      show: true,
+      isEdit: false,
+      data: {
+        id: null,
+        label: 'Add School Data',
+        dropdownLabel: 'Select School',
+        dropdownOptionsString: 'SOD, SOEMR, SOE, SOL, SOM',
+        assignedTableKeys: [],
+      },
+    });
+  };
+
+  const handleOpenEditTableButton = (btn) => {
+    setTableButtonModal({
+      show: true,
+      isEdit: true,
+      data: {
+        id: btn.id,
+        label: btn.label || '',
+        dropdownLabel: btn.dropdownLabel || '',
+        dropdownOptionsString: Array.isArray(btn.dropdownOptions)
+          ? btn.dropdownOptions.join(', ')
+          : (btn.dropdownOptions || ''),
+        assignedTableKeys: Array.isArray(btn.assignedTableKeys) ? [...btn.assignedTableKeys] : [],
+      },
+    });
+  };
+
+  const handleToggleAssignTable = (tableKey) => {
+    setTableButtonModal((prev) => {
+      const currentKeys = prev.data.assignedTableKeys || [];
+      const exists = currentKeys.includes(tableKey);
+      const updatedKeys = exists
+        ? currentKeys.filter((k) => k !== tableKey)
+        : [...currentKeys, tableKey];
+      return {
+        ...prev,
+        data: {
+          ...prev.data,
+          assignedTableKeys: updatedKeys,
+        },
+      };
+    });
+  };
+
+  const handleSelectAllTablesForButton = (allKeys) => {
+    setTableButtonModal((prev) => ({
+      ...prev,
+      data: {
+        ...prev.data,
+        assignedTableKeys: allKeys,
+      },
+    }));
+  };
+
+  const handleClearAllTablesForButton = () => {
+    setTableButtonModal((prev) => ({
+      ...prev,
+      data: {
+        ...prev.data,
+        assignedTableKeys: [],
+      },
+    }));
+  };
+
+  const handleSaveTableButton = async (e) => {
+    e.preventDefault();
+    if (!currentSection) return;
+
+    const currentButtons = normalizeTableButtons(currentSection.tableButtons);
+    const opts = tableButtonModal.data.dropdownOptionsString
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    if (!tableButtonModal.data.label.trim()) {
+      alert('Please enter a button label (e.g. Add School Data).');
+      return;
+    }
+    if (opts.length === 0) {
+      alert('Please provide at least one dropdown option (e.g. SOD, SOEMR).');
+      return;
+    }
+    if (tableButtonModal.data.assignedTableKeys.length === 0) {
+      alert('Please assign at least one table to this button.');
+      return;
+    }
+
+    let updatedButtons;
+    if (tableButtonModal.isEdit) {
+      updatedButtons = currentButtons.map((b) =>
+        b.id === tableButtonModal.data.id
+          ? {
+              ...b,
+              label: tableButtonModal.data.label.trim(),
+              dropdownLabel: tableButtonModal.data.dropdownLabel.trim() || 'Option',
+              dropdownOptions: opts,
+              assignedTableKeys: tableButtonModal.data.assignedTableKeys,
+            }
+          : b
+      );
+    } else {
+      const newBtn = {
+        id: `btn_${Date.now()}`,
+        label: tableButtonModal.data.label.trim(),
+        dropdownLabel: tableButtonModal.data.dropdownLabel.trim() || 'Option',
+        dropdownOptions: opts,
+        assignedTableKeys: tableButtonModal.data.assignedTableKeys,
+      };
+      updatedButtons = [...currentButtons, newBtn];
+    }
+
+    try {
+      await updateSection(currentSection.id, {
+        title: currentSection.title,
+        sectionNumber: currentSection.number || '',
+        ownerRole: currentSection.ownerRole || 'director-schools',
+        description: currentSection.description || '',
+        tableButtons: JSON.stringify(updatedButtons),
+      });
+      setTableButtonModal((prev) => ({ ...prev, show: false }));
+      await loadTree();
+    } catch (err) {
+      alert('Error saving table button: ' + err.message);
+    }
+  };
+
+  const handleDeleteTableButton = async (btnId) => {
+    if (!window.confirm('Are you sure you want to delete this dynamic button? Its assigned tables will become permanently visible.')) return;
+    if (!currentSection) return;
+
+    const currentButtons = normalizeTableButtons(currentSection.tableButtons);
+    const updatedButtons = currentButtons.filter((b) => b.id !== btnId);
+
+    try {
+      await updateSection(currentSection.id, {
+        title: currentSection.title,
+        sectionNumber: currentSection.number || '',
+        ownerRole: currentSection.ownerRole || 'director-schools',
+        description: currentSection.description || '',
+        tableButtons: JSON.stringify(updatedButtons),
+      });
+      await loadTree();
+    } catch (err) {
+      alert('Error deleting table button: ' + err.message);
     }
   };
 
@@ -901,6 +1069,127 @@ export const FormBuilderCanvas = ({
                 })()}
               </div>
 
+              {/* Dynamic Table Buttons (Repeater Groups) Panel */}
+              <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '18px', marginBottom: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+                  <div>
+                    <h4 style={{ margin: 0, fontWeight: 700, color: '#0f172a', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>⚡ Dynamic Table Buttons (Repeater Groups)</span>
+                    </h4>
+                    <p style={{ margin: '3px 0 0', color: '#64748b', fontSize: '12px' }}>
+                      Assign tables to action buttons. In the form, assigned tables stay hidden until the user clicks the button and switches entries via dropdown.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #c7d2fe', background: '#eef2ff', color: '#4338ca', fontWeight: 700, fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    onClick={handleOpenAddTableButton}
+                  >
+                    <span>➕ Add Table Button</span>
+                  </button>
+                </div>
+
+                {(() => {
+                  const buttons = normalizeTableButtons(currentSection.tableButtons);
+                  if (buttons.length === 0) {
+                    return (
+                      <div style={{ padding: '12px 14px', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '8px', color: '#64748b', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>ℹ️</span>
+                        <span>No dynamic buttons configured for this section. All tables are permanently visible by default. Click <strong>+ Add Table Button</strong> to create one.</span>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '12px' }}>
+                      {buttons.map((btn) => {
+                        const assignedTables = (currentSection.tables || []).filter((tbl) => isTableAssignedToButton(tbl, btn));
+                        const optionsList = Array.isArray(btn.dropdownOptions)
+                          ? btn.dropdownOptions
+                          : typeof btn.dropdownOptions === 'string'
+                          ? btn.dropdownOptions.split(',').map((s) => s.trim()).filter(Boolean)
+                          : [];
+
+                        return (
+                          <div
+                            key={btn.id}
+                            style={{
+                              border: '1.5px solid #c7d2fe',
+                              borderRadius: '10px',
+                              background: '#f8faff',
+                              padding: '14px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'space-between',
+                              gap: '10px',
+                            }}
+                          >
+                            <div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '6px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span style={{ fontSize: '15px' }}>⚡</span>
+                                  <strong style={{ fontSize: '13.5px', color: '#1e3a8a' }}>{btn.label}</strong>
+                                </div>
+                                <div style={{ display: 'flex', gap: '4px' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenEditTableButton(btn)}
+                                    style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px', fontSize: '13px' }}
+                                    title="Edit Button"
+                                  >
+                                    ✏️
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteTableButton(btn.id)}
+                                    style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px', color: '#ef4444', fontSize: '13px' }}
+                                    title="Delete Button"
+                                  >
+                                    🗑️
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div style={{ fontSize: '12px', color: '#475569', marginBottom: '6px' }}>
+                                Dropdown: <strong>{btn.dropdownLabel || 'Select'}</strong>
+                              </div>
+
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
+                                {optionsList.map((opt, i) => (
+                                  <span
+                                    key={i}
+                                    style={{
+                                      fontSize: '10.5px',
+                                      fontWeight: 700,
+                                      padding: '2px 6px',
+                                      background: '#e0e7ff',
+                                      color: '#3730a3',
+                                      borderRadius: '4px',
+                                    }}
+                                  >
+                                    {opt}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div style={{ borderTop: '1px solid #e0e7ff', paddingTop: '8px', fontSize: '11.5px', color: '#64748b' }}>
+                              <span>Assigned: <strong>{assignedTables.length} table(s)</strong></span>
+                              {assignedTables.length > 0 && (
+                                <span style={{ marginLeft: '4px', color: '#4338ca' }}>
+                                  ({assignedTables.map((t) => t.title || t.tableKey).slice(0, 2).join(', ')}
+                                  {assignedTables.length > 2 ? ` +${assignedTables.length - 2} more` : ''})
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+
               {/* Tables in Section */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
                 <h4 style={{ margin: 0, fontWeight: 800, color: '#0f172a', fontSize: '16px' }}>📊 Tables in Section</h4>
@@ -953,9 +1242,26 @@ export const FormBuilderCanvas = ({
                   <div key={tbl.id} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px', marginBottom: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
                       <div>
-                        <h4 style={{ margin: '0 0 3px', fontWeight: 700, color: '#0f172a', fontSize: '15px' }}>
-                          {tbl.title || `Table ${tIdx + 1}`}
-                        </h4>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '3px' }}>
+                          <h4 style={{ margin: 0, fontWeight: 700, color: '#0f172a', fontSize: '15px' }}>
+                            {tbl.title || `Table ${tIdx + 1}`}
+                          </h4>
+                          {(() => {
+                            const assignedBtn = (normalizeTableButtons(currentSection.tableButtons) || []).find((btn) => isTableAssignedToButton(tbl, btn));
+                            if (assignedBtn) {
+                              return (
+                                <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '5px', background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>
+                                  ⚡ Assigned to: {assignedBtn.label}
+                                </span>
+                              );
+                            }
+                            return (
+                              <span style={{ fontSize: '11px', fontWeight: 650, padding: '2px 8px', borderRadius: '5px', background: '#f1f5f9', color: '#475569' }}>
+                                📌 Permanent (Always Visible)
+                              </span>
+                            );
+                          })()}
+                        </div>
                         <small style={{ color: '#64748b', fontSize: '12px' }}>
                           Key: <code>{tbl.tableKey}</code> | {tbl.isRepeatable ? 'Dynamic Rows' : 'Fixed Form'}
                         </small>
@@ -1777,6 +2083,185 @@ export const FormBuilderCanvas = ({
                   style={{ padding: '8px 18px', borderRadius: '7px', border: 'none', background: '#2563eb', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
                 >
                   Save Column / Field
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Table Button Modal (Repeater Groups) */}
+      {tableButtonModal.show && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1050, background: 'rgba(15,23,42,0.5)', display: 'grid', placeItems: 'center', padding: '20px' }}>
+          <div style={{ width: '100%', maxWidth: '580px', background: '#fff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '16px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h4 style={{ margin: 0, fontWeight: 800, color: '#0f172a', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>{tableButtonModal.isEdit ? '✏️ Edit Dynamic Table Button' : '⚡ Add Dynamic Table Button'}</span>
+              </h4>
+              <button
+                type="button"
+                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '18px', color: '#64748b' }}
+                onClick={() => setTableButtonModal({ ...tableButtonModal, show: false })}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveTableButton} style={{ overflowY: 'auto', flex: 1 }}>
+              <div style={{ padding: '20px', display: 'grid', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 650, fontSize: '13px', marginBottom: '4px', color: '#1e293b' }}>
+                    Button Label*
+                  </label>
+                  <input
+                    type="text"
+                    style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                    placeholder="e.g. Add School Data, Add Department, Add Laboratory"
+                    required
+                    value={tableButtonModal.data.label}
+                    onChange={(e) =>
+                      setTableButtonModal({
+                        ...tableButtonModal,
+                        data: { ...tableButtonModal.data, label: e.target.value },
+                      })
+                    }
+                  />
+                  <small style={{ color: '#64748b', fontSize: '11.5px', marginTop: '2px', display: 'block' }}>
+                    The label shown on the trigger button in the form (e.g. "+ Add School Data").
+                  </small>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontWeight: 650, fontSize: '13px', marginBottom: '4px', color: '#1e293b' }}>
+                      Dropdown Label*
+                    </label>
+                    <input
+                      type="text"
+                      style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                      placeholder="e.g. Select School, Department, Category"
+                      required
+                      value={tableButtonModal.data.dropdownLabel}
+                      onChange={(e) =>
+                        setTableButtonModal({
+                          ...tableButtonModal,
+                          data: { ...tableButtonModal.data, dropdownLabel: e.target.value },
+                        })
+                      }
+                    />
+                    <small style={{ color: '#64748b', fontSize: '11.5px', marginTop: '2px', display: 'block' }}>
+                      Title shown above the instance switcher dropdown.
+                    </small>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontWeight: 650, fontSize: '13px', marginBottom: '4px', color: '#1e293b' }}>
+                      Dropdown Options* (Comma-separated)
+                    </label>
+                    <input
+                      type="text"
+                      style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                      placeholder="e.g. SOD, SOEMR, SOE, SOL, SOM"
+                      required
+                      value={tableButtonModal.data.dropdownOptionsString}
+                      onChange={(e) =>
+                        setTableButtonModal({
+                          ...tableButtonModal,
+                          data: { ...tableButtonModal.data, dropdownOptionsString: e.target.value },
+                        })
+                      }
+                    />
+                    <small style={{ color: '#64748b', fontSize: '11.5px', marginTop: '2px', display: 'block' }}>
+                      Allowed values users can add and switch between.
+                    </small>
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label style={{ fontWeight: 650, fontSize: '13px', color: '#1e293b' }}>
+                      Assign Tables in this Section* ({tableButtonModal.data.assignedTableKeys.length} selected)
+                    </label>
+                    {currentSection?.tables?.length > 0 && (
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectAllTablesForButton(currentSection.tables.map((t) => t.tableKey || t.idString || String(t.id)))}
+                          style={{ border: 'none', background: '#eff6ff', color: '#1d4ed8', fontSize: '11.5px', fontWeight: 650, padding: '2px 6px', borderRadius: '4px', cursor: 'pointer' }}
+                        >
+                          Select All
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleClearAllTablesForButton}
+                          style={{ border: 'none', background: '#f1f5f9', color: '#475569', fontSize: '11.5px', fontWeight: 650, padding: '2px 6px', borderRadius: '4px', cursor: 'pointer' }}
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <p style={{ margin: '0 0 8px', color: '#64748b', fontSize: '12px' }}>
+                    Check the tables that should appear when this button is clicked. Unchecked tables remain permanently visible.
+                  </p>
+
+                  <div style={{ border: '1px solid #cbd5e1', borderRadius: '8px', maxHeight: '200px', overflowY: 'auto', padding: '8px', display: 'flex', flexDirection: 'column', gap: '6px', background: '#f8fafc' }}>
+                    {(!currentSection?.tables || currentSection.tables.length === 0) ? (
+                      <div style={{ padding: '12px', textAlign: 'center', color: '#94a3b8', fontSize: '12.5px' }}>
+                        No tables in this section yet. Add tables first, then assign them to buttons.
+                      </div>
+                    ) : (
+                      currentSection.tables.map((t, idx) => {
+                        const tKey = t.tableKey || t.idString || String(t.id);
+                        const isChecked = tableButtonModal.data.assignedTableKeys.includes(tKey);
+
+                        return (
+                          <label
+                            key={t.id || tKey}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              padding: '6px 10px',
+                              borderRadius: '6px',
+                              background: isChecked ? '#eff6ff' : '#fff',
+                              border: isChecked ? '1px solid #93c5fd' : '1px solid #e2e8f0',
+                              cursor: 'pointer',
+                              fontSize: '12.5px',
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => handleToggleAssignTable(tKey)}
+                              style={{ cursor: 'pointer' }}
+                            />
+                            <span style={{ fontWeight: 650, color: isChecked ? '#1d4ed8' : '#1e293b', flex: 1 }}>
+                              {idx + 1}. {t.title || tKey}
+                            </span>
+                            <code style={{ fontSize: '11px', color: '#64748b' }}>{tKey}</code>
+                          </label>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ padding: '14px 20px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button
+                  type="button"
+                  style={{ padding: '8px 16px', borderRadius: '7px', border: '1px solid #cbd5e1', background: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
+                  onClick={() => setTableButtonModal({ ...tableButtonModal, show: false })}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{ padding: '8px 18px', borderRadius: '7px', border: 'none', background: '#2563eb', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  Save Table Button
                 </button>
               </div>
             </form>

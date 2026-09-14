@@ -29,6 +29,8 @@ import AuditReportPanel from "../components/AuditReportPanel";
 import { InlineSpinner, LoadingState, SkeletonList } from "../components/LoadingState";
 import { columnsWithSerial, serialColumnFor, numberedRowFor, withSerialNumbers } from "../components/tableHelpers";
 import AuditTable from "../components/AuditTable";
+import { TableButtonGroup } from "../components/TableButtonGroup";
+import { partitionTablesByButtons, getScopedTableRows } from "../utils/tableButtonHelpers";
 import UserProfileModal from "../components/UserProfileModal";
 import AdministrativeReportPanel from "../administrativeAudit/AdministrativeReportPanel";
 import UserManagementPanel from "../userManagement/UserManagementPanel";
@@ -7124,47 +7126,102 @@ function SubmittedFormViewer({
                   return null;
                 }
 
+                const { unassignedTables, buttonGroups } = partitionTablesByButtons(
+                  block.tables,
+                  block.tableButtons || activeSection.tableButtons
+                );
+
                 if (editableSection) {
+                  const renderEditableAuditTable = (table, overrideKey, activeInstance) => {
+                    const tableKey = overrideKey || table.scopedKey || table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
+                    const rows = activeInstance
+                      ? (getScopedTableRows(formData.tables, table, activeInstance) || getTableRows(formData.tables, table))
+                      : getTableRows(formData.tables, table);
+
+                    return (
+                      <div key={table.id ? `${table.id}_${tableKey}` : tableKey} style={{ marginBottom: 24, width: "100%" }}>
+                        <AuditTable
+                          table={table}
+                          rows={rows}
+                          values={formData.values}
+                          onFieldChange={onFieldChange}
+                          onChange={(rowIndex, column, value) => onTableChange?.(tableKey || table.id, rowIndex, column, value)}
+                          onAddRow={onAddRow}
+                          onDeleteLastRow={onDeleteLastRow}
+                          onUploadAttachment={onUploadAttachment}
+                          onDeleteAttachment={onDeleteAttachment}
+                          readOnly={false}
+                        />
+                      </div>
+                    );
+                  };
+
                   return (
                     <div key={`${activeSection.id}-tables-${blockIndex}`} style={styles.reviewTables}>
-                      {block.tables.map((table) => {
-                        const tableKey = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
-                        const rows = getTableRows(formData.tables, table);
+                      {/* 1. Permanent / Unassigned Tables */}
+                      {unassignedTables.map((table) => renderEditableAuditTable(table))}
 
-                        return (
-                          <div key={table.id || tableKey || table.tableKey || table.idString} style={{ marginBottom: 24, width: "100%" }}>
-                            <AuditTable
-                              table={table}
-                              rows={rows}
-                              values={formData.values}
-                              onFieldChange={onFieldChange}
-                              onChange={(rowIndex, column, value) => onTableChange?.(tableKey || table.id, rowIndex, column, value)}
-                              onAddRow={onAddRow}
-                              onDeleteLastRow={onDeleteLastRow}
-                              onUploadAttachment={onUploadAttachment}
-                              onDeleteAttachment={onDeleteAttachment}
-                              readOnly={false}
-                            />
-                          </div>
-                        );
-                      })}
+                      {/* 2. Button-Triggered Table Groups */}
+                      {buttonGroups.map(({ button, tables: assignedTables }) => (
+                        <TableButtonGroup
+                          key={button.id}
+                          button={button}
+                          tables={assignedTables}
+                          valuesData={formData.values}
+                          tablesData={formData.tables}
+                          onValueChange={onFieldChange}
+                          onTableChange={(scopedKey, newRows) => {
+                            if (onTableChange) {
+                              onTableChange(scopedKey, 0, null, newRows);
+                            }
+                          }}
+                          renderTable={(scopedTable, scopedKey, activeInstance) =>
+                            renderEditableAuditTable(scopedTable, scopedKey, activeInstance)
+                          }
+                          readOnly={false}
+                        />
+                      ))}
                     </div>
                   );
                 }
 
+                const renderReadOnlyAuditTable = (table, overrideKey, activeInstance) => {
+                  const tableKey = overrideKey || table.scopedKey || table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
+                  const rows = activeInstance
+                    ? (getScopedTableRows(formData.tables, table, activeInstance) || getTableRows(formData.tables, table))
+                    : getTableRows(formData.tables, table);
+
+                  return (
+                    <ReadOnlyTable
+                      key={table.id ? `${table.id}_${tableKey}` : tableKey}
+                      table={table}
+                      rows={rows}
+                      values={formData.values}
+                    />
+                  );
+                };
+
                 return (
                   <div key={`${activeSection.id}-tables-${blockIndex}`} style={styles.reviewTables}>
-                    {block.tables.map((table) => {
-                      const rows = getTableRows(formData.tables, table);
-                      return (
-                        <ReadOnlyTable
-                          key={table.id || table.tableKey || table.idString}
-                          table={table}
-                          rows={rows}
-                          values={formData.values}
-                        />
-                      );
-                    })}
+                    {/* 1. Permanent / Unassigned Tables */}
+                    {unassignedTables.map((table) => renderReadOnlyAuditTable(table))}
+
+                    {/* 2. Button-Triggered Table Groups */}
+                    {buttonGroups.map(({ button, tables: assignedTables }) => (
+                      <TableButtonGroup
+                        key={button.id}
+                        button={button}
+                        tables={assignedTables}
+                        valuesData={formData.values}
+                        tablesData={formData.tables}
+                        onValueChange={null}
+                        onTableChange={null}
+                        renderTable={(scopedTable, scopedKey, activeInstance) =>
+                          renderReadOnlyAuditTable(scopedTable, scopedKey, activeInstance)
+                        }
+                        readOnly={true}
+                      />
+                    ))}
                   </div>
                 );
               })}

@@ -1,5 +1,7 @@
 //renders a section of the audit form, like part A, part B, etc. It can contain fields and tables
 import AuditTable from "./AuditTable";
+import { TableButtonGroup } from "./TableButtonGroup";
+import { partitionTablesByButtons } from "../utils/tableButtonHelpers";
 import DateInput from "./DateInput";
 import { columnsWithSerial, serialColumnFor, numberedRowFor, withSerialNumbers, emptyRowFor } from "./tableHelpers";
 import { getAttachmentUrl } from "../../../utils/attachment";
@@ -642,28 +644,52 @@ function FieldGrid({ fields, values, onFieldChange, readOnly = false, onUploadAt
   );
 }
 
-function TableList({ tableDefinitions, tableValues, values, onFieldChange, onTableChange, onAddRow, onDeleteLastRow, onUploadAttachment, onDeleteAttachment, readOnly = false }) {
+function TableList({ tableDefinitions, tableValues, values, tableButtons, onFieldChange, onTableChange, onAddRow, onDeleteLastRow, onUploadAttachment, onDeleteAttachment, readOnly = false }) {
+  const { unassignedTables, buttonGroups } = partitionTablesByButtons(tableDefinitions, tableButtons);
+
+  const renderSingleAuditTable = (table, overrideKey) => {
+    const tableKey = overrideKey || table.scopedKey || table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
+    const rows = tableValues[tableKey] || (table.id != null ? tableValues[table.id] : []) || (table.tableKey ? tableValues[table.tableKey] : []) || [];
+    return (
+      <AuditTable
+        key={table.id ? `${table.id}_${tableKey}` : tableKey}
+        table={table}
+        rows={rows}
+        values={values}
+        onFieldChange={onFieldChange}
+        onChange={(rowIndex, column, value) => onTableChange(tableKey, rowIndex, column, value)}
+        onAddRow={onAddRow}
+        onDeleteLastRow={onDeleteLastRow}
+        onUploadAttachment={onUploadAttachment}
+        onDeleteAttachment={onDeleteAttachment}
+        readOnly={readOnly}
+      />
+    );
+  };
+
   return (
     <div style={styles.tables}>
-      {tableDefinitions.map((table) => {
-        const tableKey = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
-        const rows = tableValues[tableKey] || (table.id != null ? tableValues[table.id] : []) || (table.tableKey ? tableValues[table.tableKey] : []) || [];
-        return (
-          <AuditTable
-            key={table.id || tableKey}
-            table={table}
-            rows={rows}
-            values={values}
-            onFieldChange={onFieldChange}
-            onChange={(rowIndex, column, value) => onTableChange(tableKey, rowIndex, column, value)}
-            onAddRow={onAddRow}
-            onDeleteLastRow={onDeleteLastRow}
-            onUploadAttachment={onUploadAttachment}
-            onDeleteAttachment={onDeleteAttachment}
-            readOnly={readOnly}
-          />
-        );
-      })}
+      {/* 1. Permanent / Unassigned Tables */}
+      {unassignedTables.map((table) => renderSingleAuditTable(table))}
+
+      {/* 2. Button-Triggered Table Groups */}
+      {buttonGroups.map(({ button, tables: assignedTables }) => (
+        <TableButtonGroup
+          key={button.id}
+          button={button}
+          tables={assignedTables}
+          valuesData={values}
+          tablesData={tableValues}
+          onValueChange={onFieldChange}
+          onTableChange={(scopedKey, newRows) => {
+            if (onTableChange) {
+              onTableChange(scopedKey, newRows);
+            }
+          }}
+          renderTable={(scopedTable, scopedKey) => renderSingleAuditTable(scopedTable, scopedKey)}
+          readOnly={readOnly}
+        />
+      ))}
     </div>
   );
 }
@@ -1004,6 +1030,7 @@ export default function AuditSection({ section, values, tables, onFieldChange, o
               key={`tables-${index}`}
               tableValues={tables}
               tableDefinitions={block.tables}
+              tableButtons={section.tableButtons}
               values={values}
               onFieldChange={onFieldChange}
               onTableChange={onTableChange}

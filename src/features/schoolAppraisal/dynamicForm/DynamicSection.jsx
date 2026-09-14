@@ -1,6 +1,8 @@
 import React from 'react';
 import { DynamicField } from './DynamicField';
 import { DynamicTable } from './DynamicTable';
+import { TableButtonGroup } from '../components/TableButtonGroup';
+import { partitionTablesByButtons } from '../utils/tableButtonHelpers';
 
 export const DynamicSection = ({
   section,
@@ -22,6 +24,7 @@ export const DynamicSection = ({
     description,
     ownerRole,
     isAuditorSection,
+    tableButtons,
     fields = [],
     tables = [],
   } = section;
@@ -107,23 +110,60 @@ export const DynamicSection = ({
       )}
 
       {/* Tables in section */}
-      {tables && tables.length > 0 && (
-        <div className="section-tables">
-          {tables.map((table) => {
-            const tKey = table.tableKey || table.idString;
-            return (
-              <DynamicTable
-                key={table.id || tKey}
-                table={table}
-                data={tablesData[tKey] || []}
-                onChange={onTableChange}
+      {tables && tables.length > 0 && (() => {
+        const { unassignedTables, buttonGroups } = partitionTablesByButtons(tables, tableButtons);
+
+        return (
+          <div className="section-tables">
+            {/* 1. Permanent / Unassigned tables */}
+            {unassignedTables.map((table) => {
+              const tKey = table.tableKey || table.idString;
+              return (
+                <DynamicTable
+                  key={table.id || tKey}
+                  table={table}
+                  data={tablesData[tKey] || []}
+                  onChange={onTableChange}
+                  readOnly={effectiveReadOnly}
+                  onUploadAttachment={onUploadAttachment}
+                />
+              );
+            })}
+
+            {/* 2. Button-Triggered Table Groups */}
+            {buttonGroups.map(({ button, tables: assignedTables }) => (
+              <TableButtonGroup
+                key={button.id}
+                button={button}
+                tables={assignedTables}
+                valuesData={valuesData}
+                tablesData={tablesData}
+                onValueChange={onValueChange}
+                onTableChange={(scopedKey, newRows) => {
+                  if (onTableChange) {
+                    onTableChange(scopedKey, newRows);
+                  }
+                }}
+                renderTable={(scopedTable, scopedKey) => (
+                  <DynamicTable
+                    key={scopedKey}
+                    table={scopedTable}
+                    data={tablesData[scopedKey] || []}
+                    onChange={(k, rows) => {
+                      if (onTableChange) {
+                        onTableChange(scopedKey, rows);
+                      }
+                    }}
+                    readOnly={effectiveReadOnly}
+                    onUploadAttachment={onUploadAttachment}
+                  />
+                )}
                 readOnly={effectiveReadOnly}
-                onUploadAttachment={onUploadAttachment}
               />
-            );
-          })}
-        </div>
-      )}
+            ))}
+          </div>
+        );
+      })()}
 
       {/* Review Remarks / Bottom Auditor Fields */}
       {reviewFields && reviewFields.length > 0 && (
