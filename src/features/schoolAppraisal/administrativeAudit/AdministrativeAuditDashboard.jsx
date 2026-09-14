@@ -981,7 +981,7 @@ export default function AdministrativeAuditDashboard() {
             <>
           <header className="admin-audit-header audit-form__header" style={styles.header}>
             <div style={styles.headerContent}>
-              <img src={universityInfo?.logoUrl || universityLogo} alt="University Logo" style={styles.logo} />
+              <img src={getAttachmentUrl(universityInfo?.logoUrl || sessionStorage.getItem("universityLogo")) || universityLogo} alt="University Logo" style={styles.logo} />
               <div>
                 <p style={styles.kicker}>{universityInfo?.universityName || sessionStorage.getItem("universityName") || ""}</p>
                 <h1 style={styles.title}>{dynamicSchema?.title || "Internal Administrative Audit"}</h1>
@@ -992,7 +992,7 @@ export default function AdministrativeAuditDashboard() {
               </div>
             </div>
             <div style={styles.headerRight}>
-              <img src={universityInfo?.iqacLogoUrl || iqacLogo} alt="IQAC Logo" style={styles.headerIqacLogo} />
+              <img src={getAttachmentUrl(universityInfo?.iqacLogoUrl || sessionStorage.getItem("iqacLogo")) || iqacLogo} alt="IQAC Logo" style={styles.headerIqacLogo} />
               <div className="admin-audit-actions" style={styles.headerActions}>
                 <button type="button" className="btn btn-secondary" onClick={resetActiveModule} disabled={readOnly || loadingDraft || savingDraft}>
                   Reset Section

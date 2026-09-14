@@ -288,16 +288,16 @@ export default function AuditReportPanel({
   return (
     <div className="generated-report" style={styles.panel}>
       <header className="generated-report__cover" style={styles.header}>
-        <img src={universityLogo} alt="DYPIU Logo" style={styles.logo} />
+        <img src={getAttachmentUrl(sessionStorage.getItem("universityLogo")) || universityLogo} alt="University Logo" style={styles.logo} />
         <div style={styles.headerText}>
-          <p style={styles.kicker}>{schema.header.university}</p>
+          <p style={styles.kicker}>{sessionStorage.getItem("universityName") || schema.header.university}</p>
           <h1 style={styles.title}>{schema.title}</h1>
-          <p style={styles.meta}>{schema.header.address}</p>
+          <p style={styles.meta}>{sessionStorage.getItem("universityAddress") || schema.header.address}</p>
           <p style={styles.meta}>{schema.header.act}</p>
           <p style={styles.year}>Academic Year {schema.academicYear}</p>
         </div>
         <div className="generated-report__document-meta" style={styles.documentMeta}>
-          <img src={iqacLogo} alt="IQAC Logo" style={styles.documentLogo} />
+          <img src={getAttachmentUrl(sessionStorage.getItem("iqacLogo")) || iqacLogo} alt="IQAC Logo" style={styles.documentLogo} />
           <span style={styles.generatedDate}>Prepared {formatDateDDMMYYYY(new Date())}</span>
         </div>
       </header>

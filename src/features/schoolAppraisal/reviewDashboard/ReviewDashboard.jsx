@@ -20,7 +20,7 @@ import {
   deleteAttachment,
   withApproverSignOff,
 } from "../../../api/submissions";
-import { fetchActiveSchema, fetchSchemaByVersion } from "../../../api/config";
+import { fetchActiveSchema, fetchSchemaByVersion, fetchUniversityBranding } from "../../../api/config";
 import { fetchCurrentUser, fetchUsers } from "../../../api/users";
 import universityLogo from "../../../assets/images/image.png";
 import iqacLogo from "../../../assets/images/IQAS.png";
@@ -2108,6 +2108,31 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
   const [activeAcademicYear, setActiveAcademicYear] = useState("");
   const [availableYears, setAvailableYears] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [universityInfo, setUniversityInfo] = useState(null);
+
+  useEffect(() => {
+    let isActive = true;
+    const universityCode = sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || "";
+    if (universityCode) {
+      fetchUniversityBranding(universityCode)
+        .then((data) => {
+          if (isActive && data) {
+            setUniversityInfo(data);
+            if (data.logoUrl) sessionStorage.setItem("universityLogo", data.logoUrl);
+            if (data.iqacLogoUrl) sessionStorage.setItem("iqacLogo", data.iqacLogoUrl);
+            if (data.universityName) sessionStorage.setItem("universityName", data.universityName);
+            if (data.address) sessionStorage.setItem("universityAddress", data.address);
+          }
+        })
+        .catch(() => {});
+    }
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  const resolvedUniversityLogo = getAttachmentUrl(universityInfo?.logoUrl || sessionStorage.getItem("universityLogo")) || universityLogo;
+  const resolvedIqacLogo = getAttachmentUrl(universityInfo?.iqacLogoUrl || sessionStorage.getItem("iqacLogo")) || iqacLogo;
 
   const setDashboardRouteState = useCallback((viewId, { submissionId = "", replace = false } = {}) => {
     const nextParams = new URLSearchParams(searchParams);
@@ -3329,15 +3354,15 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
             <header style={styles.header}>
               <div style={styles.headerContent}>
                 <div style={styles.logoWrap}>
-                  <img src={universityLogo} alt="University Logo" style={styles.logo} />
+                  <img src={resolvedUniversityLogo} alt="University Logo" style={styles.logo} />
                 </div>
                 <div>
-                  <p style={styles.kicker}>{sessionStorage.getItem("universityName") || ""}</p>
+                  <p style={styles.kicker}>{universityInfo?.universityName || sessionStorage.getItem("universityName") || ""}</p>
                   <h1 style={styles.title}>{roleConfig.title}</h1>
                   <p style={styles.meta}>School Appraisal Review - Academic Year {academicYearPeriod(academicYear)}</p>
                 </div>
               </div>
-              <img src={iqacLogo} alt="IQAC Logo" style={styles.headerIqacLogo} />
+              <img src={resolvedIqacLogo} alt="IQAC Logo" style={styles.headerIqacLogo} />
             </header>
           )}
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   getVersionTree,
   publishVersion,
@@ -1654,9 +1655,9 @@ export const FormBuilderCanvas = ({
       </div>
 
       {/* Section Modal */}
-      {sectionModal.show && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1050, background: 'rgba(15,23,42,0.5)', display: 'grid', placeItems: 'center', padding: '20px' }}>
-          <div style={{ width: '100%', maxWidth: '520px', background: '#fff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+      {sectionModal.show && typeof document !== 'undefined' && createPortal(
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10000, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ width: '100%', maxWidth: '520px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: '#fff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
             <div style={{ padding: '16px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h4 style={{ margin: 0, fontWeight: 800, color: '#0f172a', fontSize: '16px' }}>
                 {sectionModal.isEdit ? '✏️ Edit Section' : '➕ Add New Section'}
@@ -1669,7 +1670,7 @@ export const FormBuilderCanvas = ({
                 ✕
               </button>
             </div>
-            <form onSubmit={handleSaveSection}>
+            <form onSubmit={handleSaveSection} style={{ overflowY: 'auto', flex: 1 }}>
               <div style={{ padding: '20px', display: 'grid', gap: '14px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>Section Title*</label>
@@ -1824,13 +1825,14 @@ export const FormBuilderCanvas = ({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Table Modal */}
-      {tableModal.show && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1050, background: 'rgba(15,23,42,0.5)', display: 'grid', placeItems: 'center', padding: '20px' }}>
-          <div style={{ width: '100%', maxWidth: '520px', background: '#fff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+      {tableModal.show && typeof document !== 'undefined' && createPortal(
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10000, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ width: '100%', maxWidth: '520px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: '#fff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
             <div style={{ padding: '16px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h4 style={{ margin: 0, fontWeight: 800, color: '#0f172a', fontSize: '16px' }}>
                 {tableModal.isEdit ? '✏️ Edit Table' : '➕ Add New Table'}
@@ -1843,7 +1845,7 @@ export const FormBuilderCanvas = ({
                 ✕
               </button>
             </div>
-            <form onSubmit={handleSaveTable}>
+            <form onSubmit={handleSaveTable} style={{ overflowY: 'auto', flex: 1 }}>
               <div style={{ padding: '20px', display: 'grid', gap: '14px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>Table Title*</label>
@@ -1909,13 +1911,14 @@ export const FormBuilderCanvas = ({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Copy Table Modal (Academic Flow Only) */}
-      {copyTableModal.show && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1050, background: 'rgba(15,23,42,0.5)', display: 'grid', placeItems: 'center', padding: '20px' }}>
-          <div style={{ width: '100%', maxWidth: '520px', background: '#fff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+      {copyTableModal.show && typeof document !== 'undefined' && createPortal(
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10000, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ width: '100%', maxWidth: '520px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: '#fff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
             <div style={{ padding: '16px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h4 style={{ margin: 0, fontWeight: 800, color: '#0f172a', fontSize: '16px' }}>
                 📋 Copy Table from Another Form (Avoid Rework)
@@ -1928,7 +1931,7 @@ export const FormBuilderCanvas = ({
                 ✕
               </button>
             </div>
-            <form onSubmit={handleExecuteCopyTable}>
+            <form onSubmit={handleExecuteCopyTable} style={{ overflowY: 'auto', flex: 1 }}>
               <div style={{ padding: '20px', display: 'grid', gap: '14px' }}>
                 {loadingTables ? (
                   <p style={{ color: '#64748b', fontSize: '13px' }}>Loading available tables...</p>
@@ -1993,13 +1996,14 @@ export const FormBuilderCanvas = ({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Field / Column Modal */}
-      {fieldModal.show && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1050, background: 'rgba(15,23,42,0.5)', display: 'grid', placeItems: 'center', padding: '20px' }}>
-          <div style={{ width: '100%', maxWidth: '520px', background: '#fff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+      {fieldModal.show && typeof document !== 'undefined' && createPortal(
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10000, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ width: '100%', maxWidth: '520px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: '#fff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
             <div style={{ padding: '16px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h4 style={{ margin: 0, fontWeight: 800, color: '#0f172a', fontSize: '16px' }}>
                 {fieldModal.isEdit
@@ -2018,7 +2022,7 @@ export const FormBuilderCanvas = ({
                 ✕
               </button>
             </div>
-            <form onSubmit={handleSaveField}>
+            <form onSubmit={handleSaveField} style={{ overflowY: 'auto', flex: 1 }}>
               <div style={{ padding: '20px', display: 'grid', gap: '14px' }}>
                 {fieldModal.isReviewField && (
                   <div style={{ padding: '8px 12px', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '7px', fontSize: '12px', color: '#065f46', lineHeight: 1.4 }}>
@@ -2136,12 +2140,13 @@ export const FormBuilderCanvas = ({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Table Button Modal (Repeater Groups) */}
-      {tableButtonModal.show && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1050, background: 'rgba(15,23,42,0.5)', display: 'grid', placeItems: 'center', padding: '20px' }}>
+      {tableButtonModal.show && typeof document !== 'undefined' && createPortal(
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10000, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div style={{ width: '100%', maxWidth: '580px', background: '#fff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '16px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h4 style={{ margin: 0, fontWeight: 800, color: '#0f172a', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -2419,11 +2424,12 @@ export const FormBuilderCanvas = ({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Excel Table Import Modal (Single Section) */}
-      {excelImportModal.show && (
+      {excelImportModal.show && typeof document !== 'undefined' && createPortal(
         <ExcelTableImportModal
           show={excelImportModal.show}
           section={excelImportModal.section}
@@ -2431,11 +2437,12 @@ export const FormBuilderCanvas = ({
           onImportSuccess={async () => {
             await loadTree();
           }}
-        />
+        />,
+        document.body
       )}
 
       {/* Excel Full Schema Import Modal (Multi-Section / Entire Form) */}
-      {fullSchemaImportModal && (
+      {fullSchemaImportModal && typeof document !== 'undefined' && createPortal(
         <ExcelFullSchemaImportModal
           show={fullSchemaImportModal}
           versionId={versionId}
@@ -2445,7 +2452,8 @@ export const FormBuilderCanvas = ({
           onImportSuccess={async () => {
             await loadTree();
           }}
-        />
+        />,
+        document.body
       )}
     </div>
   );

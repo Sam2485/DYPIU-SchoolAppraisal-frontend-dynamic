@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { getApiErrorMessage } from "../../api/client";
 import { login, verifyOtp, resendOtp, requestPasswordReset } from "../../api/auth";
 import { dashboardForRole, normalizeUserProfile, fetchCurrentAuditCycle } from "../../api/submissions";
+import { fetchUniversityBranding } from "../../api/config";
+import { getAttachmentUrl } from "../../utils/attachment";
 import { InlineSpinner } from "../../features/schoolAppraisal/components/LoadingState";
 import backgroundImage from "../../assets/images/dyp.jpeg";
 import iqacLogo from "../../assets/images/IQAS.png";
@@ -83,6 +85,20 @@ export default function Login() {
     setItem("universityId", profile.universityId || authPayload.universityId || authPayload.user?.universityId || "");
     setItem("universityCode", profile.universityCode || authPayload.universityCode || authPayload.user?.universityCode || "");
     setItem("universityName", profile.universityName || authPayload.universityName || authPayload.user?.universityName || "");
+    try {
+      const uCode = profile.universityCode || authPayload.universityCode || authPayload.user?.universityCode || "";
+      if (uCode) {
+        const branding = await fetchUniversityBranding(uCode);
+        if (branding) {
+          if (branding.logoUrl) setItem("universityLogo", branding.logoUrl);
+          if (branding.iqacLogoUrl) setItem("iqacLogo", branding.iqacLogoUrl);
+          if (branding.universityName) setItem("universityName", branding.universityName);
+          if (branding.address) setItem("universityAddress", branding.address);
+        }
+      }
+    } catch {
+      // non-blocking branding fetch
+    }
     try {
       const { data } = await fetchCurrentAuditCycle();
       const activeYear = data?.activeYear || data?.academicYear;
@@ -356,14 +372,14 @@ export default function Login() {
       <div style={s.wrap}>
         <img
           className="school-login-logo"
-          src={universityLogo}
+          src={getAttachmentUrl(sessionStorage.getItem("universityLogo")) || universityLogo}
           alt="University Logo"
           style={s.topLeftLogo}
         />
 
         <img
           className="school-login-logo"
-          src={iqacLogo}
+          src={getAttachmentUrl(sessionStorage.getItem("iqacLogo")) || iqacLogo}
           alt="IQAC Logo"
           style={s.topRightLogo}
         />

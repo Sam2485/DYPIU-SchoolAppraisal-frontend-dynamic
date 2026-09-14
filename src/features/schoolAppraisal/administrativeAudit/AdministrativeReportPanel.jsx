@@ -203,17 +203,17 @@ export default function AdministrativeReportPanel({
   return (
     <div className="generated-report" style={styles.panel}>
       <div className="generated-report__cover" style={styles.header}>
-        <img src={universityLogo} alt="DYPIU Logo" style={styles.logo} />
+        <img src={getAttachmentUrl(sessionStorage.getItem("universityLogo")) || universityLogo} alt="University Logo" style={styles.logo} />
         <div style={styles.headerText}>
-          <p style={styles.kicker}>{meta.university}</p>
+          <p style={styles.kicker}>{sessionStorage.getItem("universityName") || meta.university}</p>
           <h2 style={styles.title}>{meta.title}</h2>
-          <p style={styles.text}>{meta.address}</p>
+          <p style={styles.text}>{sessionStorage.getItem("universityAddress") || meta.address}</p>
           <p style={styles.text}>{meta.act}</p>
           <p style={styles.year}>Academic Year {meta.academicYear}</p>
         </div>
         <div style={styles.headerRight}>
           <div className="generated-report__document-meta" style={styles.documentMeta}>
-            <img src={iqacLogo} alt="IQAC Logo" style={styles.documentLogo} />
+            <img src={getAttachmentUrl(sessionStorage.getItem("iqacLogo")) || iqacLogo} alt="IQAC Logo" style={styles.documentLogo} />
             <span style={styles.generatedDate}>Prepared {formatDateDDMMYYYY(new Date())}</span>
           </div>
           <div className="admin-report-actions" style={styles.actions}>
