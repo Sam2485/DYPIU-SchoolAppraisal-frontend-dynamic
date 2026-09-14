@@ -1108,7 +1108,7 @@ export default function AdministrativeAuditDashboard() {
                             key={table.id ? `${table.id}_${tableKey}` : tableKey}
                             table={table}
                             rows={data.tables[tableKey] || []}
-                            onCellChange={(rowIndex, column, value) => setCellValue(tableKey, rowIndex, column, value)}
+                            onChange={(rowIndex, column, value) => setCellValue(tableKey, rowIndex, column, value)}
                             onRowsChange={(rows) => setTableRows(tableKey, rows)}
                             onAddRow={(t) => addRow(t, tableKey)}
                             onDeleteLastRow={(t) => deleteLastRow(t, tableKey)}
