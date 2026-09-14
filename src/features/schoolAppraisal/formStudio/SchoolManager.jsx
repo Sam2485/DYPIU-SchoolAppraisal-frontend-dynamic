@@ -122,23 +122,7 @@ export const SchoolManager = ({ selectedUniversity }) => {
         </div>
       ) : error ? (
         <div className="alert alert-danger p-3 rounded">{error}</div>
-      ) : schools.length === 0 ? (
-        <div className="card shadow-sm p-5 text-center bg-white" style={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-          <h4 className="fw-bold text-dark">No schools configured yet</h4>
-          <p className="text-muted">
-            Add the academic schools/departments for this university. They will automatically populate user creation dropdowns and appraisal audit reports.
-          </p>
-          <div>
-            <button
-              className="btn btn-primary px-4 py-2"
-              style={{ borderRadius: '8px', background: '#2563eb', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600 }}
-              onClick={handleOpenAdd}
-            >
-              + Add First School
-            </button>
-          </div>
-        </div>
-      ) : (
+      ) : schools.length === 0 ? null : (
         <div className="card shadow-sm" style={{ borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', overflow: 'hidden' }}>
           <div style={{ padding: '14px 18px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontWeight: 700, color: '#0f172a' }}>Configured Schools ({schools.length})</span>

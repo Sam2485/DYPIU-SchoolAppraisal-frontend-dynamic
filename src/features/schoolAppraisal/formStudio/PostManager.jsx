@@ -126,14 +126,7 @@ export const PostManager = ({ selectedUniversity }) => {
         </div>
       ) : error ? (
         <div className="alert alert-danger p-3 rounded">{error}</div>
-      ) : posts.length === 0 ? (
-        <div className="card p-5 text-center bg-white" style={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: 'none' }}>
-          <h4 className="fw-bold text-dark">No administrative posts configured yet</h4>
-          <p className="text-muted mb-0">
-            Add administrative posts such as Registrar, HR, Dean Student Welfare, Dean Placement, CFO, etc.
-          </p>
-        </div>
-      ) : (
+      ) : posts.length === 0 ? null : (
         <div className="card" style={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: 'none', background: '#fff', overflow: 'hidden' }}>
           <div style={{ padding: '14px 18px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontWeight: 700, color: '#0f172a' }}>Configured Posts ({posts.length})</span>
