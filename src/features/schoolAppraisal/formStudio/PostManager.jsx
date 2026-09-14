@@ -96,7 +96,7 @@ export const PostManager = ({ selectedUniversity }) => {
   };
 
   return (
-    <div className="post-manager-container p-4">
+    <div className="post-manager-container">
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
         <div>
           <h2 className="fw-bold text-dark mb-1" style={{ fontSize: '22px' }}>👔 University Administrative Posts</h2>
@@ -115,7 +115,7 @@ export const PostManager = ({ selectedUniversity }) => {
         </button>
       </div>
 
-      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px 18px', marginBottom: '20px', fontSize: '13px', color: '#334155' }}>
+      <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '10px 14px', marginTop: '14px', marginBottom: '20px', fontSize: '11.5px', lineHeight: '1.5', color: '#334155', wordBreak: 'break-word' }}>
         <strong>ℹ️ Role of Administrative Posts:</strong> In the Administrative flow, there is <strong>one unified form</strong> divided into sections. Each section is assigned to one of these posts. Administrative users mapped to a post will fill only their assigned section(s).
       </div>
 
@@ -127,23 +127,14 @@ export const PostManager = ({ selectedUniversity }) => {
       ) : error ? (
         <div className="alert alert-danger p-3 rounded">{error}</div>
       ) : posts.length === 0 ? (
-        <div className="card shadow-sm p-5 text-center bg-white" style={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+        <div className="card p-5 text-center bg-white" style={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: 'none' }}>
           <h4 className="fw-bold text-dark">No administrative posts configured yet</h4>
-          <p className="text-muted">
+          <p className="text-muted mb-0">
             Add administrative posts such as Registrar, HR, Dean Student Welfare, Dean Placement, CFO, etc.
           </p>
-          <div>
-            <button
-              className="btn btn-primary px-4 py-2"
-              style={{ borderRadius: '8px', background: '#2563eb', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600 }}
-              onClick={handleOpenAdd}
-            >
-              + Add First Post
-            </button>
-          </div>
         </div>
       ) : (
-        <div className="card shadow-sm" style={{ borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', overflow: 'hidden' }}>
+        <div className="card" style={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: 'none', background: '#fff', overflow: 'hidden' }}>
           <div style={{ padding: '14px 18px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontWeight: 700, color: '#0f172a' }}>Configured Posts ({posts.length})</span>
           </div>

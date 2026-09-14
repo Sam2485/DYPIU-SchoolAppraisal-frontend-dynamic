@@ -286,14 +286,14 @@ export const SchemaManager = ({
   };
 
   return (
-    <div className="form-studio-container p-4">
+    <div className="form-studio-container">
       {/* Header section with instructions & actions */}
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
         <div>
           <h2 className="fw-bold text-dark mb-1" style={{ fontSize: '22px' }}>
             {isAdministrative
-              ? '📋 Single University Administrative Form'
-              : '📋 Academic Appraisal Form Schemas'}
+              ? 'Single University Administrative Form'
+              : 'Academic Appraisal Form Schemas'}
           </h2>
           <p className="text-muted mb-0" style={{ fontSize: '13.5px' }}>
             {isAdministrative
@@ -328,15 +328,15 @@ export const SchemaManager = ({
 
       {/* Info card describing the specific workflow rules */}
       {isAdministrative ? (
-        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 18px', marginBottom: '20px', fontSize: '13px', color: '#334155' }}>
+        <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '10px 14px', marginTop: '14px', marginBottom: '20px', fontSize: '11.5px', lineHeight: '1.5', color: '#334155', wordBreak: 'break-word' }}>
           <strong>ℹ️ Single Form Paradigm (Administrative Flow):</strong> Administration has <strong>ONE single form overall</strong> for the university. The single form is divided into sections (e.g. Part A, Part B, Part C), and each section is assigned to a specific Administrative Post (e.g. Registrar, HR, Dean Student Welfare). Administrative users mapped to a post will fill only their assigned section(s). <em>(No "Copy Table" is needed since there is only one form.)</em>
         </div>
       ) : (
-        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '12px 18px', marginBottom: '20px', fontSize: '13px', color: '#166534', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '10px 14px', marginTop: '14px', marginBottom: '20px', fontSize: '11.5px', lineHeight: '1.5', color: '#166534', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', wordBreak: 'break-word' }}>
           <div>
             <strong>💡 School-Level Form Flexibility (Academic Flow):</strong> Within this university, schools can either share the <em>same form</em> (Condition 2), or have <em>different custom forms</em> (Condition 1). Use <strong>"📋 Copy Form"</strong> to quickly duplicate any existing form and customize columns without rebuilding from scratch!
           </div>
-          <span style={{ fontSize: '12px', fontWeight: 700, padding: '3px 8px', background: '#dcfce7', color: '#15803d', borderRadius: '6px' }}>
+          <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', background: '#dcfce7', color: '#15803d', borderRadius: '6px', flexShrink: 0 }}>
             {universitySchools.length} Schools Configured
           </span>
         </div>
@@ -347,31 +347,11 @@ export const SchemaManager = ({
           <div className="spinner-border text-primary" role="status"></div>
           <p className="text-muted mt-2">Loading appraisal schemas...</p>
         </div>
-      ) : schemas.length === 0 ? (
-        <div className="card shadow-sm p-5 text-center bg-white" style={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-          <h4 className="fw-bold text-dark">
-            {isAdministrative ? 'No Administrative Form created yet' : 'No Academic form schemas configured yet'}
-          </h4>
-          <p className="text-muted">
-            {isAdministrative
-              ? 'Create the single unified administrative appraisal form for this university to begin configuring sections for administrative posts.'
-              : 'Create your first Academic audit schema to begin building forms for schools.'}
-          </p>
-          <div>
-            <button
-              className="btn btn-primary px-4 py-2"
-              style={{ borderRadius: '8px', background: '#2563eb', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600 }}
-              onClick={() => handleOpenCreateModal()}
-            >
-              {isAdministrative ? '+ Create Single Administrative Form' : '+ Create First Academic Schema'}
-            </button>
-          </div>
-        </div>
-      ) : isAdministrative ? (
+      ) : schemas.length === 0 ? null : isAdministrative ? (
         /* Single Administrative Form View (Streamlined, no school clutter) */
         <div>
           {selectedSchema && (
-            <div className="card shadow-sm" style={{ borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', overflow: 'hidden' }}>
+            <div className="card" style={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: 'none', background: '#fff', overflow: 'hidden' }}>
               <div style={{ padding: '18px 24px', background: '#fff', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -508,7 +488,7 @@ export const SchemaManager = ({
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1.2fr) 2fr', gap: '20px' }}>
           {/* Left Column: Schema List */}
           <div>
-            <div className="card shadow-sm" style={{ borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', overflow: 'hidden' }}>
+            <div className="card" style={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: 'none', background: '#fff', overflow: 'hidden' }}>
               <div style={{ padding: '14px 18px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontWeight: 700, color: '#0f172a' }}>Academic Schemas ({schemas.length})</span>
                 <span style={{ fontSize: '11px', color: '#64748b' }}>Click to select</span>
@@ -603,7 +583,7 @@ export const SchemaManager = ({
           {/* Right Column: Version History & Actions */}
           <div>
             {selectedSchema && (
-              <div className="card shadow-sm" style={{ borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', overflow: 'hidden' }}>
+              <div className="card" style={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: 'none', background: '#fff', overflow: 'hidden' }}>
                 <div style={{ padding: '16px 20px', background: '#fff', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                   <div>
                     <h4 style={{ margin: 0, fontWeight: 800, color: '#0f172a', fontSize: '16px' }}>{selectedSchema.name}</h4>
