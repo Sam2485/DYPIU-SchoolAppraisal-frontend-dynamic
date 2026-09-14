@@ -1323,7 +1323,17 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                       valuesData={valuesData}
                       tablesData={tablesData}
                       onValueChange={(key, val) => setValuesData((prev) => ({ ...prev, [key]: val }))}
-                      onTableChange={(scopedKey, newRows) => setTablesData((prev) => ({ ...prev, [scopedKey]: newRows }))}
+                      onTableChange={(scopedKey, newRows) => {
+                        if (newRows === null || newRows === undefined) {
+                          setTablesData((prev) => {
+                            const next = { ...prev };
+                            delete next[scopedKey];
+                            return next;
+                          });
+                        } else {
+                          setTablesData((prev) => ({ ...prev, [scopedKey]: newRows }));
+                        }
+                      }}
                       renderTable={(scopedTable, scopedKey) =>
                         renderLivePreviewTable(scopedTable, scopedKey)
                       }

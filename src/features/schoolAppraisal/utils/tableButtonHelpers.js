@@ -91,37 +91,38 @@ export const getActiveInstancesForButton = (button, valuesData = {}, tablesData 
   const instancesKey = `__tb_${button.id}_instances`;
   const rawFromValues = valuesData?.[instancesKey];
 
-  const instancesSet = new Set();
-
-  if (Array.isArray(rawFromValues)) {
-    rawFromValues.forEach((item) => {
-      if (item && String(item).trim()) instancesSet.add(String(item).trim());
-    });
-  } else if (typeof rawFromValues === 'string' && rawFromValues.trim()) {
-    try {
-      const parsed = JSON.parse(rawFromValues);
-      if (Array.isArray(parsed)) {
-        parsed.forEach((item) => {
-          if (item && String(item).trim()) instancesSet.add(String(item).trim());
-        });
-      } else {
-        instancesSet.add(rawFromValues.trim());
-      }
-    } catch {
-      rawFromValues.split(',').forEach((s) => {
-        if (s && s.trim()) instancesSet.add(s.trim());
-      });
+  // If instancesKey is defined in valuesData (even if []), it is the authoritative source of truth
+  if (rawFromValues !== undefined && rawFromValues !== null) {
+    if (Array.isArray(rawFromValues)) {
+      return rawFromValues.map((item) => String(item).trim()).filter(Boolean);
     }
+    if (typeof rawFromValues === 'string') {
+      const trimmed = rawFromValues.trim();
+      if (!trimmed) return [];
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return parsed.map((item) => String(item).trim()).filter(Boolean);
+        }
+      } catch {
+        return trimmed.split(',').map((s) => s.trim()).filter(Boolean);
+      }
+      return [trimmed];
+    }
+    return [];
   }
 
-  // Also discover from tablesData keys matching `${tableKey}__${instance}`
+  // Fallback discovery from tablesData only when valuesData does not have instancesKey at all
+  const instancesSet = new Set();
   if (tablesData && typeof tablesData === 'object') {
     const assignedKeys = (button.assignedTableKeys || []).map((k) => String(k).trim().toLowerCase());
     Object.keys(tablesData).forEach((key) => {
       if (key.includes('__')) {
         const [baseKey, ...rest] = key.split('__');
         const instance = rest.join('__').trim();
-        if (instance && (assignedKeys.length === 0 || assignedKeys.includes(baseKey.toLowerCase()))) {
+        const rows = tablesData[key];
+        const hasRows = Array.isArray(rows) ? rows.length > 0 : Boolean(rows);
+        if (instance && hasRows && (assignedKeys.length === 0 || assignedKeys.includes(baseKey.toLowerCase()))) {
           instancesSet.add(instance);
         }
       }

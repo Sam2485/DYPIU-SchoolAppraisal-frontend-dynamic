@@ -275,9 +275,9 @@ export const FormBuilderCanvas = ({
       isEdit: false,
       data: {
         id: null,
-        label: 'Add School Data',
-        dropdownLabel: 'Select School',
-        dropdownOptionsString: 'SOD, SOEMR, SOE, SOL, SOM',
+        label: '',
+        dropdownLabel: '',
+        dropdownOptionsString: '',
         assignedTableKeys: [],
       },
     });

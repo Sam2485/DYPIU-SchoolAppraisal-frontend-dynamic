@@ -496,6 +496,28 @@ export default function AuditForm({
   };
 
   const handleTableChange = (tableKeyOrId, rowIndex, column, value) => {
+    // If clearing or deleting table
+    if (rowIndex === null || rowIndex === undefined) {
+      setTables((current) => {
+        const next = { ...current };
+        delete next[String(tableKeyOrId)];
+        if (typeof tableKeyOrId === "number") delete next[tableKeyOrId];
+        return next;
+      });
+      setStatus("");
+      return;
+    }
+
+    // If setting full rows array directly
+    if (Array.isArray(rowIndex)) {
+      setTables((current) => ({
+        ...current,
+        [String(tableKeyOrId)]: rowIndex,
+      }));
+      setStatus("");
+      return;
+    }
+
     setTables((current) => {
       const strKey = String(tableKeyOrId);
       const existing = current[strKey] || (typeof tableKeyOrId === "number" ? current[tableKeyOrId] : []) || [];
@@ -515,7 +537,7 @@ export default function AuditForm({
   };
 
   const handleAddRow = (table) => {
-    const key = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
+    const key = table.scopedKey || table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
     setTables((current) => {
       const existing = current[key] || (table.tableKey ? current[table.tableKey] : []) || (table.id != null ? current[table.id] : []) || [];
       const rows = Array.isArray(existing) ? existing : [];
@@ -523,13 +545,12 @@ export default function AuditForm({
       return {
         ...current,
         ...(key ? { [key]: nextRows } : {}),
-        ...(table.tableKey ? { [table.tableKey]: nextRows } : {}),
       };
     });
   };
 
   const handleDeleteLastRow = (table) => {
-    const key = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
+    const key = table.scopedKey || table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
     setTables((current) => {
       const existing = current[key] || (table.tableKey ? current[table.tableKey] : []) || (table.id != null ? current[table.id] : []) || [];
       const rows = Array.isArray(existing) ? existing : [];
@@ -538,7 +559,6 @@ export default function AuditForm({
       return {
         ...current,
         ...(key ? { [key]: formatted } : {}),
-        ...(table.tableKey ? { [table.tableKey]: formatted } : {}),
       };
     });
   };

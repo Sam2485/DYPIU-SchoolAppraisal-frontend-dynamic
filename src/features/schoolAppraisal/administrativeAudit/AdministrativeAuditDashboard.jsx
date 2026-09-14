@@ -585,14 +585,25 @@ export default function AdministrativeAuditDashboard() {
   const setTableRows = (tableOrKey, rows) => {
     const tableKey = typeof tableOrKey === 'string' ? tableOrKey : (tableOrKey?.scopedKey || tableOrKey?.id);
     const cols = typeof tableOrKey === 'object' ? tableOrKey?.columns : null;
-    setData((current) => ({
-      ...current,
-      tables: {
-        ...current.tables,
-        [tableKey]: cols?.length ? normalizeRows(cols, rows.length ? rows : [emptyRowFor(cols, 0)]) : rows,
-      },
-      lastSavedAt: new Date().toISOString(),
-    }));
+    setData((current) => {
+      if (rows === null || rows === undefined) {
+        const nextTables = { ...current.tables };
+        delete nextTables[tableKey];
+        return {
+          ...current,
+          tables: nextTables,
+          lastSavedAt: new Date().toISOString(),
+        };
+      }
+      return {
+        ...current,
+        tables: {
+          ...current.tables,
+          [tableKey]: cols?.length ? normalizeRows(cols, rows.length ? rows : [emptyRowFor(cols, 0)]) : rows,
+        },
+        lastSavedAt: new Date().toISOString(),
+      };
+    });
   };
 
   const addRow = (table, overrideKey) => {

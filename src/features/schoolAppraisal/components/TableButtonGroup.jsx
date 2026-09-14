@@ -32,7 +32,7 @@ export const TableButtonGroup = ({
     : [];
 
   const remainingOptions = dropdownOptions.filter((opt) => !instances.includes(opt));
-  const [optionToAdd, setOptionToAdd] = useState(remainingOptions[0] || dropdownOptions[0] || '');
+  const [optionToAdd, setOptionToAdd] = useState('');
 
   // Keep instances in sync if discoveredInstances changes from parent
   useEffect(() => {
@@ -43,11 +43,10 @@ export const TableButtonGroup = ({
     }
   }, [button, valuesData, tablesData]);
 
-  // Keep optionToAdd valid
+  // Keep optionToAdd reset if current optionToAdd is no longer available
   useEffect(() => {
-    const remaining = dropdownOptions.filter((opt) => !instances.includes(opt));
-    if (remaining.length > 0 && !remaining.includes(optionToAdd)) {
-      setOptionToAdd(remaining[0]);
+    if (optionToAdd && !remainingOptions.includes(optionToAdd)) {
+      setOptionToAdd('');
     }
   }, [instances, dropdownOptions]);
 
@@ -58,6 +57,7 @@ export const TableButtonGroup = ({
     const nextInstances = [...instances, opt];
     setInstances(nextInstances);
     setSelectedInstance(opt);
+    setOptionToAdd('');
 
     if (onValueChange) {
       onValueChange(instancesKey, nextInstances);
@@ -83,7 +83,7 @@ export const TableButtonGroup = ({
       tables.forEach((tbl) => {
         const baseKey = tbl.tableKey || tbl.idString || (tbl.id != null ? String(tbl.id) : '');
         const scopedKey = buildScopedTableKey(baseKey, selectedInstance);
-        onTableChange(scopedKey, []);
+        onTableChange(scopedKey, null);
       });
     }
   };
@@ -146,13 +146,16 @@ export const TableButtonGroup = ({
                 background: '#fff',
                 fontSize: '13px',
                 fontWeight: 650,
-                color: '#1e3a8a',
+                color: optionToAdd ? '#1e3a8a' : '#64748b',
                 outline: 'none',
               }}
             >
+              <option value="" disabled>
+                {button.dropdownLabel ? `-- ${button.dropdownLabel} --` : '-- Select School --'}
+              </option>
               {dropdownOptions.map((opt) => (
                 <option key={opt} value={opt}>
-                  {button.dropdownLabel ? `${button.dropdownLabel}: ${opt}` : opt}
+                  {opt}
                 </option>
               ))}
             </select>
@@ -160,21 +163,22 @@ export const TableButtonGroup = ({
 
           <button
             type="button"
-            onClick={() => handleAddInstance(optionToAdd || dropdownOptions[0])}
+            disabled={!optionToAdd}
+            onClick={() => handleAddInstance(optionToAdd)}
             style={{
               height: '38px',
               padding: '0 18px',
               borderRadius: '8px',
               border: 'none',
-              background: '#2563eb',
+              background: optionToAdd ? '#2563eb' : '#94a3b8',
               color: '#fff',
               fontWeight: 700,
               fontSize: '13px',
-              cursor: 'pointer',
+              cursor: optionToAdd ? 'pointer' : 'not-allowed',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              boxShadow: '0 2px 6px rgba(37,99,235,0.25)',
+              boxShadow: optionToAdd ? '0 2px 6px rgba(37,99,235,0.25)' : 'none',
             }}
           >
             <span>➕</span>
@@ -267,10 +271,13 @@ export const TableButtonGroup = ({
                     background: '#fff',
                     fontSize: '12.5px',
                     fontWeight: 650,
-                    color: '#334155',
+                    color: optionToAdd ? '#334155' : '#94a3b8',
                     outline: 'none',
                   }}
                 >
+                  <option value="" disabled>
+                    {button.dropdownLabel ? `-- ${button.dropdownLabel} --` : '-- Select School --'}
+                  </option>
                   {remainingOptions.map((opt) => (
                     <option key={opt} value={opt}>
                       {opt}
@@ -279,24 +286,25 @@ export const TableButtonGroup = ({
                 </select>
                 <button
                   type="button"
+                  disabled={!optionToAdd}
                   onClick={() => handleAddInstance(optionToAdd)}
                   style={{
                     height: '34px',
                     padding: '0 12px',
                     borderRadius: '7px',
-                    border: '1px solid #93c5fd',
-                    background: '#2563eb',
+                    border: optionToAdd ? '1px solid #93c5fd' : '1px solid #e2e8f0',
+                    background: optionToAdd ? '#2563eb' : '#cbd5e1',
                     color: '#fff',
                     fontWeight: 700,
                     fontSize: '12.5px',
-                    cursor: 'pointer',
+                    cursor: optionToAdd ? 'pointer' : 'not-allowed',
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '4px',
                   }}
-                  title={`Add ${optionToAdd} to this section`}
+                  title={optionToAdd ? `Add ${optionToAdd} to this section` : `Select an option to add`}
                 >
-                  <span>➕ Add {button.dropdownLabel || 'Option'}</span>
+                  <span>➕ {button.label || `Add ${button.dropdownLabel || 'Option'}`}</span>
                 </button>
               </div>
             )}
