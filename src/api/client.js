@@ -16,7 +16,12 @@ const getApiBaseUrl = () => {
 };
 
 const apiBaseUrl = getApiBaseUrl();
-const loginPath = import.meta.env.MODE === "vm" ? "/AAA/login" : "/login";
+const getLoginPath = () => {
+  if (typeof window !== "undefined" && (window.location.pathname === "/AAA" || window.location.pathname.startsWith("/AAA/"))) {
+    return "/AAA/login";
+  }
+  return "/login";
+};
 
 const apiClient = axios.create({
   baseURL: apiBaseUrl,
@@ -123,8 +128,9 @@ export const clearAuthState = () => {
 };
 
 const redirectToLogin = () => {
-  if (globalThis.location?.pathname !== loginPath) {
-    globalThis.location.replace(loginPath);
+  const targetLogin = getLoginPath();
+  if (globalThis.location?.pathname !== targetLogin) {
+    globalThis.location.replace(targetLogin);
   }
 };
 
