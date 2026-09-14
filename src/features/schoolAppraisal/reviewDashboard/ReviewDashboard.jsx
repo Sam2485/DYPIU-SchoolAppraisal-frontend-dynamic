@@ -41,6 +41,7 @@ import {
   normalizeAcademicSchoolCodes,
 } from "../userManagement/userManagementConfig";
 import BackupRestorePanel from "./BackupRestorePanel";
+import UniversityControlsPanel from "./UniversityControlsPanel";
 import AppraisalFormStudio from "../formStudio/AppraisalFormStudio";
 import { formatDateDDMMYYYY } from "../../../utils/dateFormat";
 import { getAttachmentUrl } from "../../../utils/attachment";
@@ -92,6 +93,13 @@ const BACKUP_RESTORE_NAV_ITEM = {
   group: "system-admin",
   groupLabel: "System Administration",
 };
+const UNIVERSITY_CONTROLS_NAV_ITEM = {
+  id: "university-controls",
+  title: "University Controls",
+  caption: "Edit name, domain & logos",
+  group: "system-admin",
+  groupLabel: "System Administration",
+};
 const REVIEW_ROUTE_VIEW_IDS = new Set([
   ...REVIEW_NAV_ITEMS.map((item) => item.id),
   AUDITOR_FINAL_REVIEW_NAV_ITEM.id,
@@ -99,6 +107,7 @@ const REVIEW_ROUTE_VIEW_IDS = new Set([
   USER_MANAGEMENT_NAV_ITEM.id,
   APPRAISAL_FORM_STUDIO_NAV_ITEM.id,
   BACKUP_RESTORE_NAV_ITEM.id,
+  UNIVERSITY_CONTROLS_NAV_ITEM.id,
 ]);
 
 const routeViewFor = (value, fallback) => {
@@ -2073,7 +2082,7 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
   const isAuditor = dashboardKind === "auditor" || isAuditorRole(role);
   const isIqacDashboard = role === "iqac" && !isAuditor;
   const initialAuditorCategory = sessionStorage.getItem("category") || auditCategoryFromRole(role) || "academic";
-  const defaultActiveView = isAuditor ? initialAuditorCategory : "overview";
+  const defaultActiveView = isAuditor ? initialAuditorCategory : role === "vice-chancellor" ? "previous-reports" : "overview";
   const routeActiveView = routeViewFor(searchParams.get("view"), defaultActiveView);
   const routeSubmissionId = searchParams.get("submission") || "";
   const activeView = routeActiveView;
@@ -2108,26 +2117,26 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [universityInfo, setUniversityInfo] = useState(null);
 
-  useEffect(() => {
-    let isActive = true;
+  const refreshBranding = useCallback(async () => {
     const universityCode = sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || "";
-    if (universityCode) {
-      fetchUniversityBranding(universityCode)
-        .then((data) => {
-          if (isActive && data) {
-            setUniversityInfo(data);
-            if (data.logoUrl) sessionStorage.setItem("universityLogo", data.logoUrl);
-            if (data.iqacLogoUrl) sessionStorage.setItem("iqacLogo", data.iqacLogoUrl);
-            if (data.universityName) sessionStorage.setItem("universityName", data.universityName);
-            if (data.address) sessionStorage.setItem("universityAddress", data.address);
-          }
-        })
-        .catch(() => {});
+    if (!universityCode) return;
+    try {
+      const data = await fetchUniversityBranding(universityCode);
+      if (data) {
+        setUniversityInfo(data);
+        if (data.logoUrl) sessionStorage.setItem("universityLogo", data.logoUrl);
+        if (data.iqacLogoUrl) sessionStorage.setItem("iqacLogo", data.iqacLogoUrl);
+        if (data.universityName) sessionStorage.setItem("universityName", data.universityName);
+        if (data.address) sessionStorage.setItem("universityAddress", data.address);
+      }
+    } catch {
+      // non-blocking branding fetch
     }
-    return () => {
-      isActive = false;
-    };
   }, []);
+
+  useEffect(() => {
+    refreshBranding();
+  }, [refreshBranding]);
 
   const resolvedUniversityLogo = getAttachmentUrl(universityInfo?.logoUrl || sessionStorage.getItem("universityLogo")) || "";
   const resolvedIqacLogo = getAttachmentUrl(universityInfo?.iqacLogoUrl || sessionStorage.getItem("iqacLogo")) || "";
@@ -2275,29 +2284,31 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
       return auditItems;
     }
 
+    if (role === "vice-chancellor") return [];
+
     if (isIqacDashboard) {
       return REVIEW_NAV_ITEMS.filter((item) => item.id !== "advanced-overview");
     }
 
     return REVIEW_NAV_ITEMS;
-  }, [isAuditor, isIqacDashboard, profile.category]);
+  }, [isAuditor, isIqacDashboard, profile.category, role]);
   const pinnedNavigationItems = useMemo(() => {
     if (isAuditor || !canManageUsers) return [];
     return [USER_MANAGEMENT_NAV_ITEM];
   }, [canManageUsers, isAuditor]);
   const standaloneNavigationItems = useMemo(() => {
     if (isAuditor) return [];
+    if (role === "vice-chancellor") return [PREVIOUS_REPORTS_NAV_ITEM];
     const items = [];
-    if (["iqac", "vice-chancellor"].includes(role)) {
-      items.push(AUDITOR_FINAL_REVIEW_NAV_ITEM, PREVIOUS_REPORTS_NAV_ITEM, START_NEXT_YEAR_NAV_ITEM);
-    }
     if (role === "iqac") {
+      items.push(AUDITOR_FINAL_REVIEW_NAV_ITEM, PREVIOUS_REPORTS_NAV_ITEM, START_NEXT_YEAR_NAV_ITEM);
       items.push(APPRAISAL_FORM_STUDIO_NAV_ITEM);
       items.push(BACKUP_RESTORE_NAV_ITEM);
+      items.push(UNIVERSITY_CONTROLS_NAV_ITEM);
     }
     return items;
   }, [isAuditor, role]);
-  const visibleActiveView = !canManageUsers && activeView === "user-management" ? "overview" : activeView;
+  const visibleActiveView = !canManageUsers && activeView === "user-management" ? defaultActiveView : activeView;
   const auditorReviewedSubmissions = useMemo(
     () => allSubmissions.filter((submission) => isAuditorCompleted(submission) && !isApprovedReport(submission)),
     [allSubmissions],
@@ -3452,6 +3463,8 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
             <AppraisalFormStudio currentUser={profile} />
           ) : visibleActiveView === "backup-restore" ? (
             <BackupRestorePanel />
+          ) : visibleActiveView === "university-controls" ? (
+            <UniversityControlsPanel onSaved={refreshBranding} />
           ) : null}
 
           {error && <div className="review-error-notice" style={styles.errorNotice}>{error}</div>}

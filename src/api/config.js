@@ -44,6 +44,11 @@ export const fetchUniversityBranding = async (universityCode = null) => {
   }
 };
 
+export const updateUniversityBranding = async (payload) => {
+  const response = await api.put('/api/config/branding', payload);
+  return response.data;
+};
+
 export const fetchUniversitiesDirectory = async () => {
   try {
     const response = await api.get('/api/config/universities');

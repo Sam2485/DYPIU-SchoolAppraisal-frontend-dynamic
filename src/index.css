@@ -880,6 +880,7 @@ textarea:disabled {
   .audit-form__header > div:nth-child(2) .btn { flex: 1; width: auto; }
   .audit-section-card { padding: 18px !important; border-radius: 13px !important; }
   .audit-field-grid { grid-template-columns: 1fr !important; }
+  .university-controls-grid { grid-template-columns: 1fr !important; }
   .user-management-heading { flex-direction: column; }
   .user-management-heading .btn { width: 100%; }
   .user-management-category-grid,
