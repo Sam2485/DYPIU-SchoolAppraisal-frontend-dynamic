@@ -414,8 +414,8 @@ textarea:disabled {
   cursor: pointer;
   transition: background .15s ease, border-color .15s ease, opacity .15s ease;
 }
-.audit-table-add-row { border: 1px solid #10b981; color: #fff; background: #10b981; }
-.audit-table-add-row:hover { border-color: #059669; background: #059669; }
+.audit-table-add-row { border: 1px solid #2563eb; color: #fff; background: #2563eb; }
+.audit-table-add-row:hover { border-color: #1d4ed8; background: #1d4ed8; }
 .audit-table-delete-row { border: 1px solid #fecaca; color: #b91c1c; background: #fff; }
 .audit-table-delete-row:hover:not(:disabled) { border-color: #fca5a5; background: #fef2f2; }
 .audit-table-delete-row:disabled { opacity: .45; cursor: not-allowed; }
