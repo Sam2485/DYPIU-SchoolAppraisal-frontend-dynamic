@@ -415,7 +415,7 @@ export default function AdministrativeAuditDashboard() {
   const contributionLocked = contributionApproved || (!backendAllowsContributionEdit && isSubmitted);
   const readOnly = isHistoricalYear || !canEditActiveModule || backendBlocksContributionEdit || contributionLocked;
   const isFinalOwnedModule = Boolean(canEditActiveModule && activeModule?.id && activeModule.id === finalOwnedModule?.id);
-  const canWorkOnOwnedModule = Boolean(canEditActiveModule && !backendBlocksContributionEdit && !contributionLocked);
+  const canWorkOnOwnedModule = Boolean(canEditActiveModule && !isHistoricalYear && !backendBlocksContributionEdit && !contributionLocked);
   const canSubmitPart = isSubmissionConfirmed(submissionConfirmation);
   const currentStatusRole = statusRoleForPost(userPost);
 
