@@ -4,6 +4,7 @@ import { FormBuilderCanvas } from './FormBuilderCanvas';
 import { LiveFormPreview } from './LiveFormPreview';
 import { SchoolManager } from './SchoolManager';
 import { PostManager } from './PostManager';
+import { GraduationCapIcon, BuildingIcon } from './StudioIcons';
 import apiClient from '../../../api/client';
 
 export default function AppraisalFormStudio({ currentUser }) {
@@ -122,7 +123,7 @@ export default function AppraisalFormStudio({ currentUser }) {
                 }}
                 onClick={() => setFormType('academic')}
               >
-                <span>🏫</span>
+                <GraduationCapIcon size={16} />
                 <span>A) Academic Flow</span>
               </button>
 
@@ -145,7 +146,7 @@ export default function AppraisalFormStudio({ currentUser }) {
                 }}
                 onClick={() => setFormType('administrative')}
               >
-                <span>🏢</span>
+                <BuildingIcon size={16} />
                 <span>B) Administrative Flow</span>
               </button>
             </div>

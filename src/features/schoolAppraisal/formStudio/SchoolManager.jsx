@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { SchoolHouseIcon, IconBadge, EmptyState, ErrorState } from './StudioIcons';
 import {
   getUniversitySchools,
   createUniversitySchool,
@@ -96,14 +97,17 @@ export const SchoolManager = ({ selectedUniversity }) => {
   };
 
   return (
-    <div className="school-manager-container">
-      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-        <div>
-          <h2 className="fw-bold text-dark mb-1" style={{ fontSize: '22px' }}> University Schools & Departments</h2>
-          <p className="text-muted mb-0" style={{ fontSize: '13.5px' }}>
-            Configure academic schools, faculties, and departments for{' '}
-            <strong className="text-primary">{selectedUniversity?.name || 'Your University'}</strong>.
-          </p>
+    <div className="school-manager-container" style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '24px' }}>
+      <div className="d-flex justify-content-between align-items-flex-start mb-4 flex-wrap gap-3">
+        <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+          <IconBadge tone="emerald" icon={<SchoolHouseIcon />} />
+          <div>
+            <h2 className="fw-bold text-dark mb-1" style={{ fontSize: '20px' }}>University Schools & Departments</h2>
+            <p className="text-muted mb-0" style={{ fontSize: '13px' }}>
+              Configure academic schools, faculties, and departments for{' '}
+              <strong className="text-primary">{selectedUniversity?.name || 'Your University'}</strong>.
+            </p>
+          </div>
         </div>
         <button
           type="button"
@@ -121,9 +125,16 @@ export const SchoolManager = ({ selectedUniversity }) => {
           <p className="text-muted mt-2">Loading configured schools...</p>
         </div>
       ) : error ? (
-        <div className="alert alert-danger p-3 rounded">{error}</div>
-      ) : schools.length === 0 ? null : (
-        <div className="card shadow-sm" style={{ borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', overflow: 'hidden' }}>
+        <ErrorState title="Unable to load schools right now" message={error} onRetry={loadSchools} />
+      ) : schools.length === 0 ? (
+        <EmptyState
+          tone="emerald"
+          icon={<SchoolHouseIcon size={30} />}
+          title="No schools or departments added yet"
+          description={`Click on "Add New School / Department" to configure academic units for ${selectedUniversity?.name || 'this university'}.`}
+        />
+      ) : (
+        <div className="card" style={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: 'none', background: '#fff', overflow: 'hidden' }}>
           <div style={{ padding: '14px 18px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontWeight: 700, color: '#0f172a' }}>Configured Schools ({schools.length})</span>
           </div>
