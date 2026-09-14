@@ -89,9 +89,9 @@ export default function AppraisalFormStudio({ currentUser }) {
     <div className="appraisal-form-studio-root" style={{ minHeight: '100%', background: '#f8fafc' }}>
       {/* Top Banner & Main Form Type Selector (Academic vs Administrative) */}
       {viewMode === 'list' && (
-        <div style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+        <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', boxShadow: 'none', marginBottom: '20px' }}>
           {/* Header & University Info */}
-          <div style={{ padding: '16px 24px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ padding: '18px 22px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
             <div>
               <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#2563eb' }}>
                 IQAC Appraisal Form Studio
@@ -170,7 +170,7 @@ export default function AppraisalFormStudio({ currentUser }) {
                   }}
                   onClick={() => setAcademicNav('schemas')}
                 >
-                  📋 Form Schemas & Versions (Academic)
+                   Form Schemas & Versions (Academic)
                 </button>
                 <button
                   type="button"
@@ -187,7 +187,7 @@ export default function AppraisalFormStudio({ currentUser }) {
                   }}
                   onClick={() => setAcademicNav('schools')}
                 >
-                  🏫 University Schools & Departments
+                   University Schools & Departments
                 </button>
               </>
             ) : (
@@ -207,7 +207,7 @@ export default function AppraisalFormStudio({ currentUser }) {
                   }}
                   onClick={() => setAdminNav('single-form')}
                 >
-                  📋 Single Administrative Form
+                   Single Administrative Form
                 </button>
                 <button
                   type="button"
@@ -224,7 +224,7 @@ export default function AppraisalFormStudio({ currentUser }) {
                   }}
                   onClick={() => setAdminNav('posts')}
                 >
-                  👔 Administrative Posts & Offices
+                   Administrative Posts & Offices
                 </button>
               </>
             )}

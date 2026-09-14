@@ -96,10 +96,10 @@ export const SchoolManager = ({ selectedUniversity }) => {
   };
 
   return (
-    <div className="school-manager-container p-4">
+    <div className="school-manager-container">
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
         <div>
-          <h2 className="fw-bold text-dark mb-1" style={{ fontSize: '22px' }}>🏫 University Schools & Departments</h2>
+          <h2 className="fw-bold text-dark mb-1" style={{ fontSize: '22px' }}> University Schools & Departments</h2>
           <p className="text-muted mb-0" style={{ fontSize: '13.5px' }}>
             Configure academic schools, faculties, and departments for{' '}
             <strong className="text-primary">{selectedUniversity?.name || 'Your University'}</strong>.
