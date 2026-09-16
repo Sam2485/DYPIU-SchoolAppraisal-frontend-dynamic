@@ -7359,15 +7359,15 @@ function SubmittedFormViewer({
                 const editContext = {
                   section: activeSection,
                   sectionKey: getSectionKey(activeSection),
-                  role: profile?.auditorType || fallbackAuditorType || (String(profile?.role || "").toLowerCase().includes("ext") ? "external" : "internal"),
-                  auditorType: profile?.auditorType || fallbackAuditorType,
+                  role: isExternalCycle ? "external" : "internal",
+                  auditorType: isExternalCycle ? "external" : "internal",
                 };
 
                 const readContext = {
                   section: activeSection,
                   sectionKey: getSectionKey(activeSection),
-                  role: isAuditorSection(activeSection, submission.auditType) ? (profile?.auditorType || fallbackAuditorType || "internal") : "director",
-                  auditorType: isAuditorSection(activeSection, submission.auditType) ? (profile?.auditorType || fallbackAuditorType) : undefined,
+                  role: isAuditorSection(activeSection, auditType) ? (isExternalCycle ? "external" : "internal") : "director",
+                  auditorType: isAuditorSection(activeSection, auditType) ? (isExternalCycle ? "external" : "internal") : undefined,
                 };
 
                 if (editableSection) {
@@ -8972,9 +8972,6 @@ const styles = {
     display: "grid",
     placeItems: "center",
     flexShrink: 0,
-    border: "1px solid #e7edf5",
-    borderRadius: 14,
-    background: "#f8fafc",
   },
   logo: {
     width: 62,

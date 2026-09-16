@@ -893,9 +893,6 @@ const styles = {
     display: "grid",
     placeItems: "center",
     flexShrink: 0,
-    border: "1px solid #e7edf5",
-    borderRadius: 14,
-    background: "#f8fafc",
   },
   logo: {
     width: 62,
