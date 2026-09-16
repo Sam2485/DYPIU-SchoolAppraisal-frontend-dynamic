@@ -741,6 +741,23 @@ const getAuditorSectionTableKeys = (sections = [], auditType) => {
   return keys;
 };
 
+const getAuditorSectionButtonIds = (sections = [], auditType = "academic") => {
+  const ids = new Set();
+  (sections || []).forEach((sec) => {
+    if (isAuditorSection(sec, auditType)) {
+      (sec.tableButtons || []).forEach((b) => {
+        if (b.id) ids.add(String(b.id));
+      });
+      (sec.blocks || []).forEach((block) => {
+        (block.tableButtons || []).forEach((b) => {
+          if (b.id) ids.add(String(b.id));
+        });
+      });
+    }
+  });
+  return ids;
+};
+
 const clearAuditorSectionTables = (tables = {}, sections = [], auditType = "academic") => {
   const next = { ...(tables || {}) };
   const keysToClear = getAuditorSectionTableKeys(sections, auditType);
@@ -749,7 +766,22 @@ const clearAuditorSectionTables = (tables = {}, sections = [], auditType = "acad
 
   Object.keys(next).forEach((k) => {
     const norm = normalizeKey(k);
-    if (keysToClear.has(k) || normalizedTargets.has(norm) || norm.includes("auditor")) {
+    const baseKey = k.includes('__') ? k.split('__')[0] : k;
+    const baseNorm = normalizeKey(baseKey);
+    const isAuditorTable =
+      keysToClear.has(k) ||
+      keysToClear.has(baseKey) ||
+      normalizedTargets.has(norm) ||
+      normalizedTargets.has(baseNorm) ||
+      norm.includes("auditor") ||
+      baseNorm.includes("auditor") ||
+      Array.from(normalizedTargets).some((target) => {
+        const tNoTable = target.replace(/^table_?/, "");
+        const bNoTable = baseNorm.replace(/^table_?/, "");
+        return baseNorm === target || (tNoTable && bNoTable && tNoTable === bNoTable);
+      });
+
+    if (isAuditorTable) {
       delete next[k];
     }
   });
@@ -759,18 +791,24 @@ const clearAuditorSectionTables = (tables = {}, sections = [], auditType = "acad
 const clearAuditorSectionValues = (values = {}, sections = [], auditType = "academic") => {
   const next = { ...(values || {}) };
   const keysToClear = getAuditorSectionFieldKeys(sections, auditType);
+  const buttonIdsToClear = getAuditorSectionButtonIds(sections, auditType);
   const normalizeKey = (k) => String(k || "").toLowerCase().replace(/[^a-z0-9]/g, "");
   const normalizedTargets = new Set(Array.from(keysToClear).map(normalizeKey).filter(Boolean));
 
   Object.keys(next).forEach((k) => {
     const norm = normalizeKey(k);
+    const isAuditorButtonKey =
+      Array.from(buttonIdsToClear).some((btnId) => k.includes(`__tb_${btnId}_`)) ||
+      (buttonIdsToClear.size > 0 && k.startsWith("__tb_"));
     if (
       keysToClear.has(k) ||
       normalizedTargets.has(norm) ||
+      isAuditorButtonKey ||
       norm.includes("auditobservation") ||
       norm.includes("auditrecommendation") ||
       norm.includes("reviewremark") ||
-      norm.includes("auditorobservation")
+      norm.includes("auditorobservation") ||
+      k.startsWith("__auditSignOff")
     ) {
       delete next[k];
     }
@@ -778,6 +816,11 @@ const clearAuditorSectionValues = (values = {}, sections = [], auditType = "acad
 
   keysToClear.forEach((k) => {
     next[k] = "";
+  });
+
+  buttonIdsToClear.forEach((btnId) => {
+    delete next[`__tb_${btnId}_instances`];
+    delete next[`__tb_${btnId}_selected`];
   });
 
   next.auditObservations = "";
@@ -5934,16 +5977,21 @@ function FullFormReview({
     !auditorReviewReadOnly &&
     hasAcademicPartEValues(previousInternalReport?.values) &&
     academicPartEValuesMatch(submission?.values, previousInternalReport?.values);
+  const hasAuditorValuesOrButtons = (vals) =>
+    hasAcademicPartEValues(vals) ||
+    Object.keys(vals || {}).some((k) => k.startsWith("__tb_") && Array.isArray(vals[k]) && vals[k].length > 0);
+
   const currentUserAssignments = auditorAssignmentsForCurrentUser(submission, currentProfile);
   const isAdministrative = submission.auditType === "administrative";
   let currentAssignmentValues = null;
   let currentAssignmentAttachments = [];
   if (isAdministrative) {
     const activeAssignment = currentUserAssignments.find(
-      (assignment) => hasAcademicPartEValues(safeObjectValue(assignment.values))
+      (assignment) => hasAuditorValuesOrButtons(safeObjectValue(assignment.values || (assignment.valuesData ? safeJsonParse(assignment.valuesData, {}) : null)))
     ) || currentUserAssignments[0];
-    if (activeAssignment && hasAcademicPartEValues(safeObjectValue(activeAssignment.values))) {
-      currentAssignmentValues = safeObjectValue(activeAssignment.values);
+    const parsedValues = safeObjectValue(activeAssignment?.values || (activeAssignment?.valuesData ? safeJsonParse(activeAssignment?.valuesData, {}) : null));
+    if (activeAssignment && hasAuditorValuesOrButtons(parsedValues)) {
+      currentAssignmentValues = parsedValues;
       currentAssignmentAttachments = arrayValue(activeAssignment.attachments);
     } else {
       currentAssignmentValues = null;
@@ -5951,12 +5999,12 @@ function FullFormReview({
     }
   } else {
     currentAssignmentValues = currentUserAssignments
-      .map((assignment) => safeObjectValue(assignment.values))
-      .find(hasAcademicPartEValues) || null;
+      .map((assignment) => safeObjectValue(assignment.values || (assignment.valuesData ? safeJsonParse(assignment.valuesData, {}) : null)))
+      .find(hasAuditorValuesOrButtons) || null;
     currentAssignmentAttachments = uniqueAttachments(
       currentUserAssignments.flatMap((assignment) => [
         ...arrayValue(assignment.attachments).filter(isAttachmentValue),
-        ...valueList(safeObjectValue(assignment.values).auditDocumentation).filter(isAttachmentValue),
+        ...valueList(safeObjectValue(assignment.values || (assignment.valuesData ? safeJsonParse(assignment.valuesData, {}) : null)).auditDocumentation).filter(isAttachmentValue),
       ])
     );
   }
@@ -6004,7 +6052,12 @@ function FullFormReview({
   }, [sections, submission.auditType]);
 
   const currentAssignmentTables = currentUserAssignments
-    .map((assignment) => safeObjectValue(assignment.tables || assignment.tablesData))
+    .map((assignment) => safeObjectValue(
+      assignment.tables ||
+      (assignment.tablesData ? safeJsonParse(assignment.tablesData, {}) : null) ||
+      (assignment.reviewTablesData ? safeJsonParse(assignment.reviewTablesData, {}) : null) ||
+      assignment.reviewTables
+    ))
     .find((tables) => Object.keys(tables).length > 0);
 
   const baseTables = clearAuditorSectionTables(submission.tables || {}, sections, submission.auditType);
@@ -6013,7 +6066,15 @@ function FullFormReview({
       delete baseTables[key];
     });
     Object.keys(baseTables).forEach((k) => {
-      if (Array.from(auditorTableKeys).some((ak) => String(ak).toLowerCase().trim() === String(k).toLowerCase().trim())) {
+      const baseK = k.includes('__') ? k.split('__')[0] : k;
+      if (
+        Array.from(auditorTableKeys).some((ak) => {
+          const akLower = String(ak).toLowerCase().trim();
+          const kLower = String(k).toLowerCase().trim();
+          const baseKLower = String(baseK).toLowerCase().trim();
+          return akLower === kLower || akLower === baseKLower || akLower.replace(/^table_?/, '') === baseKLower.replace(/^table_?/, '');
+        })
+      ) {
         delete baseTables[k];
       }
     });
@@ -6075,6 +6136,7 @@ function FullFormReview({
     if (canEditAuditorSection) {
       effectiveValues = { ...draftValues };
       const auditorKeys = getAuditorSectionFieldKeys(sections, submission.auditType);
+      const auditorButtonIds = getAuditorSectionButtonIds(sections, submission.auditType);
       const normalizeKey = (k) => String(k || "").toLowerCase().replace(/[^a-z0-9]/g, "");
       const normalizedAuditorKeys = new Set(Array.from(auditorKeys).map(normalizeKey).filter(Boolean));
 
@@ -6083,19 +6145,23 @@ function FullFormReview({
         const isAuditorField =
           auditorKeys.has(k) ||
           normalizedAuditorKeys.has(norm) ||
+          Array.from(auditorButtonIds).some((btnId) => k.includes(`__tb_${btnId}_`)) ||
+          (auditorButtonIds.size > 0 && k.startsWith("__tb_")) ||
           norm.includes("auditobservation") ||
           norm.includes("auditrecommendation") ||
           norm.includes("reviewremark") ||
-          norm.includes("auditorobservation");
+          norm.includes("auditorobservation") ||
+          k.startsWith("__auditSignOff");
         if (!isAuditorField && effectiveValues[k] === undefined) {
           effectiveValues[k] = val;
         }
       });
 
-      effectiveTables = { ...(submission.tables || {}), ...(draftTables || {}) };
-      auditorTableKeys.forEach((k) => {
-        effectiveTables[k] = draftTables[k] || [];
-      });
+      const nonAuditorTables = clearAuditorSectionTables(submission.tables || {}, sections, submission.auditType);
+      effectiveTables = {
+        ...nonAuditorTables,
+        ...(draftTables || {}),
+      };
     }
 
     return {
@@ -7546,7 +7612,7 @@ function ReadOnlyFieldGrid({ fields, values }) {
   );
 }
 
-function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType, tables = [], allFormDataTables = {}, tableButtons = [] }) {
+function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType, tables = [], tableButtons = [] }) {
   const visibleFields = (fields || []).filter((field) => field.kind !== "heading");
   const headerFields = visibleFields.filter((f) => !isReviewRemarkField(f));
   const reviewRemarkFields = visibleFields.filter((f) => isReviewRemarkField(f));
@@ -7604,27 +7670,11 @@ function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType,
                 rows = assignmentTables[tableWithKey.scopedKey] || assignmentTables[tableKey];
               }
             }
-            if (!rows || rows.length === 0) {
-              rows = getScopedTableRows(allFormDataTables, tableWithKey, activeInstance);
-            }
-            if (!rows || rows.length === 0) {
-              if (allFormDataTables && (allFormDataTables[tableWithKey.scopedKey] || allFormDataTables[tableKey])) {
-                rows = allFormDataTables[tableWithKey.scopedKey] || allFormDataTables[tableKey];
-              }
-            }
           } else {
             rows = getTableRows(assignmentTables, tableWithKey);
             if (!rows || rows.length === 0) {
               if (assignmentTables && (assignmentTables[tableWithKey.id] || assignmentTables[tableKey])) {
                 rows = assignmentTables[tableWithKey.id] || assignmentTables[tableKey];
-              }
-            }
-            if (!rows || rows.length === 0) {
-              rows = getTableRows(allFormDataTables, tableWithKey);
-            }
-            if (!rows || rows.length === 0) {
-              if (allFormDataTables && (allFormDataTables[tableWithKey.id] || allFormDataTables[tableKey])) {
-                rows = allFormDataTables[tableWithKey.id] || allFormDataTables[tableKey];
               }
             }
           }
@@ -7687,7 +7737,7 @@ function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType,
                     button={button}
                     tables={assignedTables}
                     valuesData={values}
-                    tablesData={assignmentTables && Object.keys(assignmentTables).length > 0 ? assignmentTables : allFormDataTables}
+                    tablesData={assignmentTables || {}}
                     onValueChange={null}
                     onTableChange={null}
                     renderTable={(scopedTable, scopedKey, activeInstance) =>

@@ -769,7 +769,7 @@ const isReviewRemarkField = (f) => {
   return false;
 };
 
-function AuditorCard({ assignment, index, fieldDefinitions, tableDefinitions, fallbackAuditorType, allFormDataTables = {}, tableButtons = [] }) {
+function AuditorCard({ assignment, index, fieldDefinitions, tableDefinitions, fallbackAuditorType, tableButtons = [] }) {
   const values = safeObjectValue(assignment.values || assignmentPartEValues(assignment));
   const assignmentTables = safeObjectValue(
     assignment.tables ||
@@ -804,20 +804,10 @@ function AuditorCard({ assignment, index, fieldDefinitions, tableDefinitions, fa
           rows = assignmentTables[tableWithKey.scopedKey] || assignmentTables[tableKey];
         }
       }
-      if (!rows || rows.length === 0) {
-        rows = getScopedTableRows(allFormDataTables, tableWithKey, activeInstance);
-      }
-      if (!rows || rows.length === 0) {
-        if (allFormDataTables && (allFormDataTables[tableWithKey.scopedKey] || allFormDataTables[tableKey])) {
-          rows = allFormDataTables[tableWithKey.scopedKey] || allFormDataTables[tableKey];
-        }
-      }
     } else {
       rows =
         (assignmentTables && (assignmentTables[table.id] || assignmentTables[tableKey])) ||
         getTableRows(assignmentTables, tableWithKey) ||
-        (allFormDataTables && (allFormDataTables[table.id] || allFormDataTables[tableKey])) ||
-        getTableRows(allFormDataTables, tableWithKey) ||
         [];
     }
 
@@ -852,14 +842,19 @@ function AuditorCard({ assignment, index, fieldDefinitions, tableDefinitions, fa
 
       {headerFields.length > 0 && (
         <div className="review-auditor-review-fields" style={styles.auditorReviewFieldGrid}>
-          {headerFields.map((field) => (
-            <div key={field.id} style={field.type === "file" ? styles.auditorReviewDocsField : styles.auditorReviewField}>
-              <div style={styles.readOnlyLabel}>{field.label}</div>
-              <div style={field.type === "file" ? styles.auditorReviewDocsValue : styles.auditorReviewValue}>
-                <ReadOnlyPartEValue value={resolveFieldValue(field, values)} />
+          {headerFields.map((field) => {
+            const rawType = String(field.fieldType || field.type || "text").trim().toLowerCase();
+            const isFile = rawType === "file" || rawType === "attachment" || rawType === "document";
+            const val = resolveFieldValue(field, values);
+            return (
+              <div key={field.id} style={isFile ? styles.auditorReviewDocsField : styles.auditorReviewField}>
+                <div style={styles.readOnlyLabel}>{field.label}</div>
+                <div style={isFile ? styles.auditorReviewDocsValue : styles.auditorReviewValue}>
+                  <ReadOnlyPartEValue value={val} />
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -875,7 +870,7 @@ function AuditorCard({ assignment, index, fieldDefinitions, tableDefinitions, fa
               button={button}
               tables={assignedTables}
               valuesData={values}
-              tablesData={assignmentTables && Object.keys(assignmentTables).length > 0 ? assignmentTables : allFormDataTables}
+              tablesData={assignmentTables || {}}
               onValueChange={null}
               onTableChange={null}
               renderTable={(scopedTable, scopedKey, activeInstance) =>
