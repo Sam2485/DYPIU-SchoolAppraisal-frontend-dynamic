@@ -7370,7 +7370,9 @@ function SubmittedFormViewer({
                 const readContext = {
                   section: activeSection,
                   sectionKey: getSectionKey(activeSection),
-                  role: isAuditorSection(activeSection, auditType) ? (isExternalCycle ? "external" : "internal") : "director",
+                  role: isAuditorSection(activeSection, auditType)
+                    ? (isExternalCycle ? "external" : "internal")
+                    : (auditType === "administrative" ? "administrative" : "director"),
                   auditorType: isAuditorSection(activeSection, auditType) ? (isExternalCycle ? "external" : "internal") : undefined,
                 };
 
