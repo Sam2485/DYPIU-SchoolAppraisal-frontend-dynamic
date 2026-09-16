@@ -450,15 +450,16 @@ function approverLabel(role = "") {
 }
 
 function SignerDetails({ signer = {}, pendingText }) {
-  if (!signer.name) return <div style={styles.pendingApproval}>{pendingText}</div>;
+  const s = signer || {};
+  if (!s.name) return <div style={styles.pendingApproval}>{pendingText}</div>;
 
   return (
     <>
-      <div style={styles.signatureRow}><span>Name</span><strong>{signer.name}</strong></div>
-      <div style={styles.signatureRow}><span>Designation</span><strong>{signer.designation || "-"}</strong></div>
-      {signer.role && <div style={styles.signatureRow}><span>Role</span><strong>{signer.role}</strong></div>}
-      {signer.email && <div style={styles.signatureRow}><span>Email</span><strong>{signer.email}</strong></div>}
-      <div style={styles.signatureRow}><span>Date</span><strong>{formatSignOffDate(signer.date)}</strong></div>
+      <div style={styles.signatureRow}><span>Name</span><strong>{s.name}</strong></div>
+      <div style={styles.signatureRow}><span>Designation</span><strong>{s.designation || "-"}</strong></div>
+      {s.role && <div style={styles.signatureRow}><span>Role</span><strong>{s.role}</strong></div>}
+      {s.email && <div style={styles.signatureRow}><span>Email</span><strong>{s.email}</strong></div>}
+      <div style={styles.signatureRow}><span>Date</span><strong>{formatSignOffDate(s.date)}</strong></div>
     </>
   );
 }
@@ -472,9 +473,10 @@ function CertificationSignOff({
   const submittedBy = signOff?.submittedBy || {};
   const storedAuditor = signOff?.auditedBy || signOff?.auditorBy || {};
   const approvedBy = signOff?.approvedBy || {};
-  const activeAuditor = currentAuditor.name ? currentAuditor : storedAuditor;
+  const safeCurrentAuditor = currentAuditor || {};
+  const activeAuditor = safeCurrentAuditor.name ? safeCurrentAuditor : storedAuditor;
   const isExternalReport = String(reportCategory).toLowerCase() === "external";
-  const internalAuditor = isExternalReport ? previousInternalAuditor : activeAuditor;
+  const internalAuditor = isExternalReport ? (previousInternalAuditor || {}) : activeAuditor;
 
   return (
     <section className="generated-report__signatures" style={styles.signatureWrap}>
