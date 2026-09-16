@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getVersionTree } from './formStudioApi';
 import { TableButtonGroup } from '../components/TableButtonGroup';
-import { partitionTablesByButtons } from '../utils/tableButtonHelpers';
+import { partitionTablesByButtons, getSectionKey } from '../utils/tableButtonHelpers';
 
 const isReviewRemarkField = (f) => {
   if (!f) return false;
@@ -1338,6 +1338,8 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                         renderLivePreviewTable(scopedTable, scopedKey)
                       }
                       readOnly={isSectionLockedInCurrentRole}
+                      section={currentSection}
+                      sectionKey={getSectionKey(currentSection)}
                     />
                   ))}
                 </div>

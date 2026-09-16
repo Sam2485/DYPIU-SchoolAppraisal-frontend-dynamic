@@ -2,7 +2,7 @@ import React from 'react';
 import { DynamicField } from './DynamicField';
 import { DynamicTable } from './DynamicTable';
 import { TableButtonGroup } from '../components/TableButtonGroup';
-import { partitionTablesByButtons } from '../utils/tableButtonHelpers';
+import { partitionTablesByButtons, getSectionKey } from '../utils/tableButtonHelpers';
 
 export const DynamicSection = ({
   section,
@@ -159,6 +159,9 @@ export const DynamicSection = ({
                   />
                 )}
                 readOnly={effectiveReadOnly}
+                section={section}
+                sectionKey={getSectionKey(section)}
+                role="director"
               />
             ))}
           </div>

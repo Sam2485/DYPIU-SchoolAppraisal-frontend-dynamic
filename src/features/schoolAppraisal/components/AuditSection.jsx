@@ -2,7 +2,7 @@
 import { useMemo } from "react";
 import AuditTable from "./AuditTable";
 import { TableButtonGroup } from "./TableButtonGroup";
-import { partitionTablesByButtons, buildScopedTableKey, getScopedTableRows, normalizeTableButtons } from "../utils/tableButtonHelpers";
+import { partitionTablesByButtons, buildScopedTableKey, getScopedTableRows, normalizeTableButtons, getSectionKey } from "../utils/tableButtonHelpers";
 import DateInput from "./DateInput";
 import { columnsWithSerial, serialColumnFor, numberedRowFor, withSerialNumbers, emptyRowFor } from "./tableHelpers";
 import { getAttachmentUrl } from "../../../utils/attachment";
@@ -645,17 +645,24 @@ function FieldGrid({ fields, values, onFieldChange, readOnly = false, onUploadAt
   );
 }
 
-function TableList({ tableDefinitions, tableValues, values, tableButtons, onFieldChange, onTableChange, onAddRow, onDeleteLastRow, onUploadAttachment, onDeleteAttachment, readOnly = false }) {
+function TableList({ tableDefinitions, tableValues, values, tableButtons, onFieldChange, onTableChange, onAddRow, onDeleteLastRow, onUploadAttachment, onDeleteAttachment, readOnly = false, section }) {
   const { unassignedTables, buttonGroups } = partitionTablesByButtons(tableDefinitions, tableButtons);
+  const context = {
+    section,
+    sectionKey: getSectionKey(section),
+    role: "director",
+  };
 
   const renderSingleAuditTable = (table, overrideKey, activeInstance) => {
     const tableKey = overrideKey || table.scopedKey || table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
     const tableWithKey = {
       ...table,
-      scopedKey: overrideKey || table.scopedKey || (activeInstance ? buildScopedTableKey(table.tableKey || table.idString || table.id, activeInstance) : undefined),
+      scopedKey: overrideKey || table.scopedKey || (activeInstance ? buildScopedTableKey(table.tableKey || table.idString || table.id, activeInstance, context) : undefined),
     };
     const isScoped = Boolean(tableWithKey.scopedKey);
-    const rows = tableValues[tableKey] || (!isScoped ? ((table.id != null ? tableValues[table.id] : []) || (table.tableKey ? tableValues[table.tableKey] : [])) : []) || [];
+    const rows = activeInstance
+      ? (getScopedTableRows(tableValues, tableWithKey, activeInstance, context) || [])
+      : (tableValues[tableKey] || (!isScoped ? ((table.id != null ? tableValues[table.id] : []) || (table.tableKey ? tableValues[table.tableKey] : [])) : []) || []);
     return (
       <AuditTable
         key={table.id ? `${table.id}_${tableKey}` : tableKey}
@@ -694,6 +701,9 @@ function TableList({ tableDefinitions, tableValues, values, tableButtons, onFiel
           }}
           renderTable={(scopedTable, scopedKey, activeInstance) => renderSingleAuditTable(scopedTable, scopedKey, activeInstance)}
           readOnly={readOnly}
+          section={section}
+          sectionKey={getSectionKey(section)}
+          role="director"
         />
       ))}
     </div>
@@ -769,7 +779,7 @@ const isReviewRemarkField = (f) => {
   return false;
 };
 
-function AuditorCard({ assignment, index, fieldDefinitions, tableDefinitions, fallbackAuditorType, tableButtons = [] }) {
+function AuditorCard({ assignment, index, fieldDefinitions, tableDefinitions, fallbackAuditorType, tableButtons = [], section }) {
   const values = safeObjectValue(assignment.values || assignmentPartEValues(assignment));
   const assignmentTables = safeObjectValue(
     assignment.tables ||
@@ -785,6 +795,13 @@ function AuditorCard({ assignment, index, fieldDefinitions, tableDefinitions, fa
     (reviewRemarkField ? resolveFieldValue(reviewRemarkField, values) : "") ||
     remarks;
 
+  const assignmentContext = {
+    section,
+    sectionKey: getSectionKey(section),
+    role: assignment.auditorType || fallbackAuditorType || "internal",
+    auditorType: assignment.auditorType || fallbackAuditorType || "internal",
+  };
+
   const { unassignedTables, buttonGroups } = useMemo(() => {
     return partitionTablesByButtons(tableDefinitions, tableButtons);
   }, [tableDefinitions, tableButtons]);
@@ -793,12 +810,12 @@ function AuditorCard({ assignment, index, fieldDefinitions, tableDefinitions, fa
     const tableKey = overrideKey || table.scopedKey || table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
     const tableWithKey = {
       ...table,
-      scopedKey: overrideKey || table.scopedKey || (activeInstance ? buildScopedTableKey(table.tableKey || table.idString || table.id, activeInstance) : undefined),
+      scopedKey: overrideKey || table.scopedKey || (activeInstance ? buildScopedTableKey(table.tableKey || table.idString || table.id, activeInstance, assignmentContext) : undefined),
     };
 
     let rows;
     if (activeInstance) {
-      rows = getScopedTableRows(assignmentTables, tableWithKey, activeInstance);
+      rows = getScopedTableRows(assignmentTables, tableWithKey, activeInstance, assignmentContext);
       if (!rows || rows.length === 0) {
         if (assignmentTables && (assignmentTables[tableWithKey.scopedKey] || assignmentTables[tableKey])) {
           rows = assignmentTables[tableWithKey.scopedKey] || assignmentTables[tableKey];
@@ -877,6 +894,10 @@ function AuditorCard({ assignment, index, fieldDefinitions, tableDefinitions, fa
                 renderSingleCardTable(scopedTable, scopedKey, activeInstance)
               }
               readOnly={true}
+              section={section}
+              sectionKey={getSectionKey(section)}
+              role={assignmentContext.role}
+              auditorType={assignmentContext.auditorType}
             />
           ))}
         </div>
@@ -1015,6 +1036,7 @@ export function AuditorSectionReviewPanel({ section, review, tables = {}, values
               fallbackAuditorType="internal"
               allFormDataTables={tables}
               tableButtons={tableButtons}
+              section={section}
             />
           ))}
         </div>
@@ -1041,6 +1063,7 @@ export function AuditorSectionReviewPanel({ section, review, tables = {}, values
               fallbackAuditorType="external"
               allFormDataTables={tables}
               tableButtons={tableButtons}
+              section={section}
             />
           ))}
         </div>
@@ -1103,6 +1126,7 @@ export default function AuditSection({ section, values, tables, onFieldChange, o
               onUploadAttachment={onUploadAttachment}
               onDeleteAttachment={onDeleteAttachment}
               readOnly={effectiveReadOnly}
+              section={section}
             />
           );
         })

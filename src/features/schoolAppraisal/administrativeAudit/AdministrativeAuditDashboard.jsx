@@ -5,7 +5,7 @@ import { SIGN_OFF_FIELD, buildSubmissionPayload, deleteAttachment, fetchMyDraft,
 import { fetchCurrentUser } from "../../../api/users";
 import AuditTable from "../components/AuditTable";
 import { TableButtonGroup } from "../components/TableButtonGroup";
-import { partitionTablesByButtons } from "../utils/tableButtonHelpers";
+import { partitionTablesByButtons, getSectionKey } from "../utils/tableButtonHelpers";
 import DateInput from "../components/DateInput";
 import { InlineSpinner, LoadingState, SkeletonList } from "../components/LoadingState";
 import SubmissionConfirmation from "../components/SubmissionConfirmation";
@@ -1152,6 +1152,9 @@ export default function AdministrativeAuditDashboard() {
                               onTableChange={(scopedKey, newRows) => setTableRows(scopedKey, newRows)}
                               renderTable={(scopedTable, scopedKey) => renderAdminTable(scopedTable, scopedKey)}
                               readOnly={readOnly}
+                              section={activeModule}
+                              sectionKey={getSectionKey(activeModule)}
+                              role="administrative"
                             />
                           ))}
                         </>

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   getActiveInstancesForButton,
   buildScopedTableKey,
+  buildButtonInstancesKey,
+  getSectionKey,
 } from '../utils/tableButtonHelpers';
 
 /**
@@ -17,11 +19,24 @@ export const TableButtonGroup = ({
   onTableChange,
   renderTable,
   readOnly = false,
+  section,
+  sectionKey,
+  role,
+  auditorType,
+  school,
 }) => {
   if (!button || !tables || tables.length === 0) return null;
 
-  const instancesKey = `__tb_${button.id}_instances`;
-  const discoveredInstances = getActiveInstancesForButton(button, valuesData, tablesData);
+  const context = useMemo(() => ({
+    section,
+    sectionKey: sectionKey || getSectionKey(section),
+    role: role || (auditorType ? (String(auditorType).toLowerCase().includes('ext') ? 'external' : 'internal') : 'director'),
+    auditorType,
+    school,
+  }), [section, sectionKey, role, auditorType, school]);
+
+  const instancesKey = buildButtonInstancesKey(button, context);
+  const discoveredInstances = getActiveInstancesForButton(button, valuesData, tablesData, context);
   const [instances, setInstances] = useState(discoveredInstances);
   const [selectedInstance, setSelectedInstance] = useState(discoveredInstances[0] || '');
 
@@ -40,12 +55,12 @@ export const TableButtonGroup = ({
 
   // Keep instances in sync if discoveredInstances changes from parent
   useEffect(() => {
-    const fresh = getActiveInstancesForButton(button, valuesData, tablesData);
+    const fresh = getActiveInstancesForButton(button, valuesData, tablesData, context);
     setInstances(fresh);
     if (!fresh.includes(selectedInstance)) {
       setSelectedInstance(fresh[0] || '');
     }
-  }, [button, valuesData, tablesData]);
+  }, [button, valuesData, tablesData, context]);
 
   // Keep optionToAdd reset if current optionToAdd is no longer available
   useEffect(() => {
@@ -65,6 +80,10 @@ export const TableButtonGroup = ({
 
     if (onValueChange) {
       onValueChange(instancesKey, nextInstances);
+      const legacyKey = `__tb_${button.id}_instances`;
+      if (legacyKey !== instancesKey) {
+        onValueChange(legacyKey, nextInstances);
+      }
     }
   };
 
@@ -80,13 +99,17 @@ export const TableButtonGroup = ({
 
     if (onValueChange) {
       onValueChange(instancesKey, nextInstances);
+      const legacyKey = `__tb_${button.id}_instances`;
+      if (legacyKey !== instancesKey) {
+        onValueChange(legacyKey, nextInstances);
+      }
     }
 
     // Clear data for this instance across all assigned tables
     if (onTableChange) {
       tables.forEach((tbl) => {
         const baseKey = tbl.tableKey || tbl.idString || (tbl.id != null ? String(tbl.id) : '');
-        const scopedKey = buildScopedTableKey(baseKey, selectedInstance);
+        const scopedKey = buildScopedTableKey(baseKey, selectedInstance, context);
         onTableChange(scopedKey, null);
       });
     }
@@ -343,7 +366,7 @@ export const TableButtonGroup = ({
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         {tables.map((tbl, idx) => {
           const baseKey = tbl.tableKey || tbl.idString || (tbl.id != null ? String(tbl.id) : `table_${idx}`);
-          const scopedKey = buildScopedTableKey(baseKey, selectedInstance);
+          const scopedKey = buildScopedTableKey(baseKey, selectedInstance, context);
           const scopedTable = {
             ...tbl,
             originalTitle: tbl.title,

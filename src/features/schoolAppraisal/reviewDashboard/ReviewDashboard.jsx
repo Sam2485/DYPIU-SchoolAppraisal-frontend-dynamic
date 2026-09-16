@@ -28,7 +28,7 @@ import { InlineSpinner, LoadingState, SkeletonList } from "../components/Loading
 import { columnsWithSerial, serialColumnFor, numberedRowFor, withSerialNumbers } from "../components/tableHelpers";
 import AuditTable from "../components/AuditTable";
 import { TableButtonGroup } from "../components/TableButtonGroup";
-import { partitionTablesByButtons, getScopedTableRows, buildScopedTableKey, normalizeTableButtons } from "../utils/tableButtonHelpers";
+import { partitionTablesByButtons, getScopedTableRows, buildScopedTableKey, normalizeTableButtons, getSectionKey } from "../utils/tableButtonHelpers";
 import UserProfileModal from "../components/UserProfileModal";
 import AdministrativeReportPanel from "../administrativeAudit/AdministrativeReportPanel";
 import UserManagementPanel from "../userManagement/UserManagementPanel";
@@ -758,28 +758,94 @@ const getAuditorSectionButtonIds = (sections = [], auditType = "academic") => {
   return ids;
 };
 
+const getNonAuditorSectionTableKeys = (sections = [], auditType = "academic") => {
+  const keys = new Set();
+  (sections || []).forEach((sec) => {
+    if (!isAuditorSection(sec, auditType)) {
+      const registerTable = (t) => {
+        if (!t) return;
+        if (t.id != null) keys.add(String(t.id));
+        if (t.rawId != null) keys.add(String(t.rawId));
+        if (t.tableKey) keys.add(String(t.tableKey));
+        if (t.idString) keys.add(String(t.idString));
+        if (t.title) keys.add(String(t.title));
+      };
+      (sec.tables || []).forEach(registerTable);
+      (sec.blocks || []).flatMap((b) => (b.type === "tables" && Array.isArray(b.tables) ? b.tables : [])).forEach(registerTable);
+    }
+  });
+  return keys;
+};
+
+const getNonAuditorSectionButtonIds = (sections = [], auditType = "academic") => {
+  const ids = new Set();
+  (sections || []).forEach((sec) => {
+    if (!isAuditorSection(sec, auditType)) {
+      (sec.tableButtons || []).forEach((b) => {
+        if (b.id) ids.add(String(b.id));
+      });
+      (sec.blocks || []).forEach((block) => {
+        (block.tableButtons || []).forEach((b) => {
+          if (b.id) ids.add(String(b.id));
+        });
+      });
+    }
+  });
+  return ids;
+};
+
 const clearAuditorSectionTables = (tables = {}, sections = [], auditType = "academic") => {
   const next = { ...(tables || {}) };
   const keysToClear = getAuditorSectionTableKeys(sections, auditType);
+  const protectedKeys = getNonAuditorSectionTableKeys(sections, auditType);
   const normalizeKey = (k) => String(k || "").toLowerCase().replace(/[^a-z0-9]/g, "");
   const normalizedTargets = new Set(Array.from(keysToClear).map(normalizeKey).filter(Boolean));
+  const normalizedProtected = new Set(Array.from(protectedKeys).map(normalizeKey).filter(Boolean));
 
   Object.keys(next).forEach((k) => {
     const norm = normalizeKey(k);
+    const kLower = k.toLowerCase();
+
+    // 1. Explicit protection for Director / non-auditor scoped keys
+    if (kLower.startsWith("director__") || kLower.startsWith("director_")) {
+      return; // NEVER DELETE DIRECTOR TABLES
+    }
+
+    // 2. Explicit auditor scoped keys: ALWAYS clear from fresh auditor draft
+    const isExplicitAuditorKey =
+      kLower.startsWith("internal__") ||
+      kLower.startsWith("external__") ||
+      kLower.startsWith("internal_auditor__") ||
+      kLower.startsWith("external_auditor__") ||
+      kLower.startsWith("auditor__");
+
+    if (isExplicitAuditorKey) {
+      delete next[k];
+      return;
+    }
+
+    // 3. For legacy or base keys:
     const baseKey = k.includes('__') ? k.split('__')[0] : k;
     const baseNorm = normalizeKey(baseKey);
+
+    // If it belongs to a non-auditor section, NEVER delete it!
+    const isProtected =
+      protectedKeys.has(k) ||
+      protectedKeys.has(baseKey) ||
+      normalizedProtected.has(norm) ||
+      normalizedProtected.has(baseNorm);
+
+    if (isProtected) {
+      return; // PROTECTED: DO NOT DELETE
+    }
+
     const isAuditorTable =
       keysToClear.has(k) ||
       keysToClear.has(baseKey) ||
       normalizedTargets.has(norm) ||
       normalizedTargets.has(baseNorm) ||
       norm.includes("auditor") ||
-      baseNorm.includes("auditor") ||
-      Array.from(normalizedTargets).some((target) => {
-        const tNoTable = target.replace(/^table_?/, "");
-        const bNoTable = baseNorm.replace(/^table_?/, "");
-        return baseNorm === target || (tNoTable && bNoTable && tNoTable === bNoTable);
-      });
+      baseNorm.includes("auditor");
 
     if (isAuditorTable) {
       delete next[k];
@@ -792,14 +858,34 @@ const clearAuditorSectionValues = (values = {}, sections = [], auditType = "acad
   const next = { ...(values || {}) };
   const keysToClear = getAuditorSectionFieldKeys(sections, auditType);
   const buttonIdsToClear = getAuditorSectionButtonIds(sections, auditType);
+  const protectedButtonIds = getNonAuditorSectionButtonIds(sections, auditType);
   const normalizeKey = (k) => String(k || "").toLowerCase().replace(/[^a-z0-9]/g, "");
   const normalizedTargets = new Set(Array.from(keysToClear).map(normalizeKey).filter(Boolean));
 
   Object.keys(next).forEach((k) => {
     const norm = normalizeKey(k);
-    const isAuditorButtonKey =
-      Array.from(buttonIdsToClear).some((btnId) => k.includes(`__tb_${btnId}_`)) ||
-      (buttonIdsToClear.size > 0 && k.startsWith("__tb_"));
+    const kLower = k.toLowerCase();
+
+    // NEVER delete Director scoped button instances
+    if (kLower.includes("_director_") || kLower.includes("director__")) {
+      return;
+    }
+
+    // NEVER delete buttons belonging to non-auditor sections
+    const isProtectedButton = Array.from(protectedButtonIds).some((btnId) =>
+      k.includes(`__tb_${btnId}_`) || k.includes(`_${btnId}_instances`)
+    );
+    if (isProtectedButton) {
+      return;
+    }
+
+    // Only delete buttons that strictly belong to auditor sections
+    const isAuditorButtonKey = Array.from(buttonIdsToClear).some((btnId) =>
+      k.includes(`__tb_${btnId}_`) ||
+      k.includes(`_${btnId}_instances`) ||
+      k.includes(`_${btnId}_selected`)
+    ) || kLower.includes("_internal_") || kLower.includes("_external_");
+
     if (
       keysToClear.has(k) ||
       normalizedTargets.has(norm) ||
@@ -819,8 +905,10 @@ const clearAuditorSectionValues = (values = {}, sections = [], auditType = "acad
   });
 
   buttonIdsToClear.forEach((btnId) => {
-    delete next[`__tb_${btnId}_instances`];
-    delete next[`__tb_${btnId}_selected`];
+    if (!protectedButtonIds.has(btnId)) {
+      delete next[`__tb_${btnId}_instances`];
+      delete next[`__tb_${btnId}_selected`];
+    }
   });
 
   next.auditObservations = "";
@@ -6061,26 +6149,8 @@ function FullFormReview({
     .find((tables) => Object.keys(tables).length > 0);
 
   const baseTables = clearAuditorSectionTables(submission.tables || {}, sections, submission.auditType);
-  if (canEditAuditorSection) {
-    auditorTableKeys.forEach((key) => {
-      delete baseTables[key];
-    });
-    Object.keys(baseTables).forEach((k) => {
-      const baseK = k.includes('__') ? k.split('__')[0] : k;
-      if (
-        Array.from(auditorTableKeys).some((ak) => {
-          const akLower = String(ak).toLowerCase().trim();
-          const kLower = String(k).toLowerCase().trim();
-          const baseKLower = String(baseK).toLowerCase().trim();
-          return akLower === kLower || akLower === baseKLower || akLower.replace(/^table_?/, '') === baseKLower.replace(/^table_?/, '');
-        })
-      ) {
-        delete baseTables[k];
-      }
-    });
-  }
-  const initialDraftTables = currentAssignmentTables
-    ? { ...baseTables, ...currentAssignmentTables }
+  const initialDraftTables = canEditAuditorSection
+    ? (currentAssignmentTables || {})
     : baseTables;
   const [draftValues, setDraftValues] = useState(
     initialDraftValues
@@ -6137,21 +6207,31 @@ function FullFormReview({
       effectiveValues = { ...draftValues };
       const auditorKeys = getAuditorSectionFieldKeys(sections, submission.auditType);
       const auditorButtonIds = getAuditorSectionButtonIds(sections, submission.auditType);
+      const protectedButtonIds = getNonAuditorSectionButtonIds(sections, submission.auditType);
       const normalizeKey = (k) => String(k || "").toLowerCase().replace(/[^a-z0-9]/g, "");
       const normalizedAuditorKeys = new Set(Array.from(auditorKeys).map(normalizeKey).filter(Boolean));
 
       Object.entries(submission.values || {}).forEach(([k, val]) => {
         const norm = normalizeKey(k);
+        const kLower = k.toLowerCase();
+        const isDirectorKey = kLower.includes("_director_") || kLower.includes("director__");
+        const isProtectedButton = Array.from(protectedButtonIds).some((btnId) =>
+          k.includes(`__tb_${btnId}_`) || k.includes(`_${btnId}_instances`)
+        );
+        const isAuditorButton = !isDirectorKey && !isProtectedButton && Array.from(auditorButtonIds).some((btnId) =>
+          k.includes(`__tb_${btnId}_`) || k.includes(`_${btnId}_instances`) || k.includes(`_${btnId}_selected`)
+        );
         const isAuditorField =
-          auditorKeys.has(k) ||
+          !isDirectorKey &&
+          !isProtectedButton &&
+          (auditorKeys.has(k) ||
           normalizedAuditorKeys.has(norm) ||
-          Array.from(auditorButtonIds).some((btnId) => k.includes(`__tb_${btnId}_`)) ||
-          (auditorButtonIds.size > 0 && k.startsWith("__tb_")) ||
+          isAuditorButton ||
           norm.includes("auditobservation") ||
           norm.includes("auditrecommendation") ||
           norm.includes("reviewremark") ||
           norm.includes("auditorobservation") ||
-          k.startsWith("__auditSignOff");
+          k.startsWith("__auditSignOff"));
         if (!isAuditorField && effectiveValues[k] === undefined) {
           effectiveValues[k] = val;
         }
@@ -7276,15 +7356,29 @@ function SubmittedFormViewer({
                   block.tableButtons || activeSection.tableButtons
                 );
 
+                const editContext = {
+                  section: activeSection,
+                  sectionKey: getSectionKey(activeSection),
+                  role: profile?.auditorType || fallbackAuditorType || (String(profile?.role || "").toLowerCase().includes("ext") ? "external" : "internal"),
+                  auditorType: profile?.auditorType || fallbackAuditorType,
+                };
+
+                const readContext = {
+                  section: activeSection,
+                  sectionKey: getSectionKey(activeSection),
+                  role: isAuditorSection(activeSection, submission.auditType) ? (profile?.auditorType || fallbackAuditorType || "internal") : "director",
+                  auditorType: isAuditorSection(activeSection, submission.auditType) ? (profile?.auditorType || fallbackAuditorType) : undefined,
+                };
+
                 if (editableSection) {
                   const renderEditableAuditTable = (table, overrideKey, activeInstance) => {
                     const tableKey = overrideKey || table.scopedKey || table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
                     const tableWithKey = {
                       ...table,
-                      scopedKey: overrideKey || table.scopedKey || (activeInstance ? buildScopedTableKey(table.tableKey || table.idString || table.id, activeInstance) : undefined),
+                      scopedKey: overrideKey || table.scopedKey || (activeInstance ? buildScopedTableKey(table.tableKey || table.idString || table.id, activeInstance, editContext) : undefined),
                     };
                     const rows = activeInstance
-                      ? (getScopedTableRows(formData.tables, tableWithKey, activeInstance) || [])
+                      ? (getScopedTableRows(formData.tables, tableWithKey, activeInstance, editContext) || [])
                       : getTableRows(formData.tables, tableWithKey);
 
                     return (
@@ -7328,6 +7422,10 @@ function SubmittedFormViewer({
                             renderEditableAuditTable(scopedTable, scopedKey, activeInstance)
                           }
                           readOnly={false}
+                          section={activeSection}
+                          sectionKey={getSectionKey(activeSection)}
+                          role={editContext.role}
+                          auditorType={editContext.auditorType}
                         />
                       ))}
                     </div>
@@ -7338,10 +7436,10 @@ function SubmittedFormViewer({
                   const tableKey = overrideKey || table.scopedKey || table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
                   const tableWithKey = {
                     ...table,
-                    scopedKey: overrideKey || table.scopedKey || (activeInstance ? buildScopedTableKey(table.tableKey || table.idString || table.id, activeInstance) : undefined),
+                    scopedKey: overrideKey || table.scopedKey || (activeInstance ? buildScopedTableKey(table.tableKey || table.idString || table.id, activeInstance, readContext) : undefined),
                   };
                   const rows = activeInstance
-                    ? (getScopedTableRows(formData.tables, tableWithKey, activeInstance) || [])
+                    ? (getScopedTableRows(formData.tables, tableWithKey, activeInstance, readContext) || [])
                     : getTableRows(formData.tables, tableWithKey);
 
                   return (
@@ -7373,6 +7471,10 @@ function SubmittedFormViewer({
                           renderReadOnlyAuditTable(scopedTable, scopedKey, activeInstance)
                         }
                         readOnly={true}
+                        section={activeSection}
+                        sectionKey={getSectionKey(activeSection)}
+                        role={readContext.role}
+                        auditorType={readContext.auditorType}
                       />
                     ))}
                   </div>
@@ -7655,16 +7757,23 @@ function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType,
           (reviewRemarkField ? resolveFieldValue(reviewRemarkField, values) : "") ||
           remarks;
 
+        const assignmentContext = {
+          section: activeSection,
+          sectionKey: getSectionKey(activeSection),
+          role: assignment.auditorType || fallbackAuditorType || "internal",
+          auditorType: assignment.auditorType || fallbackAuditorType || "internal",
+        };
+
         const renderAssignmentTable = (table, overrideKey, activeInstance) => {
           const tableKey = overrideKey || table.scopedKey || table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
           const tableWithKey = {
             ...table,
-            scopedKey: overrideKey || table.scopedKey || (activeInstance ? buildScopedTableKey(table.tableKey || table.idString || table.id, activeInstance) : undefined),
+            scopedKey: overrideKey || table.scopedKey || (activeInstance ? buildScopedTableKey(table.tableKey || table.idString || table.id, activeInstance, assignmentContext) : undefined),
           };
 
           let rows;
           if (activeInstance) {
-            rows = getScopedTableRows(assignmentTables, tableWithKey, activeInstance);
+            rows = getScopedTableRows(assignmentTables, tableWithKey, activeInstance, assignmentContext);
             if (!rows || rows.length === 0) {
               if (assignmentTables && (assignmentTables[tableWithKey.scopedKey] || assignmentTables[tableKey])) {
                 rows = assignmentTables[tableWithKey.scopedKey] || assignmentTables[tableKey];
@@ -7744,6 +7853,10 @@ function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType,
                       renderAssignmentTable(scopedTable, scopedKey, activeInstance)
                     }
                     readOnly={true}
+                    section={activeSection}
+                    sectionKey={getSectionKey(activeSection)}
+                    role={assignmentContext.role}
+                    auditorType={assignmentContext.auditorType}
                   />
                 ))}
               </div>

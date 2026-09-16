@@ -7,6 +7,7 @@ import {
   partitionTablesByButtons,
   getActiveInstancesForButton,
   getScopedTableRows,
+  getSectionKey,
 } from "../utils/tableButtonHelpers";
 
 const safeJsonParse = (val, fallback = {}) => {
@@ -386,12 +387,18 @@ export default function AuditReportPanel({
               section.tableButtons
             );
 
+            const reportContext = {
+              section,
+              sectionKey: getSectionKey(section),
+              role: isAuditorSection(section) ? "internal" : "director",
+            };
+
             const renderSingleReportTable = (table, instance = null) => {
               const columns = resolveTableColumns(table);
               const tableKey = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
               const displayTitle = instance ? `${table.title || ''} (${instance})` : table.title;
               const rows = instance
-                ? (getScopedTableRows(combinedTables, table, instance) || [])
+                ? (getScopedTableRows(combinedTables, table, instance, reportContext) || [])
                 : getTableRows(combinedTables, table);
 
               return (
@@ -450,7 +457,7 @@ export default function AuditReportPanel({
 
                 {/* 2. Button-assigned tables for each added instance */}
                 {buttonGroups.map(({ button, tables: assignedTables }) => {
-                  const instances = getActiveInstancesForButton(button, combinedValues, combinedTables);
+                  const instances = getActiveInstancesForButton(button, combinedValues, combinedTables, reportContext);
                   if (instances.length === 0) return null;
 
                   return instances.map((instance) =>
