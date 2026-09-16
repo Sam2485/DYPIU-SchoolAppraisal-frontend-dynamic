@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   getActiveInstancesForButton,
   buildScopedTableKey,
@@ -25,11 +25,15 @@ export const TableButtonGroup = ({
   const [instances, setInstances] = useState(discoveredInstances);
   const [selectedInstance, setSelectedInstance] = useState(discoveredInstances[0] || '');
 
-  const dropdownOptions = Array.isArray(button.dropdownOptions)
-    ? button.dropdownOptions
-    : typeof button.dropdownOptions === 'string'
-    ? button.dropdownOptions.split(',').map((s) => s.trim()).filter(Boolean)
-    : [];
+  const dropdownOptions = useMemo(() => {
+    if (Array.isArray(button?.dropdownOptions)) {
+      return button.dropdownOptions;
+    }
+    if (typeof button?.dropdownOptions === 'string') {
+      return button.dropdownOptions.split(',').map((s) => s.trim()).filter(Boolean);
+    }
+    return [];
+  }, [button?.dropdownOptions]);
 
   const remainingOptions = dropdownOptions.filter((opt) => !instances.includes(opt));
   const [optionToAdd, setOptionToAdd] = useState('');

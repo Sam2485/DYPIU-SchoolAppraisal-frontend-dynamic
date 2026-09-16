@@ -570,19 +570,31 @@ export default function AdministrativeAuditDashboard() {
   };
 
   const setCellValue = (tableId, rowIndex, column, value) => {
-    setData((current) => ({
-      ...current,
-      tables: {
-        ...current.tables,
-        [tableId]: current.tables[tableId].map((row, index) => (index === rowIndex ? { ...row, [column]: value } : row)),
-      },
-      lastSavedAt: new Date().toISOString(),
-    }));
+    setData((current) => {
+      const existing = current.tables?.[tableId] || [];
+      let rows = Array.isArray(existing) ? [...existing] : [];
+      if (rowIndex >= rows.length) {
+        while (rows.length <= rowIndex) {
+          const nextIdx = rows.length;
+          rows.push({ "Sr No": String(nextIdx + 1) });
+        }
+      }
+      rows = rows.map((row, index) => (index === rowIndex ? { ...row, [column]: value } : row));
+      return {
+        ...current,
+        tables: {
+          ...current.tables,
+          [tableId]: rows,
+        },
+        lastSavedAt: new Date().toISOString(),
+      };
+    });
   };
 
   const setTableRows = (tableOrKey, rows) => {
     const tableKey = typeof tableOrKey === 'string' ? tableOrKey : (tableOrKey?.scopedKey || tableOrKey?.id);
-    const cols = typeof tableOrKey === 'object' ? tableOrKey?.columns : null;
+    const rawCols = typeof tableOrKey === 'object' ? (tableOrKey?.columns || (tableOrKey?.fields?.length ? tableOrKey.fields.map((f) => f.label || f.fieldKey) : null)) : null;
+    const cols = rawCols ? columnsWithSerial(rawCols) : null;
     setData((current) => {
       if (rows === null || rows === undefined) {
         const nextTables = { ...current.tables };
@@ -606,14 +618,15 @@ export default function AdministrativeAuditDashboard() {
 
   const addRow = (table, overrideKey) => {
     const tableKey = overrideKey || (typeof table === 'string' ? table : (table?.scopedKey || table?.id));
-    const cols = typeof table === 'object' ? table?.columns : [];
+    const rawCols = typeof table === 'object' ? (table?.columns || (table?.fields?.length ? table.fields.map((f) => f.label || f.fieldKey) : [])) : [];
+    const cols = columnsWithSerial(rawCols);
     setData((current) => ({
       ...current,
       tables: {
         ...current.tables,
         [tableKey]: [
-          ...(current.tables[tableKey] || []),
-          emptyRowFor(cols, current.tables[tableKey]?.length || 0),
+          ...(current.tables?.[tableKey] || []),
+          emptyRowFor(cols, current.tables?.[tableKey]?.length || 0),
         ],
       },
       lastSavedAt: new Date().toISOString(),
@@ -622,9 +635,11 @@ export default function AdministrativeAuditDashboard() {
 
   const deleteLastRow = (table, overrideKey) => {
     const tableKey = overrideKey || (typeof table === 'string' ? table : (table?.scopedKey || table?.id));
-    const cols = typeof table === 'object' ? table?.columns : [];
+    const rawCols = typeof table === 'object' ? (table?.columns || (table?.fields?.length ? table.fields.map((f) => f.label || f.fieldKey) : [])) : [];
+    const cols = columnsWithSerial(rawCols);
     setData((current) => {
-      const nextRows = (current.tables[tableKey] || []).slice(0, -1);
+      const existing = current.tables?.[tableKey] || [];
+      const nextRows = existing.slice(0, -1);
       return {
         ...current,
         tables: {
@@ -1103,15 +1118,16 @@ export default function AdministrativeAuditDashboard() {
 
                       const renderAdminTable = (table, overrideKey) => {
                         const tableKey = overrideKey || table.scopedKey || table.id;
+                        const tableWithKey = { ...table, scopedKey: tableKey };
                         return (
                           <AuditTable
                             key={table.id ? `${table.id}_${tableKey}` : tableKey}
-                            table={table}
+                            table={tableWithKey}
                             rows={data.tables[tableKey] || []}
                             onChange={(rowIndex, column, value) => setCellValue(tableKey, rowIndex, column, value)}
                             onRowsChange={(rows) => setTableRows(tableKey, rows)}
-                            onAddRow={(t) => addRow(t, tableKey)}
-                            onDeleteLastRow={(t) => deleteLastRow(t, tableKey)}
+                            onAddRow={(t) => addRow(t || tableWithKey, tableKey)}
+                            onDeleteLastRow={(t) => deleteLastRow(t || tableWithKey, tableKey)}
                             onUploadAttachment={uploadFormAttachments}
                             onDeleteAttachment={deleteFormAttachment}
                             readOnly={readOnly}

@@ -362,7 +362,7 @@ export default function AuditReportPanel({
               const tableKey = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
               const displayTitle = instance ? `${table.title || ''} (${instance})` : table.title;
               const rows = instance
-                ? (getScopedTableRows(tables, table, instance) || getTableRows(tables, table))
+                ? (getScopedTableRows(tables, table, instance) || [])
                 : getTableRows(tables, table);
 
               return (

@@ -282,7 +282,7 @@ export default function AdministrativeReportPanel({
                 const tableKey = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
                 const displayTitle = instance ? `${table.title || ''} (${instance})` : table.title;
                 const rows = instance
-                  ? (getScopedTableRows(data.tables, table, instance) || getTableRows(data.tables, table))
+                  ? (getScopedTableRows(data.tables, table, instance) || [])
                   : getTableRows(data.tables, table);
 
                 return (

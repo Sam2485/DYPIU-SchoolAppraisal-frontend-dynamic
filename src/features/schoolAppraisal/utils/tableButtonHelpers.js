@@ -153,23 +153,21 @@ export const getScopedTableRows = (tablesData = {}, table = {}, instance = null)
   ].filter(Boolean);
 
   if (instance) {
+    if (table.scopedKey && Array.isArray(tablesData[table.scopedKey])) {
+      return tablesData[table.scopedKey];
+    }
     for (const ck of candidateKeys) {
       const scoped = `${ck}__${instance}`;
-      if (Array.isArray(tablesData[scoped]) && tablesData[scoped].length > 0) {
-        return tablesData[scoped];
-      }
-      if (tablesData[scoped] !== undefined && Array.isArray(tablesData[scoped])) {
+      if (Array.isArray(tablesData[scoped])) {
         return tablesData[scoped];
       }
     }
+    return [];
   }
 
-  // Fallback to unscoped if instance not provided or empty
+  // Fallback to unscoped only when instance is not provided or empty
   for (const ck of candidateKeys) {
-    if (Array.isArray(tablesData[ck]) && tablesData[ck].length > 0) {
-      return tablesData[ck];
-    }
-    if (tablesData[ck] !== undefined && Array.isArray(tablesData[ck])) {
+    if (Array.isArray(tablesData[ck])) {
       return tablesData[ck];
     }
   }

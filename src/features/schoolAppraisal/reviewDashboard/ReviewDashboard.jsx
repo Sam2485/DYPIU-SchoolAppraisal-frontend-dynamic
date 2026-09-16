@@ -28,7 +28,7 @@ import { InlineSpinner, LoadingState, SkeletonList } from "../components/Loading
 import { columnsWithSerial, serialColumnFor, numberedRowFor, withSerialNumbers } from "../components/tableHelpers";
 import AuditTable from "../components/AuditTable";
 import { TableButtonGroup } from "../components/TableButtonGroup";
-import { partitionTablesByButtons, getScopedTableRows } from "../utils/tableButtonHelpers";
+import { partitionTablesByButtons, getScopedTableRows, buildScopedTableKey } from "../utils/tableButtonHelpers";
 import UserProfileModal from "../components/UserProfileModal";
 import AdministrativeReportPanel from "../administrativeAudit/AdministrativeReportPanel";
 import UserManagementPanel from "../userManagement/UserManagementPanel";
@@ -6212,6 +6212,19 @@ function FullFormReview({
   const handleAuditorTableChange = (tableId, rowIndex, column, value) => {
     setDraftTables((current) => {
       const strKey = String(tableId);
+      if (value === null && column === null) {
+        const next = { ...current };
+        delete next[strKey];
+        if (typeof tableId === "number") delete next[tableId];
+        return next;
+      }
+      if (Array.isArray(value) && column === null) {
+        return {
+          ...current,
+          [strKey]: value,
+          ...(typeof tableId === "number" ? { [tableId]: value } : {}),
+        };
+      }
       const existing = current[strKey] || (typeof tableId === "number" ? current[tableId] : []) || [];
       let rows = Array.isArray(existing) ? [...existing] : [];
       if (rowIndex >= rows.length) {
@@ -6238,34 +6251,36 @@ function FullFormReview({
       };
     });
   };
-  const handleAuditorAddRow = (table) => {
-    const key = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
+  const handleAuditorAddRow = (table, overrideKey) => {
+    const key = overrideKey || table?.scopedKey || table?.tableKey || table?.idString || (table?.id != null ? String(table.id) : "");
+    const isScoped = Boolean(overrideKey || table?.scopedKey);
     const cols = resolveTableColumns(table);
     setDraftTables((current) => {
-      const existing = current[key] || (table.id != null ? current[table.id] : []) || [];
+      const existing = current[key] || (!isScoped ? ((table?.tableKey ? current[table.tableKey] : []) || (table?.id != null ? current[table.id] : [])) : []) || [];
       const rows = Array.isArray(existing) ? existing : [];
       const nextRows = [...rows, numberedRowFor(cols, rows.length)];
       return {
         ...current,
         ...(key ? { [key]: nextRows } : {}),
-        ...(table.id != null ? { [table.id]: nextRows } : {}),
-        ...(table.tableKey ? { [table.tableKey]: nextRows } : {}),
+        ...(!isScoped && table?.id != null ? { [table.id]: nextRows } : {}),
+        ...(!isScoped && table?.tableKey ? { [table.tableKey]: nextRows } : {}),
       };
     });
   };
-  const handleAuditorDeleteLastRow = (table) => {
-    const key = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
+  const handleAuditorDeleteLastRow = (table, overrideKey) => {
+    const key = overrideKey || table?.scopedKey || table?.tableKey || table?.idString || (table?.id != null ? String(table.id) : "");
+    const isScoped = Boolean(overrideKey || table?.scopedKey);
     const cols = resolveTableColumns(table);
     setDraftTables((current) => {
-      const existing = current[key] || (table.id != null ? current[table.id] : []) || [];
+      const existing = current[key] || (!isScoped ? ((table?.tableKey ? current[table.tableKey] : []) || (table?.id != null ? current[table.id] : [])) : []) || [];
       const rows = Array.isArray(existing) ? existing : [];
       const nextRows = rows.slice(0, -1);
       const formatted = nextRows.length ? withSerialNumbers(cols, nextRows) : [numberedRowFor(cols, 0)];
       return {
         ...current,
         ...(key ? { [key]: formatted } : {}),
-        ...(table.id != null ? { [table.id]: formatted } : {}),
-        ...(table.tableKey ? { [table.tableKey]: formatted } : {}),
+        ...(!isScoped && table?.id != null ? { [table.id]: formatted } : {}),
+        ...(!isScoped && table?.tableKey ? { [table.tableKey]: formatted } : {}),
       };
     });
   };
@@ -7170,20 +7185,24 @@ function SubmittedFormViewer({
                 if (editableSection) {
                   const renderEditableAuditTable = (table, overrideKey, activeInstance) => {
                     const tableKey = overrideKey || table.scopedKey || table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
+                    const tableWithKey = {
+                      ...table,
+                      scopedKey: overrideKey || table.scopedKey || (activeInstance ? buildScopedTableKey(table.tableKey || table.idString || table.id, activeInstance) : undefined),
+                    };
                     const rows = activeInstance
-                      ? (getScopedTableRows(formData.tables, table, activeInstance) || getTableRows(formData.tables, table))
-                      : getTableRows(formData.tables, table);
+                      ? (getScopedTableRows(formData.tables, tableWithKey, activeInstance) || [])
+                      : getTableRows(formData.tables, tableWithKey);
 
                     return (
                       <div key={table.id ? `${table.id}_${tableKey}` : tableKey} style={{ marginBottom: 24, width: "100%" }}>
                         <AuditTable
-                          table={table}
+                          table={tableWithKey}
                           rows={rows}
                           values={formData.values}
                           onFieldChange={onFieldChange}
                           onChange={(rowIndex, column, value) => onTableChange?.(tableKey || table.id, rowIndex, column, value)}
-                          onAddRow={onAddRow}
-                          onDeleteLastRow={onDeleteLastRow}
+                          onAddRow={(t) => onAddRow?.(t || tableWithKey, tableKey)}
+                          onDeleteLastRow={(t) => onDeleteLastRow?.(t || tableWithKey, tableKey)}
                           onUploadAttachment={onUploadAttachment}
                           onDeleteAttachment={onDeleteAttachment}
                           readOnly={false}
@@ -7208,7 +7227,7 @@ function SubmittedFormViewer({
                           onValueChange={onFieldChange}
                           onTableChange={(scopedKey, newRows) => {
                             if (onTableChange) {
-                              onTableChange(scopedKey, 0, null, newRows);
+                              onTableChange(scopedKey, null, null, newRows);
                             }
                           }}
                           renderTable={(scopedTable, scopedKey, activeInstance) =>
@@ -7223,14 +7242,18 @@ function SubmittedFormViewer({
 
                 const renderReadOnlyAuditTable = (table, overrideKey, activeInstance) => {
                   const tableKey = overrideKey || table.scopedKey || table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
+                  const tableWithKey = {
+                    ...table,
+                    scopedKey: overrideKey || table.scopedKey || (activeInstance ? buildScopedTableKey(table.tableKey || table.idString || table.id, activeInstance) : undefined),
+                  };
                   const rows = activeInstance
-                    ? (getScopedTableRows(formData.tables, table, activeInstance) || getTableRows(formData.tables, table))
-                    : getTableRows(formData.tables, table);
+                    ? (getScopedTableRows(formData.tables, tableWithKey, activeInstance) || [])
+                    : getTableRows(formData.tables, tableWithKey);
 
                   return (
                     <ReadOnlyTable
                       key={table.id ? `${table.id}_${tableKey}` : tableKey}
-                      table={table}
+                      table={tableWithKey}
                       rows={rows}
                       values={formData.values}
                     />

@@ -1,7 +1,7 @@
 //renders a section of the audit form, like part A, part B, etc. It can contain fields and tables
 import AuditTable from "./AuditTable";
 import { TableButtonGroup } from "./TableButtonGroup";
-import { partitionTablesByButtons } from "../utils/tableButtonHelpers";
+import { partitionTablesByButtons, buildScopedTableKey } from "../utils/tableButtonHelpers";
 import DateInput from "./DateInput";
 import { columnsWithSerial, serialColumnFor, numberedRowFor, withSerialNumbers, emptyRowFor } from "./tableHelpers";
 import { getAttachmentUrl } from "../../../utils/attachment";
@@ -647,19 +647,24 @@ function FieldGrid({ fields, values, onFieldChange, readOnly = false, onUploadAt
 function TableList({ tableDefinitions, tableValues, values, tableButtons, onFieldChange, onTableChange, onAddRow, onDeleteLastRow, onUploadAttachment, onDeleteAttachment, readOnly = false }) {
   const { unassignedTables, buttonGroups } = partitionTablesByButtons(tableDefinitions, tableButtons);
 
-  const renderSingleAuditTable = (table, overrideKey) => {
+  const renderSingleAuditTable = (table, overrideKey, activeInstance) => {
     const tableKey = overrideKey || table.scopedKey || table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
-    const rows = tableValues[tableKey] || (table.id != null ? tableValues[table.id] : []) || (table.tableKey ? tableValues[table.tableKey] : []) || [];
+    const tableWithKey = {
+      ...table,
+      scopedKey: overrideKey || table.scopedKey || (activeInstance ? buildScopedTableKey(table.tableKey || table.idString || table.id, activeInstance) : undefined),
+    };
+    const isScoped = Boolean(tableWithKey.scopedKey);
+    const rows = tableValues[tableKey] || (!isScoped ? ((table.id != null ? tableValues[table.id] : []) || (table.tableKey ? tableValues[table.tableKey] : [])) : []) || [];
     return (
       <AuditTable
         key={table.id ? `${table.id}_${tableKey}` : tableKey}
-        table={table}
+        table={tableWithKey}
         rows={rows}
         values={values}
         onFieldChange={onFieldChange}
         onChange={(rowIndex, column, value) => onTableChange(tableKey, rowIndex, column, value)}
-        onAddRow={onAddRow}
-        onDeleteLastRow={onDeleteLastRow}
+        onAddRow={(t) => onAddRow?.(t || tableWithKey, tableKey)}
+        onDeleteLastRow={(t) => onDeleteLastRow?.(t || tableWithKey, tableKey)}
         onUploadAttachment={onUploadAttachment}
         onDeleteAttachment={onDeleteAttachment}
         readOnly={readOnly}
@@ -686,7 +691,7 @@ function TableList({ tableDefinitions, tableValues, values, tableButtons, onFiel
               onTableChange(scopedKey, newRows);
             }
           }}
-          renderTable={(scopedTable, scopedKey) => renderSingleAuditTable(scopedTable, scopedKey)}
+          renderTable={(scopedTable, scopedKey, activeInstance) => renderSingleAuditTable(scopedTable, scopedKey, activeInstance)}
           readOnly={readOnly}
         />
       ))}

@@ -561,12 +561,13 @@ export default function AuditForm({
     setStatus("");
   };
 
-  const handleAddRow = (table) => {
-    const key = table.scopedKey || table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
+  const handleAddRow = (table, overrideKey) => {
+    const key = overrideKey || table?.scopedKey || table?.tableKey || table?.idString || (table?.id != null ? String(table.id) : "");
+    const isScoped = Boolean(overrideKey || table?.scopedKey);
     setTables((current) => {
-      const existing = current[key] || (table.tableKey ? current[table.tableKey] : []) || (table.id != null ? current[table.id] : []) || [];
+      const existing = current[key] || (!isScoped ? ((table?.tableKey ? current[table.tableKey] : []) || (table?.id != null ? current[table.id] : [])) : []) || [];
       const rows = Array.isArray(existing) ? existing : [];
-      const nextRows = [...rows, numberedRowFor(table.columns || [], rows.length)];
+      const nextRows = [...rows, numberedRowFor(table?.columns || [], rows.length)];
       return {
         ...current,
         ...(key ? { [key]: nextRows } : {}),
@@ -574,13 +575,14 @@ export default function AuditForm({
     });
   };
 
-  const handleDeleteLastRow = (table) => {
-    const key = table.scopedKey || table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
+  const handleDeleteLastRow = (table, overrideKey) => {
+    const key = overrideKey || table?.scopedKey || table?.tableKey || table?.idString || (table?.id != null ? String(table.id) : "");
+    const isScoped = Boolean(overrideKey || table?.scopedKey);
     setTables((current) => {
-      const existing = current[key] || (table.tableKey ? current[table.tableKey] : []) || (table.id != null ? current[table.id] : []) || [];
+      const existing = current[key] || (!isScoped ? ((table?.tableKey ? current[table.tableKey] : []) || (table?.id != null ? current[table.id] : [])) : []) || [];
       const rows = Array.isArray(existing) ? existing : [];
       const nextRows = rows.slice(0, -1);
-      const formatted = nextRows.length ? withSerialNumbers(table.columns || [], nextRows) : [numberedRowFor(table.columns || [], 0)];
+      const formatted = nextRows.length ? withSerialNumbers(table?.columns || [], nextRows) : [numberedRowFor(table?.columns || [], 0)];
       return {
         ...current,
         ...(key ? { [key]: formatted } : {}),
