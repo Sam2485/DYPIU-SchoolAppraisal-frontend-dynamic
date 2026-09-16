@@ -5,7 +5,7 @@ import { SIGN_OFF_FIELD, buildSubmissionPayload, deleteAttachment, fetchMyDraft,
 import { fetchCurrentUser } from "../../../api/users";
 import AuditTable from "../components/AuditTable";
 import { TableButtonGroup } from "../components/TableButtonGroup";
-import { partitionTablesByButtons, getSectionKey } from "../utils/tableButtonHelpers";
+import { partitionTablesByButtons, getSectionKey, parseScopedTableKey } from "../utils/tableButtonHelpers";
 import DateInput from "../components/DateInput";
 import { InlineSpinner, LoadingState, SkeletonList } from "../components/LoadingState";
 import SubmissionConfirmation from "../components/SubmissionConfirmation";
@@ -696,12 +696,60 @@ export default function AdministrativeAuditDashboard() {
   };
 
   const payloadForModules = (modules, values = data.fields) => {
-    const fieldIds = modules.flatMap((module) => moduleFieldsFor(module).map((field) => field.id));
-    const tableIds = modules.flatMap((module) => moduleTablesFor(module).map((table) => table.id));
-    const scopedValues = Object.fromEntries(fieldIds.map((fieldId) => [fieldId, values[fieldId] ?? ""]));
-    if (values[SIGN_OFF_FIELD]) scopedValues[SIGN_OFF_FIELD] = values[SIGN_OFF_FIELD];
-    if (values[ADMIN_SUBMISSION_STATUS_FIELD]) scopedValues[ADMIN_SUBMISSION_STATUS_FIELD] = values[ADMIN_SUBMISSION_STATUS_FIELD];
-    const scopedTables = Object.fromEntries(tableIds.map((tableId) => [tableId, data.tables[tableId] || []]));
+    const fieldIds = new Set(modules.flatMap((module) => moduleFieldsFor(module).map((field) => field.id)));
+    const moduleTables = modules.flatMap((module) => moduleTablesFor(module));
+    const moduleTableKeys = new Set(
+      moduleTables.flatMap((table) => [
+        String(table.id),
+        table.tableKey ? String(table.tableKey) : null,
+        table.idString ? String(table.idString) : null,
+        table.title ? table.title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') : null,
+      ].filter(Boolean))
+    );
+    const moduleSectionKeys = new Set(
+      modules.flatMap((m) => [getSectionKey(m), String(m.number || '').toLowerCase(), String(m.id || '').toLowerCase()]).filter(Boolean)
+    );
+
+    // 1. Collect all module fields plus any __tb_ dynamic button instances & state
+    const scopedValues = {};
+    Object.entries(values || {}).forEach(([key, val]) => {
+      if (fieldIds.has(key) || key === SIGN_OFF_FIELD || key === ADMIN_SUBMISSION_STATUS_FIELD) {
+        scopedValues[key] = val;
+      } else if (key.startsWith('__tb_')) {
+        scopedValues[key] = val;
+      }
+    });
+
+    // 2. Collect all module static tables AND scoped tables for dynamic repeater buttons
+    const scopedTables = {};
+    moduleTables.forEach((table) => {
+      if (data.tables[table.id] !== undefined) {
+        scopedTables[table.id] = data.tables[table.id];
+      }
+      if (table.tableKey && data.tables[table.tableKey] !== undefined) {
+        scopedTables[table.tableKey] = data.tables[table.tableKey];
+      }
+    });
+
+    Object.entries(data.tables || {}).forEach(([key, rows]) => {
+      if (moduleTableKeys.has(key)) {
+        scopedTables[key] = rows;
+      } else if (key.includes('__')) {
+        const parsed = parseScopedTableKey(key);
+        const baseKey = parsed.baseKey || '';
+        const baseNoTable = baseKey.replace(/^table_/, '');
+        const matchesTable = Array.from(moduleTableKeys).some((tk) => {
+          const tkLower = tk.toLowerCase();
+          const tkNoTable = tkLower.replace(/^table_/, '');
+          return tkLower === baseKey.toLowerCase() || tkNoTable === baseNoTable.toLowerCase();
+        });
+        const matchesSection = !parsed.sectionKey || moduleSectionKeys.has(parsed.sectionKey.toLowerCase());
+        if (matchesTable || matchesSection) {
+          scopedTables[key] = rows;
+        }
+      }
+    });
+
     return {
       ...buildSubmissionPayload({
         auditType: "administrative",
