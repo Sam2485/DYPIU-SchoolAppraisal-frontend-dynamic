@@ -53,6 +53,7 @@ export const normalizeContextRole = (context = {}) => {
     const r = String(context.role).toLowerCase().trim();
     if (r.includes('ext')) return 'external';
     if (r.includes('audit') || r.includes('int')) return 'internal';
+    if (r.includes('admin')) return 'administrative';
     return 'director';
   }
   return '';
@@ -209,7 +210,12 @@ export const getActiveInstancesForButton = (button, valuesData = {}, tablesData 
 
   // 1. Check context-scoped instancesKey in valuesData
   const scopedKey = buildButtonInstancesKey(button, context);
-  const rawFromScoped = valuesData?.[scopedKey];
+  let rawFromScoped = valuesData?.[scopedKey];
+  if ((rawFromScoped === undefined || rawFromScoped === null) && (expectedRole === 'administrative' || expectedRole === 'director')) {
+    const altRole = expectedRole === 'administrative' ? 'director' : 'administrative';
+    const altKey = buildButtonInstancesKey(button, { ...ctxObj, role: altRole });
+    rawFromScoped = valuesData?.[altKey];
+  }
   if (rawFromScoped !== undefined && rawFromScoped !== null) {
     if (Array.isArray(rawFromScoped)) {
       const arr = rawFromScoped.map((item) => String(item).trim()).filter(Boolean);
@@ -279,7 +285,12 @@ export const getActiveInstancesForButton = (button, valuesData = {}, tablesData 
 
       // Filter by role if both are specified
       if (expectedRole && parsed.role && expectedRole !== parsed.role) {
-        return;
+        const isCompatibleAdminRole =
+          (expectedRole === 'administrative' && (parsed.role === 'director' || !parsed.role)) ||
+          (expectedRole === 'director' && (parsed.role === 'administrative' || !parsed.role));
+        if (!isCompatibleAdminRole) {
+          return;
+        }
       }
       // If expected role is external, never inherit internal auditor or director data
       if (expectedRole === 'external' && (!parsed.role || parsed.role !== 'external')) {
@@ -347,6 +358,15 @@ export const getScopedTableRows = (tablesData = {}, table = {}, instance = null,
       const scoped = buildScopedTableKey(ck, instance, context);
       if (Array.isArray(tablesData[scoped]) && tablesData[scoped].length > 0) {
         return tablesData[scoped];
+      }
+      const ctxObj = typeof context === 'string' ? { role: context } : (context || {});
+      const ctxRole = normalizeContextRole(ctxObj);
+      if (ctxRole === 'administrative' || ctxRole === 'director') {
+        const altRole = ctxRole === 'administrative' ? 'director' : 'administrative';
+        const altScoped = buildScopedTableKey(ck, instance, { ...ctxObj, role: altRole });
+        if (Array.isArray(tablesData[altScoped]) && tablesData[altScoped].length > 0) {
+          return tablesData[altScoped];
+        }
       }
     }
 
