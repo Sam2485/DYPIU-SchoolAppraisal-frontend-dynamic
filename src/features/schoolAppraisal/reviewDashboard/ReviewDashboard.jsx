@@ -7222,6 +7222,7 @@ function SubmittedFormViewer({
                       tables={sectionTables}
                       allFormDataTables={formData.tables}
                       tableButtons={sectionTableButtons}
+                      sectionKey={getSectionKey(activeSection)}
                     />
                   </div>
                 )}
@@ -7247,6 +7248,7 @@ function SubmittedFormViewer({
                       tables={sectionTables}
                       allFormDataTables={formData.tables}
                       tableButtons={sectionTableButtons}
+                      sectionKey={getSectionKey(activeSection)}
                     />
                   </div>
                 )}
@@ -7269,6 +7271,7 @@ function SubmittedFormViewer({
                         tables={sectionTables}
                         allFormDataTables={previousInternalPartETables || formData.tables}
                         tableButtons={sectionTableButtons}
+                        sectionKey={getSectionKey(activeSection)}
                       />
                       {previousInternalIqacRemarks && (
                         <div style={{ marginTop: 12 }}>
@@ -7293,6 +7296,7 @@ function SubmittedFormViewer({
                         tables={sectionTables}
                         allFormDataTables={formData.tables}
                         tableButtons={sectionTableButtons}
+                        sectionKey={getSectionKey(activeSection)}
                       />
                     </div>
                   )}
@@ -7714,7 +7718,7 @@ function ReadOnlyFieldGrid({ fields, values }) {
   );
 }
 
-function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType, tables = [], tableButtons = [] }) {
+function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType, tables = [], tableButtons = [], sectionKey = "" }) {
   const visibleFields = (fields || []).filter((field) => field.kind !== "heading");
   const headerFields = visibleFields.filter((f) => !isReviewRemarkField(f));
   const reviewRemarkFields = visibleFields.filter((f) => isReviewRemarkField(f));
@@ -7758,8 +7762,7 @@ function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType,
           remarks;
 
         const assignmentContext = {
-          section: activeSection,
-          sectionKey: getSectionKey(activeSection),
+          sectionKey,
           role: assignment.auditorType || fallbackAuditorType || "internal",
           auditorType: assignment.auditorType || fallbackAuditorType || "internal",
         };
@@ -7853,8 +7856,7 @@ function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType,
                       renderAssignmentTable(scopedTable, scopedKey, activeInstance)
                     }
                     readOnly={true}
-                    section={activeSection}
-                    sectionKey={getSectionKey(activeSection)}
+                    sectionKey={sectionKey}
                     role={assignmentContext.role}
                     auditorType={assignmentContext.auditorType}
                   />
