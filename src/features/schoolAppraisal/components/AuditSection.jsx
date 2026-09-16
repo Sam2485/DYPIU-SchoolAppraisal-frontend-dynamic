@@ -1,4 +1,5 @@
 //renders a section of the audit form, like part A, part B, etc. It can contain fields and tables
+import { useMemo } from "react";
 import AuditTable from "./AuditTable";
 import { TableButtonGroup } from "./TableButtonGroup";
 import { partitionTablesByButtons, buildScopedTableKey, getScopedTableRows, normalizeTableButtons } from "../utils/tableButtonHelpers";
@@ -795,7 +796,7 @@ function AuditorCard({ assignment, index, fieldDefinitions, tableDefinitions, fa
       scopedKey: overrideKey || table.scopedKey || (activeInstance ? buildScopedTableKey(table.tableKey || table.idString || table.id, activeInstance) : undefined),
     };
 
-    let rows = null;
+    let rows;
     if (activeInstance) {
       rows = getScopedTableRows(assignmentTables, tableWithKey, activeInstance);
       if (!rows || rows.length === 0) {

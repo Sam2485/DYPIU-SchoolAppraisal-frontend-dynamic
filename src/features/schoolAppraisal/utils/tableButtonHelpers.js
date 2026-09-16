@@ -179,7 +179,7 @@ export const getScopedTableRows = (tablesData = {}, table = {}, instance = null)
     }
     // Also check case-insensitive match for scoped keys
     const entries = Object.entries(tablesData);
-    const match = entries.find(([k, v]) => {
+    const match = entries.find(([k]) => {
       const kLower = k.toLowerCase();
       if (!kLower.includes('__')) return false;
       const [kBase, ...kRest] = kLower.split('__');

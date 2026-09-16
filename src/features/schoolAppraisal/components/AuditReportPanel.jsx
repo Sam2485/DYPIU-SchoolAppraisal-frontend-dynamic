@@ -9,6 +9,15 @@ import {
   getScopedTableRows,
 } from "../utils/tableButtonHelpers";
 
+const safeJsonParse = (val, fallback = {}) => {
+  if (typeof val !== "string") return fallback;
+  try {
+    return JSON.parse(val);
+  } catch {
+    return fallback;
+  }
+};
+
 const parseIfJson = (value) => {
   if (typeof value === "string" && (value.trim().startsWith("[") || value.trim().startsWith("{"))) {
     try {

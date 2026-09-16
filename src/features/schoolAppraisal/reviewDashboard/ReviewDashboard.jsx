@@ -115,6 +115,16 @@ const routeViewFor = (value, fallback) => {
   return REVIEW_ROUTE_VIEW_IDS.has(normalized) ? normalized : fallback;
 };
 
+const safeJsonParse = (val, fallback = {}) => {
+  if (val == null || val === "") return fallback;
+  if (typeof val !== "string") return val;
+  try {
+    return JSON.parse(val);
+  } catch {
+    return fallback;
+  }
+};
+
 const REVIEW_ROLE_CONFIG = {
   "vice-chancellor": {
     badge: "VC",
@@ -7541,7 +7551,7 @@ function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType,
   const headerFields = visibleFields.filter((f) => !isReviewRemarkField(f));
   const reviewRemarkFields = visibleFields.filter((f) => isReviewRemarkField(f));
   const displayAssignments = groupAuditorAssignmentsForDisplay(assignments).filter(auditorAssignmentSubmitted);
-  if (!displayAssignments.length) return null;
+
   const uniqueTables = useMemo(() => {
     const seen = new Set();
     return (tables || []).filter((table) => {
@@ -7555,6 +7565,8 @@ function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType,
   const { unassignedTables, buttonGroups } = useMemo(() => {
     return partitionTablesByButtons(uniqueTables, tableButtons);
   }, [uniqueTables, tableButtons]);
+
+  if (!displayAssignments.length) return null;
 
   return (
     <div className="review-auditor-review-stack" style={styles.auditorReviewStack}>
@@ -7584,7 +7596,7 @@ function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType,
             scopedKey: overrideKey || table.scopedKey || (activeInstance ? buildScopedTableKey(table.tableKey || table.idString || table.id, activeInstance) : undefined),
           };
 
-          let rows = null;
+          let rows;
           if (activeInstance) {
             rows = getScopedTableRows(assignmentTables, tableWithKey, activeInstance);
             if (!rows || rows.length === 0) {

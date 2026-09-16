@@ -212,23 +212,25 @@ export default function AdministrativeReportPanel({
   const resolvedUniversityLogo = getAttachmentUrl(sessionStorage.getItem("universityLogo")) || "";
   const resolvedIqacLogo = getAttachmentUrl(sessionStorage.getItem("iqacLogo")) || "";
 
+  const dataTables = data?.tables;
   const combinedTables = useMemo(() => {
-    const t = { ...(data?.tables || {}) };
+    const t = { ...(dataTables || {}) };
     submittedAuditorAssignments.forEach((a) => {
       const aTables = safeObjectValue(a.tables || (a.tablesData ? safeJsonParse(a.tablesData, {}) : null));
       Object.assign(t, aTables);
     });
     return t;
-  }, [data?.tables, submittedAuditorAssignments]);
+  }, [dataTables, submittedAuditorAssignments]);
 
+  const dataFields = data?.fields;
   const combinedFields = useMemo(() => {
-    const f = { ...(data?.fields || {}) };
+    const f = { ...(dataFields || {}) };
     submittedAuditorAssignments.forEach((a) => {
       const aValues = safeObjectValue(a.values || (a.valuesData ? safeJsonParse(a.valuesData, {}) : null));
       Object.assign(f, aValues);
     });
     return f;
-  }, [data?.fields, submittedAuditorAssignments]);
+  }, [dataFields, submittedAuditorAssignments]);
   return (
     <div className="generated-report" style={styles.panel}>
       <div className="generated-report__cover" style={styles.header}>
