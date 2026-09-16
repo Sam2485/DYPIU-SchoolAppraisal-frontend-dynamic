@@ -1,7 +1,7 @@
 //renders a section of the audit form, like part A, part B, etc. It can contain fields and tables
 import AuditTable from "./AuditTable";
 import { TableButtonGroup } from "./TableButtonGroup";
-import { partitionTablesByButtons, buildScopedTableKey } from "../utils/tableButtonHelpers";
+import { partitionTablesByButtons, buildScopedTableKey, getScopedTableRows, normalizeTableButtons } from "../utils/tableButtonHelpers";
 import DateInput from "./DateInput";
 import { columnsWithSerial, serialColumnFor, numberedRowFor, withSerialNumbers, emptyRowFor } from "./tableHelpers";
 import { getAttachmentUrl } from "../../../utils/attachment";
@@ -768,7 +768,7 @@ const isReviewRemarkField = (f) => {
   return false;
 };
 
-function AuditorCard({ assignment, index, fieldDefinitions, tableDefinitions, fallbackAuditorType, allFormDataTables = {} }) {
+function AuditorCard({ assignment, index, fieldDefinitions, tableDefinitions, fallbackAuditorType, allFormDataTables = {}, tableButtons = [] }) {
   const values = safeObjectValue(assignment.values || assignmentPartEValues(assignment));
   const assignmentTables = safeObjectValue(
     assignment.tables ||
@@ -783,6 +783,52 @@ function AuditorCard({ assignment, index, fieldDefinitions, tableDefinitions, fa
   const finalRemarks =
     (reviewRemarkField ? resolveFieldValue(reviewRemarkField, values) : "") ||
     remarks;
+
+  const { unassignedTables, buttonGroups } = useMemo(() => {
+    return partitionTablesByButtons(tableDefinitions, tableButtons);
+  }, [tableDefinitions, tableButtons]);
+
+  const renderSingleCardTable = (table, overrideKey, activeInstance) => {
+    const tableKey = overrideKey || table.scopedKey || table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
+    const tableWithKey = {
+      ...table,
+      scopedKey: overrideKey || table.scopedKey || (activeInstance ? buildScopedTableKey(table.tableKey || table.idString || table.id, activeInstance) : undefined),
+    };
+
+    let rows = null;
+    if (activeInstance) {
+      rows = getScopedTableRows(assignmentTables, tableWithKey, activeInstance);
+      if (!rows || rows.length === 0) {
+        if (assignmentTables && (assignmentTables[tableWithKey.scopedKey] || assignmentTables[tableKey])) {
+          rows = assignmentTables[tableWithKey.scopedKey] || assignmentTables[tableKey];
+        }
+      }
+      if (!rows || rows.length === 0) {
+        rows = getScopedTableRows(allFormDataTables, tableWithKey, activeInstance);
+      }
+      if (!rows || rows.length === 0) {
+        if (allFormDataTables && (allFormDataTables[tableWithKey.scopedKey] || allFormDataTables[tableKey])) {
+          rows = allFormDataTables[tableWithKey.scopedKey] || allFormDataTables[tableKey];
+        }
+      }
+    } else {
+      rows =
+        (assignmentTables && (assignmentTables[table.id] || assignmentTables[tableKey])) ||
+        getTableRows(assignmentTables, tableWithKey) ||
+        (allFormDataTables && (allFormDataTables[table.id] || allFormDataTables[tableKey])) ||
+        getTableRows(allFormDataTables, tableWithKey) ||
+        [];
+    }
+
+    return (
+      <ReadOnlyTable
+        key={`auditor-${index}-${tableWithKey.id || tableKey || table.tableKey || table.idString}`}
+        table={tableWithKey}
+        rows={rows || []}
+        values={values}
+      />
+    );
+  };
 
   return (
     <section key={assignment.key || index} style={styles.auditorReviewCard}>
@@ -818,23 +864,25 @@ function AuditorCard({ assignment, index, fieldDefinitions, tableDefinitions, fa
 
       {Array.isArray(tableDefinitions) && tableDefinitions.length > 0 && (
         <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 14, width: "100%" }}>
-          {tableDefinitions.map((table) => {
-            const tableKey = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
-            const rows =
-              (assignmentTables && (assignmentTables[table.id] || assignmentTables[tableKey])) ||
-              getTableRows(assignmentTables, table) ||
-              (allFormDataTables && (allFormDataTables[table.id] || allFormDataTables[tableKey])) ||
-              getTableRows(allFormDataTables, table) ||
-              [];
-            return (
-              <ReadOnlyTable
-                key={`auditor-${index}-${table.id || tableKey || table.tableKey || table.idString}`}
-                table={table}
-                rows={rows}
-                values={values}
-              />
-            );
-          })}
+          {/* 1. Permanent / Unassigned Tables */}
+          {unassignedTables.map((table) => renderSingleCardTable(table))}
+
+          {/* 2. Button-Triggered Table Groups */}
+          {buttonGroups.map(({ button, tables: assignedTables }) => (
+            <TableButtonGroup
+              key={button.id}
+              button={button}
+              tables={assignedTables}
+              valuesData={values}
+              tablesData={assignmentTables && Object.keys(assignmentTables).length > 0 ? assignmentTables : allFormDataTables}
+              onValueChange={null}
+              onTableChange={null}
+              renderTable={(scopedTable, scopedKey, activeInstance) =>
+                renderSingleCardTable(scopedTable, scopedKey, activeInstance)
+              }
+              readOnly={true}
+            />
+          ))}
         </div>
       )}
 
@@ -876,6 +924,19 @@ export function AuditorSectionReviewPanel({ section, review, tables = {}, values
     seenFields.add(key);
     return true;
   });
+
+  const tableButtons = useMemo(() => {
+    const secButtons = normalizeTableButtons(section?.tableButtons);
+    const blockButtons = (section?.blocks || []).flatMap((b) => normalizeTableButtons(b.tableButtons));
+    const combined = [...secButtons, ...blockButtons];
+    const seen = new Set();
+    return combined.filter((btn) => {
+      const id = String(btn?.id || "").trim();
+      if (!id || seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+  }, [section]);
 
   const internalAssignments = Array.isArray(review?.internalAssignments) && review.internalAssignments.length > 0
     ? review.internalAssignments
@@ -957,6 +1018,7 @@ export function AuditorSectionReviewPanel({ section, review, tables = {}, values
               tableDefinitions={tableDefinitions}
               fallbackAuditorType="internal"
               allFormDataTables={tables}
+              tableButtons={tableButtons}
             />
           ))}
         </div>
@@ -982,6 +1044,7 @@ export function AuditorSectionReviewPanel({ section, review, tables = {}, values
               tableDefinitions={tableDefinitions}
               fallbackAuditorType="external"
               allFormDataTables={tables}
+              tableButtons={tableButtons}
             />
           ))}
         </div>

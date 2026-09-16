@@ -28,7 +28,7 @@ import { InlineSpinner, LoadingState, SkeletonList } from "../components/Loading
 import { columnsWithSerial, serialColumnFor, numberedRowFor, withSerialNumbers } from "../components/tableHelpers";
 import AuditTable from "../components/AuditTable";
 import { TableButtonGroup } from "../components/TableButtonGroup";
-import { partitionTablesByButtons, getScopedTableRows, buildScopedTableKey } from "../utils/tableButtonHelpers";
+import { partitionTablesByButtons, getScopedTableRows, buildScopedTableKey, normalizeTableButtons } from "../utils/tableButtonHelpers";
 import UserProfileModal from "../components/UserProfileModal";
 import AdministrativeReportPanel from "../administrativeAudit/AdministrativeReportPanel";
 import UserManagementPanel from "../userManagement/UserManagementPanel";
@@ -340,6 +340,7 @@ const parseIfJson = (value) => {
 const getTableRows = (tables = {}, table = {}) => {
   if (!tables || typeof tables !== "object") return [];
   const keysToTry = [
+    table.scopedKey,
     table.tableKey,
     table.idString,
     table.id != null ? String(table.id) : null,
@@ -6759,6 +6760,19 @@ function SubmittedFormViewer({
     });
   }, [activeSection]);
 
+  const sectionTableButtons = useMemo(() => {
+    const secButtons = normalizeTableButtons(activeSection?.tableButtons);
+    const blockButtons = (activeSection?.blocks || []).flatMap((b) => normalizeTableButtons(b.tableButtons));
+    const combined = [...secButtons, ...blockButtons];
+    const seen = new Set();
+    return combined.filter((btn) => {
+      const id = String(btn?.id || "").trim();
+      if (!id || seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+  }, [activeSection]);
+
   const sectionAllFields = useMemo(() => {
     const all = (activeSection?.fields || []).concat(
       (activeSection?.blocks || []).flatMap((b) => (b.type === "fields" && Array.isArray(b.fields) ? b.fields : []))
@@ -7051,6 +7065,7 @@ function SubmittedFormViewer({
                       fallbackAuditorType="internal"
                       tables={sectionTables}
                       allFormDataTables={formData.tables}
+                      tableButtons={sectionTableButtons}
                     />
                   </div>
                 )}
@@ -7075,6 +7090,7 @@ function SubmittedFormViewer({
                       fallbackAuditorType="external"
                       tables={sectionTables}
                       allFormDataTables={formData.tables}
+                      tableButtons={sectionTableButtons}
                     />
                   </div>
                 )}
@@ -7096,6 +7112,7 @@ function SubmittedFormViewer({
                         fallbackAuditorType="internal"
                         tables={sectionTables}
                         allFormDataTables={previousInternalPartETables || formData.tables}
+                        tableButtons={sectionTableButtons}
                       />
                       {previousInternalIqacRemarks && (
                         <div style={{ marginTop: 12 }}>
@@ -7119,6 +7136,7 @@ function SubmittedFormViewer({
                         fallbackAuditorType={isExternalCycle ? "external" : "internal"}
                         tables={sectionTables}
                         allFormDataTables={formData.tables}
+                        tableButtons={sectionTableButtons}
                       />
                     </div>
                   )}
@@ -7518,7 +7536,7 @@ function ReadOnlyFieldGrid({ fields, values }) {
   );
 }
 
-function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType, tables = [], allFormDataTables = {} }) {
+function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType, tables = [], allFormDataTables = {}, tableButtons = [] }) {
   const visibleFields = (fields || []).filter((field) => field.kind !== "heading");
   const headerFields = visibleFields.filter((f) => !isReviewRemarkField(f));
   const reviewRemarkFields = visibleFields.filter((f) => isReviewRemarkField(f));
@@ -7533,6 +7551,11 @@ function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType,
       return true;
     });
   }, [tables]);
+
+  const { unassignedTables, buttonGroups } = useMemo(() => {
+    return partitionTablesByButtons(uniqueTables, tableButtons);
+  }, [uniqueTables, tableButtons]);
+
   return (
     <div className="review-auditor-review-stack" style={styles.auditorReviewStack}>
       {displayAssignments.map((assignment, index) => {
@@ -7542,11 +7565,67 @@ function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType,
           .filter(Boolean)
           .join(", ") || "-";
         const remarks = assignment.remarks || values.remarks || values.auditObservations || "";
-        const assignmentTables = assignment.tables || {};
+        const assignmentTables = safeObjectValue(
+          assignment.tables ||
+          (assignment.tablesData ? safeJsonParse(assignment.tablesData, {}) : null) ||
+          (assignment.reviewTablesData ? safeJsonParse(assignment.reviewTablesData, {}) : null) ||
+          assignment.reviewTables ||
+          {}
+        );
         const reviewRemarkField = reviewRemarkFields[0];
         const finalRemarks =
           (reviewRemarkField ? resolveFieldValue(reviewRemarkField, values) : "") ||
           remarks;
+
+        const renderAssignmentTable = (table, overrideKey, activeInstance) => {
+          const tableKey = overrideKey || table.scopedKey || table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
+          const tableWithKey = {
+            ...table,
+            scopedKey: overrideKey || table.scopedKey || (activeInstance ? buildScopedTableKey(table.tableKey || table.idString || table.id, activeInstance) : undefined),
+          };
+
+          let rows = null;
+          if (activeInstance) {
+            rows = getScopedTableRows(assignmentTables, tableWithKey, activeInstance);
+            if (!rows || rows.length === 0) {
+              if (assignmentTables && (assignmentTables[tableWithKey.scopedKey] || assignmentTables[tableKey])) {
+                rows = assignmentTables[tableWithKey.scopedKey] || assignmentTables[tableKey];
+              }
+            }
+            if (!rows || rows.length === 0) {
+              rows = getScopedTableRows(allFormDataTables, tableWithKey, activeInstance);
+            }
+            if (!rows || rows.length === 0) {
+              if (allFormDataTables && (allFormDataTables[tableWithKey.scopedKey] || allFormDataTables[tableKey])) {
+                rows = allFormDataTables[tableWithKey.scopedKey] || allFormDataTables[tableKey];
+              }
+            }
+          } else {
+            rows = getTableRows(assignmentTables, tableWithKey);
+            if (!rows || rows.length === 0) {
+              if (assignmentTables && (assignmentTables[tableWithKey.id] || assignmentTables[tableKey])) {
+                rows = assignmentTables[tableWithKey.id] || assignmentTables[tableKey];
+              }
+            }
+            if (!rows || rows.length === 0) {
+              rows = getTableRows(allFormDataTables, tableWithKey);
+            }
+            if (!rows || rows.length === 0) {
+              if (allFormDataTables && (allFormDataTables[tableWithKey.id] || allFormDataTables[tableKey])) {
+                rows = allFormDataTables[tableWithKey.id] || allFormDataTables[tableKey];
+              }
+            }
+          }
+
+          return (
+            <ReadOnlyTable
+              key={tableWithKey.id ? `${tableWithKey.id}_${tableKey}` : tableKey}
+              table={tableWithKey}
+              rows={rows || []}
+              values={values}
+            />
+          );
+        };
 
         return (
           <section key={assignment.key || index} style={styles.auditorReviewCard}>
@@ -7586,31 +7665,25 @@ function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType,
 
             {Array.isArray(uniqueTables) && uniqueTables.length > 0 && (
               <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 14, width: "100%" }}>
-                {uniqueTables.map((table) => {
-                  const tableKey = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
-                  let rows = getTableRows(assignmentTables, table);
-                  if (!rows || rows.length === 0) {
-                    if (assignmentTables && (assignmentTables[table.id] || assignmentTables[tableKey])) {
-                      rows = assignmentTables[table.id] || assignmentTables[tableKey];
+                {/* 1. Permanent / Unassigned Tables */}
+                {unassignedTables.map((table) => renderAssignmentTable(table))}
+
+                {/* 2. Button-Triggered Table Groups */}
+                {buttonGroups.map(({ button, tables: assignedTables }) => (
+                  <TableButtonGroup
+                    key={button.id}
+                    button={button}
+                    tables={assignedTables}
+                    valuesData={values}
+                    tablesData={assignmentTables && Object.keys(assignmentTables).length > 0 ? assignmentTables : allFormDataTables}
+                    onValueChange={null}
+                    onTableChange={null}
+                    renderTable={(scopedTable, scopedKey, activeInstance) =>
+                      renderAssignmentTable(scopedTable, scopedKey, activeInstance)
                     }
-                  }
-                  if (!rows || rows.length === 0) {
-                    rows = getTableRows(allFormDataTables, table);
-                  }
-                  if (!rows || rows.length === 0) {
-                    if (allFormDataTables && (allFormDataTables[table.id] || allFormDataTables[tableKey])) {
-                      rows = allFormDataTables[table.id] || allFormDataTables[tableKey];
-                    }
-                  }
-                  return (
-                    <ReadOnlyTable
-                      key={table.id || tableKey || table.tableKey || table.idString}
-                      table={table}
-                      rows={rows || []}
-                      values={values}
-                    />
-                  );
-                })}
+                    readOnly={true}
+                  />
+                ))}
               </div>
             )}
 

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { columnsWithSerial, serialColumnFor } from "../components/tableHelpers";
 import { SIGN_OFF_FIELD } from "../../../api/submissions";
 import { formatDateDDMMYYYY } from "../../../utils/dateFormat";
@@ -7,6 +8,15 @@ import {
   getActiveInstancesForButton,
   getScopedTableRows,
 } from "../utils/tableButtonHelpers";
+
+const safeJsonParse = (val, fallback = {}) => {
+  if (typeof val !== "string") return fallback;
+  try {
+    return JSON.parse(val);
+  } catch {
+    return fallback;
+  }
+};
 
 const parseIfJson = (value) => {
   if (typeof value === "string" && (value.trim().startsWith("[") || value.trim().startsWith("{"))) {
@@ -22,6 +32,7 @@ const parseIfJson = (value) => {
 const getTableRows = (tables = {}, table = {}) => {
   if (!tables || typeof tables !== "object") return [];
   const keysToTry = [
+    table.scopedKey,
     table.tableKey,
     table.idString,
     table.id != null ? String(table.id) : null,
@@ -200,6 +211,24 @@ export default function AdministrativeReportPanel({
   const submittedAuditorAssignments = auditorAssignments.filter(isSubmittedAuditorAssignment);
   const resolvedUniversityLogo = getAttachmentUrl(sessionStorage.getItem("universityLogo")) || "";
   const resolvedIqacLogo = getAttachmentUrl(sessionStorage.getItem("iqacLogo")) || "";
+
+  const combinedTables = useMemo(() => {
+    const t = { ...(data?.tables || {}) };
+    submittedAuditorAssignments.forEach((a) => {
+      const aTables = safeObjectValue(a.tables || (a.tablesData ? safeJsonParse(a.tablesData, {}) : null));
+      Object.assign(t, aTables);
+    });
+    return t;
+  }, [data?.tables, submittedAuditorAssignments]);
+
+  const combinedFields = useMemo(() => {
+    const f = { ...(data?.fields || {}) };
+    submittedAuditorAssignments.forEach((a) => {
+      const aValues = safeObjectValue(a.values || (a.valuesData ? safeJsonParse(a.valuesData, {}) : null));
+      Object.assign(f, aValues);
+    });
+    return f;
+  }, [data?.fields, submittedAuditorAssignments]);
   return (
     <div className="generated-report" style={styles.panel}>
       <div className="generated-report__cover" style={styles.header}>
@@ -246,7 +275,7 @@ export default function AdministrativeReportPanel({
                   );
                 }
                 return (
-                  <ReportFieldsTable key={`fields-${index}`} fields={block.fields} values={data.fields} />
+                  <ReportFieldsTable key={`fields-${index}`} fields={block.fields} values={combinedFields} />
                 );
               }
 
@@ -263,7 +292,7 @@ export default function AdministrativeReportPanel({
                   <ReportFieldsTable
                     key={`attachment-${block.id}`}
                     fields={[{ id: block.id, label: block.label }]}
-                    values={data.fields}
+                    values={combinedFields}
                   />
                 );
               }
@@ -282,8 +311,8 @@ export default function AdministrativeReportPanel({
                 const tableKey = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
                 const displayTitle = instance ? `${table.title || ''} (${instance})` : table.title;
                 const rows = instance
-                  ? (getScopedTableRows(data.tables, table, instance) || [])
-                  : getTableRows(data.tables, table);
+                  ? (getScopedTableRows(combinedTables, table, instance) || [])
+                  : getTableRows(combinedTables, table);
 
                 return (
                   <div className="generated-report__table-block" key={instance ? `${table.id || tableKey}_${instance}` : (table.id || tableKey)} style={styles.tableBlock}>
@@ -348,7 +377,7 @@ export default function AdministrativeReportPanel({
 
                   {/* 2. Button-Assigned Tables per instance */}
                   {buttonGroups.map(({ button, tables: assignedTables }) => {
-                    const instances = getActiveInstancesForButton(button, data.fields, data.tables);
+                    const instances = getActiveInstancesForButton(button, combinedFields, combinedTables);
                     if (instances.length === 0) return null;
 
                     return instances.map((instance) =>

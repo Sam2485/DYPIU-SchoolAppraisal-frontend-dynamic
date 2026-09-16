@@ -91,28 +91,31 @@ export const getActiveInstancesForButton = (button, valuesData = {}, tablesData 
   const instancesKey = `__tb_${button.id}_instances`;
   const rawFromValues = valuesData?.[instancesKey];
 
-  // If instancesKey is defined in valuesData (even if []), it is the authoritative source of truth
+  // If instancesKey is defined in valuesData (even if []), check if it has items
   if (rawFromValues !== undefined && rawFromValues !== null) {
     if (Array.isArray(rawFromValues)) {
-      return rawFromValues.map((item) => String(item).trim()).filter(Boolean);
+      const arr = rawFromValues.map((item) => String(item).trim()).filter(Boolean);
+      if (arr.length > 0) return arr;
     }
     if (typeof rawFromValues === 'string') {
       const trimmed = rawFromValues.trim();
-      if (!trimmed) return [];
-      try {
-        const parsed = JSON.parse(trimmed);
-        if (Array.isArray(parsed)) {
-          return parsed.map((item) => String(item).trim()).filter(Boolean);
+      if (trimmed) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (Array.isArray(parsed)) {
+            const arr = parsed.map((item) => String(item).trim()).filter(Boolean);
+            if (arr.length > 0) return arr;
+          }
+        } catch {
+          const arr = trimmed.split(',').map((s) => s.trim()).filter(Boolean);
+          if (arr.length > 0) return arr;
         }
-      } catch {
-        return trimmed.split(',').map((s) => s.trim()).filter(Boolean);
+        return [trimmed];
       }
-      return [trimmed];
     }
-    return [];
   }
 
-  // Fallback discovery from tablesData only when valuesData does not have instancesKey at all
+  // Fallback discovery from tablesData
   const instancesSet = new Set();
   if (tablesData && typeof tablesData === 'object') {
     const assignedKeys = (button.assignedTableKeys || []).map((k) => String(k).trim().toLowerCase());
@@ -122,7 +125,14 @@ export const getActiveInstancesForButton = (button, valuesData = {}, tablesData 
         const instance = rest.join('__').trim();
         const rows = tablesData[key];
         const hasRows = Array.isArray(rows) ? rows.length > 0 : Boolean(rows);
-        if (instance && hasRows && (assignedKeys.length === 0 || assignedKeys.includes(baseKey.toLowerCase()))) {
+        const baseLower = baseKey.toLowerCase();
+        const baseNoTable = baseLower.replace(/^table_/, '');
+        const isMatch =
+          assignedKeys.length === 0 ||
+          assignedKeys.includes(baseLower) ||
+          assignedKeys.includes(baseNoTable) ||
+          assignedKeys.some((ak) => ak.replace(/^table_/, '') === baseNoTable);
+        if (instance && hasRows && isMatch) {
           instancesSet.add(instance);
         }
       }
@@ -150,9 +160,39 @@ export const getScopedTableRows = (tablesData = {}, table = {}, instance = null)
     table.tableKey,
     table.idString,
     table.id != null ? String(table.id) : null,
+    table.id != null ? `table_${table.id}` : null,
   ].filter(Boolean);
 
+  if (table.tableKey && String(table.tableKey).startsWith('table_')) {
+    candidateKeys.push(String(table.tableKey).replace(/^table_/, ''));
+  }
+
   if (instance) {
+    if (table.scopedKey && Array.isArray(tablesData[table.scopedKey]) && tablesData[table.scopedKey].length > 0) {
+      return tablesData[table.scopedKey];
+    }
+    for (const ck of candidateKeys) {
+      const scoped = `${ck}__${instance}`;
+      if (Array.isArray(tablesData[scoped]) && tablesData[scoped].length > 0) {
+        return tablesData[scoped];
+      }
+    }
+    // Also check case-insensitive match for scoped keys
+    const entries = Object.entries(tablesData);
+    const match = entries.find(([k, v]) => {
+      const kLower = k.toLowerCase();
+      if (!kLower.includes('__')) return false;
+      const [kBase, ...kRest] = kLower.split('__');
+      const kInst = kRest.join('__');
+      if (kInst !== String(instance).toLowerCase()) return false;
+      return candidateKeys.some((ck) => {
+        const ckLower = String(ck).toLowerCase();
+        return ckLower === kBase || ckLower.replace(/^table_/, '') === kBase.replace(/^table_/, '');
+      });
+    });
+    if (match && Array.isArray(match[1])) {
+      return match[1];
+    }
     if (table.scopedKey && Array.isArray(tablesData[table.scopedKey])) {
       return tablesData[table.scopedKey];
     }

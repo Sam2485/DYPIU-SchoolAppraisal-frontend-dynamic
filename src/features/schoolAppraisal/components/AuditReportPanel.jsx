@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { columnsWithSerial, serialColumnFor } from "./tableHelpers";
 import { SIGN_OFF_FIELD } from "../../../api/submissions";
 import { formatDateDDMMYYYY } from "../../../utils/dateFormat";
@@ -22,6 +23,7 @@ const parseIfJson = (value) => {
 const getTableRows = (tables = {}, table = {}) => {
   if (!tables || typeof tables !== "object") return [];
   const keysToTry = [
+    table.scopedKey,
     table.tableKey,
     table.idString,
     table.id != null ? String(table.id) : null,
@@ -285,6 +287,24 @@ export default function AuditReportPanel({
   const resolvedUniversityLogo = getAttachmentUrl(sessionStorage.getItem("universityLogo")) || "";
   const resolvedIqacLogo = getAttachmentUrl(sessionStorage.getItem("iqacLogo")) || "";
 
+  const combinedTables = useMemo(() => {
+    const t = { ...(tables || {}) };
+    submittedAuditorAssignments.forEach((a) => {
+      const aTables = safeObjectValue(a.tables || (a.tablesData ? safeJsonParse(a.tablesData, {}) : null));
+      Object.assign(t, aTables);
+    });
+    return t;
+  }, [tables, submittedAuditorAssignments]);
+
+  const combinedValues = useMemo(() => {
+    const v = { ...(values || {}) };
+    submittedAuditorAssignments.forEach((a) => {
+      const aValues = safeObjectValue(a.values || (a.valuesData ? safeJsonParse(a.valuesData, {}) : null));
+      Object.assign(v, aValues);
+    });
+    return v;
+  }, [values, submittedAuditorAssignments]);
+
   return (
     <div className="generated-report" style={styles.panel}>
       <header className="generated-report__cover" style={styles.header}>
@@ -337,14 +357,14 @@ export default function AuditReportPanel({
                     </div>
                     <div style={styles.partEReportBlock}>
                       <h3 style={styles.partEReportTitle}>External Auditor Review - Current External Audit</h3>
-                      <ReportFieldsTable fields={block.fields} values={values} />
+                      <ReportFieldsTable fields={block.fields} values={combinedValues} />
                     </div>
                   </div>
                 );
               }
 
               return (
-                <ReportFieldsTable key={`fields-${blockIndex}`} fields={block.fields} values={values} />
+                <ReportFieldsTable key={`fields-${blockIndex}`} fields={block.fields} values={combinedValues} />
               );
             }
 
@@ -362,8 +382,8 @@ export default function AuditReportPanel({
               const tableKey = table.tableKey || table.idString || (table.id != null ? String(table.id) : "");
               const displayTitle = instance ? `${table.title || ''} (${instance})` : table.title;
               const rows = instance
-                ? (getScopedTableRows(tables, table, instance) || [])
-                : getTableRows(tables, table);
+                ? (getScopedTableRows(combinedTables, table, instance) || [])
+                : getTableRows(combinedTables, table);
 
               return (
                 <div className="generated-report__table-block" key={instance ? `${table.id || tableKey}_${instance}` : (table.id || tableKey)} style={styles.tableBlock}>
@@ -421,7 +441,7 @@ export default function AuditReportPanel({
 
                 {/* 2. Button-assigned tables for each added instance */}
                 {buttonGroups.map(({ button, tables: assignedTables }) => {
-                  const instances = getActiveInstancesForButton(button, values, tables);
+                  const instances = getActiveInstancesForButton(button, combinedValues, combinedTables);
                   if (instances.length === 0) return null;
 
                   return instances.map((instance) =>
