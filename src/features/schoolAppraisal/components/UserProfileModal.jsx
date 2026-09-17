@@ -15,25 +15,15 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
-function minZoomForImage(imageSize) {
-  if (!imageSize.width || !imageSize.height) return 1;
-  return Math.min(imageSize.width, imageSize.height) / Math.max(imageSize.width, imageSize.height);
-}
-
-function avatarImageLayout(imageSize, zoom, viewportSize = AVATAR_EDITOR_SIZE) {
-  if (!imageSize.width || !imageSize.height) {
-    return { width: viewportSize, height: viewportSize, maxOffsetX: 0, maxOffsetY: 0 };
-  }
-
-  const baseScale = Math.max(viewportSize / imageSize.width, viewportSize / imageSize.height) * zoom;
-  const width = imageSize.width * baseScale;
-  const height = imageSize.height * baseScale;
-
+function calculateBaseSize(naturalWidth = 200, naturalHeight = 200, viewportSize = AVATAR_EDITOR_SIZE) {
+  // Containment: scale down so entire logo/photo fits comfortably within viewport with margin
+  const fitScale = Math.min(
+    (viewportSize * 0.92) / Math.max(1, naturalWidth),
+    (viewportSize * 0.92) / Math.max(1, naturalHeight)
+  );
   return {
-    width,
-    height,
-    maxOffsetX: Math.max(0, (width - viewportSize) / 2),
-    maxOffsetY: Math.max(0, (height - viewportSize) / 2),
+    width: Math.max(10, Math.round(naturalWidth * fitScale)),
+    height: Math.max(10, Math.round(naturalHeight * fitScale)),
   };
 }
 
@@ -46,30 +36,29 @@ function loadImage(src) {
   });
 }
 
-async function createAdjustedAvatarFile(src, crop) {
+async function createAdjustedAvatarFile(src, crop, baseSize) {
   const image = await loadImage(src);
   const canvas = document.createElement("canvas");
   canvas.width = AVATAR_OUTPUT_SIZE;
   canvas.height = AVATAR_OUTPUT_SIZE;
 
   const context = canvas.getContext("2d");
-  const baseScale = Math.max(AVATAR_OUTPUT_SIZE / image.naturalWidth, AVATAR_OUTPUT_SIZE / image.naturalHeight) * crop.zoom;
-  const width = image.naturalWidth * baseScale;
-  const height = image.naturalHeight * baseScale;
-  const offsetScale = AVATAR_OUTPUT_SIZE / AVATAR_EDITOR_SIZE;
-  const maxOffsetX = Math.max(0, (width - AVATAR_OUTPUT_SIZE) / 2);
-  const maxOffsetY = Math.max(0, (height - AVATAR_OUTPUT_SIZE) / 2);
-  const offsetX = clamp(crop.x * offsetScale, -maxOffsetX, maxOffsetX);
-  const offsetY = clamp(crop.y * offsetScale, -maxOffsetY, maxOffsetY);
-
   context.clearRect(0, 0, AVATAR_OUTPUT_SIZE, AVATAR_OUTPUT_SIZE);
-  context.drawImage(
-    image,
-    (AVATAR_OUTPUT_SIZE - width) / 2 + offsetX,
-    (AVATAR_OUTPUT_SIZE - height) / 2 + offsetY,
-    width,
-    height,
-  );
+
+  const ratio = AVATAR_OUTPUT_SIZE / AVATAR_EDITOR_SIZE;
+  const nw = image.naturalWidth || 200;
+  const nh = image.naturalHeight || 200;
+  const currentBase = (baseSize && baseSize.width && baseSize.height)
+    ? baseSize
+    : calculateBaseSize(nw, nh, AVATAR_EDITOR_SIZE);
+
+  const zoom = Number(crop?.zoom) || 1;
+  const scaledWidth = currentBase.width * zoom * ratio;
+  const scaledHeight = currentBase.height * zoom * ratio;
+  const drawX = (AVATAR_OUTPUT_SIZE - scaledWidth) / 2 + (crop?.x || 0) * ratio;
+  const drawY = (AVATAR_OUTPUT_SIZE - scaledHeight) / 2 + (crop?.y || 0) * ratio;
+
+  context.drawImage(image, drawX, drawY, scaledWidth, scaledHeight);
 
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
@@ -218,6 +207,7 @@ export default function UserProfileModal({ profile, onClose, onSaved }) {
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarCrop, setAvatarCrop] = useState({ zoom: 1, x: 0, y: 0 });
   const [avatarImageSize, setAvatarImageSize] = useState({ width: 0, height: 0 });
+  const [baseSize, setBaseSize] = useState({ width: 0, height: 0 });
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -264,19 +254,22 @@ export default function UserProfileModal({ profile, onClose, onSaved }) {
     setAvatarFile(file);
     setAvatarPreview(objectUrl);
     setAvatarCrop({ zoom: 1, x: 0, y: 0 });
-    setAvatarImageSize({ width: 0, height: 0 });
+    setBaseSize({ width: 0, height: 0 });
     event.target.value = "";
   };
 
   const setAvatarZoom = (zoom) => {
+    const clamped = clamp(Number(zoom) || 1, 0.2, 3.0);
+    const nextZoom = Number(clamped.toFixed(2));
     setAvatarCrop((current) => {
-      const zoomMin = minZoomForImage(avatarImageSize);
-      const nextZoom = clamp(Number(zoom) || zoomMin, zoomMin, 3);
-      const layout = avatarImageLayout(avatarImageSize, nextZoom);
+      const currentW = (baseSize.width || AVATAR_EDITOR_SIZE) * nextZoom;
+      const currentH = (baseSize.height || AVATAR_EDITOR_SIZE) * nextZoom;
+      const maxPanX = Math.max(AVATAR_EDITOR_SIZE * 0.8, (currentW + AVATAR_EDITOR_SIZE) / 2);
+      const maxPanY = Math.max(AVATAR_EDITOR_SIZE * 0.8, (currentH + AVATAR_EDITOR_SIZE) / 2);
       return {
         zoom: nextZoom,
-        x: clamp(current.x, -layout.maxOffsetX, layout.maxOffsetX),
-        y: clamp(current.y, -layout.maxOffsetY, layout.maxOffsetY),
+        x: clamp(current.x, -maxPanX, maxPanX),
+        y: clamp(current.y, -maxPanY, maxPanY),
       };
     });
   };
@@ -295,9 +288,12 @@ export default function UserProfileModal({ profile, onClose, onSaved }) {
 
   const handleAvatarPointerMove = (event) => {
     if (!dragRef.current || dragRef.current.pointerId !== event.pointerId) return;
-    const layout = avatarImageLayout(avatarImageSize, avatarCrop.zoom);
-    const nextX = clamp(dragRef.current.cropX + event.clientX - dragRef.current.startX, -layout.maxOffsetX, layout.maxOffsetX);
-    const nextY = clamp(dragRef.current.cropY + event.clientY - dragRef.current.startY, -layout.maxOffsetY, layout.maxOffsetY);
+    const currentW = (baseSize.width || AVATAR_EDITOR_SIZE) * avatarCrop.zoom;
+    const currentH = (baseSize.height || AVATAR_EDITOR_SIZE) * avatarCrop.zoom;
+    const maxPanX = Math.max(AVATAR_EDITOR_SIZE * 0.8, (currentW + AVATAR_EDITOR_SIZE) / 2);
+    const maxPanY = Math.max(AVATAR_EDITOR_SIZE * 0.8, (currentH + AVATAR_EDITOR_SIZE) / 2);
+    const nextX = clamp(dragRef.current.cropX + event.clientX - dragRef.current.startX, -maxPanX, maxPanX);
+    const nextY = clamp(dragRef.current.cropY + event.clientY - dragRef.current.startY, -maxPanY, maxPanY);
     setAvatarCrop((current) => ({ ...current, x: nextX, y: nextY }));
   };
 
@@ -312,7 +308,7 @@ export default function UserProfileModal({ profile, onClose, onSaved }) {
     try {
       let nextAvatarUrl = avatarUrl;
       if (avatarFile) {
-        const adjustedAvatarFile = await createAdjustedAvatarFile(avatarPreview, avatarCrop);
+        const adjustedAvatarFile = await createAdjustedAvatarFile(avatarPreview, avatarCrop, baseSize);
         nextAvatarUrl = (await uploadCurrentUserAvatar(adjustedAvatarFile)) || avatarUrl;
       }
       await updateCurrentUser({ name, email });
@@ -345,18 +341,19 @@ export default function UserProfileModal({ profile, onClose, onSaved }) {
                   alt=""
                   draggable="false"
                   onLoad={(event) => {
-                    const size = {
-                      width: event.currentTarget.naturalWidth,
-                      height: event.currentTarget.naturalHeight,
-                    };
-                    setAvatarImageSize(size);
-                    setAvatarCrop({ zoom: minZoomForImage(size), x: 0, y: 0 });
+                    const nw = event.currentTarget.naturalWidth || 200;
+                    const nh = event.currentTarget.naturalHeight || 200;
+                    setAvatarImageSize({ width: nw, height: nh });
+                    const initialBase = calculateBaseSize(nw, nh, AVATAR_EDITOR_SIZE);
+                    setBaseSize(initialBase);
+                    setAvatarCrop({ zoom: 1, x: 0, y: 0 });
                   }}
                   style={{
                     ...styles.avatarCropImage,
-                    width: avatarImageLayout(avatarImageSize, avatarCrop.zoom).width,
-                    height: avatarImageLayout(avatarImageSize, avatarCrop.zoom).height,
-                    transform: `translate(-50%, -50%) translate(${avatarCrop.x}px, ${avatarCrop.y}px)`,
+                    width: baseSize.width ? `${baseSize.width}px` : "auto",
+                    height: baseSize.height ? `${baseSize.height}px` : "auto",
+                    transform: `translate(-50%, -50%) translate(${avatarCrop.x}px, ${avatarCrop.y}px) scale(${avatarCrop.zoom})`,
+                    transformOrigin: "center center",
                   }}
                 />
                 <div style={styles.avatarCropGrid} />
@@ -365,24 +362,24 @@ export default function UserProfileModal({ profile, onClose, onSaved }) {
                 <label style={styles.zoomControl}>
                   <span style={styles.readOnlyLabel}>Zoom</span>
                   <div style={styles.zoomSliderRow}>
-                    <button type="button" style={styles.zoomButton} onClick={() => setAvatarZoom(avatarCrop.zoom - AVATAR_ZOOM_STEP)} aria-label="Zoom out">-</button>
+                    <button type="button" style={styles.zoomButton} onClick={() => setAvatarZoom(avatarCrop.zoom - 0.1)} aria-label="Zoom out">-</button>
                     <input
                       type="range"
-                      min={minZoomForImage(avatarImageSize)}
-                      max="3"
-                      step="0.01"
+                      min="0.2"
+                      max="3.0"
+                      step="0.02"
                       value={avatarCrop.zoom}
                       onChange={(event) => setAvatarZoom(event.target.value)}
                       style={styles.zoomSlider}
                     />
-                    <button type="button" style={styles.zoomButton} onClick={() => setAvatarZoom(avatarCrop.zoom + AVATAR_ZOOM_STEP)} aria-label="Zoom in">+</button>
+                    <button type="button" style={styles.zoomButton} onClick={() => setAvatarZoom(avatarCrop.zoom + 0.1)} aria-label="Zoom in">+</button>
                   </div>
                 </label>
                 <div style={styles.avatarEditorActions}>
                   <button type="button" style={styles.secondaryPhotoButton} onClick={() => fileInputRef.current?.click()}>
                     Replace
                   </button>
-                  <button type="button" style={styles.secondaryPhotoButton} onClick={() => setAvatarCrop({ zoom: minZoomForImage(avatarImageSize), x: 0, y: 0 })}>
+                  <button type="button" style={styles.secondaryPhotoButton} onClick={() => setAvatarCrop({ zoom: 1, x: 0, y: 0 })}>
                     Reset
                   </button>
                 </div>
@@ -491,7 +488,7 @@ const styles = {
     height: AVATAR_EDITOR_SIZE,
     overflow: "hidden",
     borderRadius: "50%",
-    background: "#e2e8f0",
+    background: "#ffffff",
     boxShadow: "0 0 0 1px #d7dee9, 0 0 0 8px #f8fafc",
     touchAction: "none",
     cursor: "grab",
@@ -502,7 +499,7 @@ const styles = {
     left: "50%",
     top: "50%",
     maxWidth: "none",
-    objectFit: "cover",
+    maxHeight: "none",
     userSelect: "none",
     pointerEvents: "none",
   },

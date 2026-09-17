@@ -7,6 +7,7 @@ import AuditReportPanel from "./AuditReportPanel";
 import AuditSection from "./AuditSection";
 import { InlineSpinner, LoadingState, SkeletonList } from "./LoadingState";
 import SubmissionConfirmation from "./SubmissionConfirmation";
+import SubmitConfirmModal from "./SubmitConfirmModal";
 import { emptySubmissionConfirmation, isSubmissionConfirmed } from "./submissionConfirmationState";
 import { columnsWithSerial, serialColumnFor } from "./tableHelpers";
 import { scrollPageToTop } from "../../../utils/scrollToTop";
@@ -406,6 +407,7 @@ export default function AuditForm({
   const [loadingDraft, setLoadingDraft] = useState(true);
   const [savingDraft, setSavingDraft] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [submissionConfirmation, setSubmissionConfirmation] = useState(emptySubmissionConfirmation);
   const [hasExistingSubmission, setHasExistingSubmission] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -678,6 +680,19 @@ export default function AuditForm({
     }
   };
 
+  const handleOpenSubmitConfirm = () => {
+    if (!canSubmit) {
+      setSubmitStatus("Please confirm both declarations before submitting.");
+      return;
+    }
+    setShowSubmitConfirm(true);
+  };
+
+  const handleConfirmSubmit = async () => {
+    setShowSubmitConfirm(false);
+    await handleSubmit();
+  };
+
   if (reportMode) {
     const reportPartEValues = academicPartEReview?.reportCategory === "external"
       ? academicPartEReview?.externalValues
@@ -842,7 +857,7 @@ export default function AuditForm({
               Generate Report
             </button>
             {!readOnly && (
-              <button type="button" className="btn btn-primary" onClick={handleSubmit} disabled={submitting || !canSubmit} aria-busy={submitting}>
+              <button type="button" className="btn btn-primary" onClick={handleOpenSubmitConfirm} disabled={submitting || !canSubmit} aria-busy={submitting}>
                 {submitting && <InlineSpinner label="Submitting form" />}
                 {submitting ? "Submitting..." : "Submit"}
               </button>
@@ -856,6 +871,18 @@ export default function AuditForm({
         )}
       </div>
       {isLastSection && submitStatus && <div style={styles.status}>{submitStatus}</div>}
+
+      <SubmitConfirmModal
+        isOpen={showSubmitConfirm}
+        title="Confirm Appraisal Submission"
+        message="Are you sure you want to submit your Academic Appraisal? Once submitted, the appraisal will be locked for editing and forwarded to the evaluation committee."
+        warningNote="Please ensure all section details and supporting documents are complete before submitting."
+        confirmText="Submit Appraisal"
+        cancelText="Cancel"
+        submitting={submitting}
+        onConfirm={handleConfirmSubmit}
+        onCancel={() => setShowSubmitConfirm(false)}
+      />
     </form>
   );
 }
