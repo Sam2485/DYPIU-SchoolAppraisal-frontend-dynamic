@@ -883,8 +883,11 @@ export default function AdministrativeAuditDashboard() {
   };
 
   const handleConfirmSubmit = async () => {
-    setShowSubmitModal(false);
-    await handleSubmitMyPart();
+    try {
+      await handleSubmitMyPart();
+    } finally {
+      setShowSubmitModal(false);
+    }
   };
 
   const handleSubmitMyPart = async () => {
@@ -1261,7 +1264,7 @@ export default function AdministrativeAuditDashboard() {
                     </button>
                     <button type="button" className="btn btn-primary" onClick={handleOpenSubmitConfirm} disabled={submitting || savingDraft || !canSubmitPart} aria-busy={submitting}>
                       {submitting && <InlineSpinner label="Submitting section" />}
-                      {submitting ? "Submitting..." : "Submit My Part"}
+                      {submitting ? "Submitting..." : "Submit Form"}
                     </button>
                   </>
                 ) : null
@@ -1299,10 +1302,10 @@ export default function AdministrativeAuditDashboard() {
 
         <SubmitConfirmModal
           isOpen={showSubmitModal}
-          title="Confirm Section Submission"
-          message="Are you sure you want to submit your part of the Administrative Audit? This will lock your section from further edits and forward it for review."
-          warningNote="Once submitted, your section will be locked from further edits unless returned by the review committee."
-          confirmText="Submit My Part"
+          title="Confirm Form Submission"
+          message="Are you sure you want to submit your Administrative Audit form? Once submitted, your section will be locked from further edits and forwarded for review."
+          warningNote="Once submitted, your entries will be locked and forwarded for review. Please ensure all data and attachments are verified."
+          confirmText="Submit Form"
           cancelText="Cancel"
           submitting={submitting}
           onConfirm={handleConfirmSubmit}

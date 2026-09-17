@@ -689,8 +689,11 @@ export default function AuditForm({
   };
 
   const handleConfirmSubmit = async () => {
-    setShowSubmitConfirm(false);
-    await handleSubmit();
+    try {
+      await handleSubmit();
+    } finally {
+      setShowSubmitConfirm(false);
+    }
   };
 
   if (reportMode) {
@@ -874,10 +877,12 @@ export default function AuditForm({
 
       <SubmitConfirmModal
         isOpen={showSubmitConfirm}
-        title="Confirm Appraisal Submission"
-        message="Are you sure you want to submit your Academic Appraisal? Once submitted, the appraisal will be locked for editing and forwarded to the evaluation committee."
+        title={auditType === "administrative" ? "Confirm Administrative Submission" : "Confirm Appraisal Submission"}
+        message={auditType === "administrative"
+          ? "Are you sure you want to submit your Administrative form? Once submitted, the form will be locked for editing and forwarded for review."
+          : "Are you sure you want to submit your Academic Appraisal? Once submitted, the appraisal will be locked for editing and forwarded to the evaluation committee."}
         warningNote="Please ensure all section details and supporting documents are complete before submitting."
-        confirmText="Submit Appraisal"
+        confirmText={auditType === "administrative" ? "Submit Form" : "Submit Appraisal"}
         cancelText="Cancel"
         submitting={submitting}
         onConfirm={handleConfirmSubmit}

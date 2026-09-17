@@ -885,8 +885,8 @@ section:has(> .review-report-actions) {
   padding: 16mm 14mm !important;
   background: #ffffff !important;
   color: var(--report-ink) !important;
-  font-family: Arial, "Helvetica Neue", Helvetica, "Segoe UI", sans-serif !important;
-  line-height: 1.35 !important;
+  font-family: 'Inter', "Segoe UI", Arial, sans-serif !important;
+  line-height: 1.4 !important;
   box-sizing: border-box !important;
   border-radius: 2px !important;
   box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.04),
@@ -940,7 +940,7 @@ section:has(> .review-report-actions) {
 .generated-report__cover .kicker {
   margin: 0 0 3px 0 !important;
   color: var(--report-ink) !important;
-  font-size: 13px !important;
+  font-size: 14px !important;
   font-weight: 700 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.03em !important;
@@ -951,7 +951,7 @@ section:has(> .review-report-actions) {
 .generated-report__cover h2 {
   margin: 0 0 3px 0 !important;
   color: var(--report-ink) !important;
-  font-size: 17px !important;
+  font-size: 19px !important;
   font-weight: 700 !important;
   line-height: 1.25 !important;
 }
@@ -961,15 +961,15 @@ section:has(> .review-report-actions) {
 .generated-report__cover p {
   margin: 1px 0 !important;
   color: #4a5568 !important;
-  font-size: 10.5px !important;
-  line-height: 1.3 !important;
+  font-size: 11.5px !important;
+  line-height: 1.35 !important;
 }
 
 .generated-report__cover p[style*="year"],
 .generated-report__cover .year {
   margin-top: 5px !important;
   color: var(--report-ink) !important;
-  font-size: 11.5px !important;
+  font-size: 12.5px !important;
   font-weight: 700 !important;
 }
 
@@ -995,7 +995,7 @@ section:has(> .review-report-actions) {
 }
 
 .generated-report__document-meta span {
-  font-size: 9px !important;
+  font-size: 10px !important;
   color: #718096 !important;
   font-weight: 600 !important;
   text-transform: uppercase !important;
@@ -1034,7 +1034,7 @@ section:has(> .review-report-actions) {
   border-radius: 0 !important;
   background: transparent !important;
   color: var(--report-ink) !important;
-  font-size: 11.5px !important;
+  font-size: 12.5px !important;
   font-weight: 700 !important;
   padding: 0 !important;
   line-height: 1.3 !important;
@@ -1045,7 +1045,7 @@ section:has(> .review-report-actions) {
 .generated-report__section-title {
   margin: 0 !important;
   color: var(--report-ink) !important;
-  font-size: 11.5px !important;
+  font-size: 12.5px !important;
   font-weight: 700 !important;
   letter-spacing: 0 !important;
   line-height: 1.3 !important;
@@ -1066,7 +1066,7 @@ section:has(> .review-report-actions) {
   border: 1px solid var(--report-border-slate) !important;
   color: var(--report-ink) !important;
   background-color: var(--report-bg-header) !important;
-  font-size: 10.5px !important;
+  font-size: 11.5px !important;
   font-weight: 700 !important;
   text-align: left !important;
 }
@@ -1077,7 +1077,7 @@ section:has(> .review-report-actions) {
   border: 1px solid var(--report-border-slate) !important;
   color: var(--report-ink) !important;
   background-color: #f4f7fa !important;
-  font-size: 10px !important;
+  font-size: 11px !important;
   font-weight: 700 !important;
   text-align: left !important;
   vertical-align: top !important;
@@ -1088,7 +1088,7 @@ section:has(> .review-report-actions) {
   border: 1px solid var(--report-border-slate) !important;
   color: var(--report-ink) !important;
   background-color: #ffffff !important;
-  font-size: 10px !important;
+  font-size: 11px !important;
   line-height: 1.35 !important;
   vertical-align: top !important;
 }
@@ -1112,7 +1112,7 @@ section:has(> .review-report-actions) {
   border-radius: 0 !important;
   color: var(--report-ink) !important;
   background: transparent !important;
-  font-size: 10.5px !important;
+  font-size: 11.5px !important;
   font-weight: 700 !important;
   letter-spacing: 0 !important;
   line-height: 1.3 !important;
@@ -1133,7 +1133,7 @@ section:has(> .review-report-actions) {
   border: 1px solid var(--report-border-slate) !important;
   color: var(--report-ink) !important;
   background-color: var(--report-bg-header) !important;
-  font-size: 10px !important;
+  font-size: 11px !important;
   font-weight: 700 !important;
   line-height: 1.25 !important;
   text-align: center !important;
@@ -1147,7 +1147,7 @@ section:has(> .review-report-actions) {
   border: 1px solid var(--report-border-slate) !important;
   color: var(--report-ink) !important;
   background: #ffffff !important;
-  font-size: 10px !important;
+  font-size: 11px !important;
   line-height: 1.35 !important;
   vertical-align: top !important;
 }
@@ -1168,7 +1168,7 @@ section:has(> .review-report-actions) {
 .generated-report__attachment {
   color: #0d6efd !important;
   font-weight: normal !important;
-  font-size: 9.5px !important;
+  font-size: 10.5px !important;
   line-height: 1.25 !important;
   word-break: break-all !important;
   overflow-wrap: anywhere !important;
@@ -1196,20 +1196,20 @@ section:has(> .review-report-actions) {
 
 .generated-report [style*="auditorReportTitle"] {
   color: var(--report-ink) !important;
-  font-size: 11px !important;
+  font-size: 12px !important;
   font-weight: 700 !important;
 }
 
 .generated-report [style*="auditorReportMeta"],
 .generated-report [style*="partEReportMeta"] {
   color: var(--report-ink-muted) !important;
-  font-size: 10px !important;
+  font-size: 11px !important;
   font-weight: 600 !important;
 }
 
 .generated-report [style*="auditorReportChips"] {
   color: var(--report-ink-muted) !important;
-  font-size: 9.5px !important;
+  font-size: 10.5px !important;
   font-weight: 700 !important;
 }
 
@@ -1221,7 +1221,7 @@ section:has(> .review-report-actions) {
   border-radius: 0 !important;
   color: var(--report-ink) !important;
   background: transparent !important;
-  font-size: 10.5px !important;
+  font-size: 11.5px !important;
   font-weight: 700 !important;
 }
 
@@ -1238,7 +1238,7 @@ section:has(> .review-report-actions) {
 .generated-report__iqac-remarks [style*="iqacReviewText"] {
   margin: 4px 0 0 0 !important;
   color: var(--report-ink) !important;
-  font-size: 10.5px !important;
+  font-size: 11.5px !important;
   line-height: 1.4 !important;
 }
 
@@ -1269,7 +1269,7 @@ section:has(> .review-report-actions) {
 .generated-report__signatures [style*="signerTitle"] {
   margin: 0 0 4px 0 !important;
   color: var(--report-ink) !important;
-  font-size: 10px !important;
+  font-size: 11px !important;
   font-weight: 700 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.02em !important;
@@ -1281,7 +1281,7 @@ section:has(> .review-report-actions) {
 .generated-report__signatures > div > div {
   display: flex !important;
   justify-content: space-between !important;
-  font-size: 9.5px !important;
+  font-size: 10.5px !important;
   color: #4a5568 !important;
   line-height: 1.35 !important;
 }
@@ -1308,7 +1308,7 @@ section:has(> .review-report-actions) {
     margin: 0 !important;
     padding: 0 !important;
     background: #ffffff !important;
-    font-family: Arial, "Helvetica Neue", Helvetica, "Segoe UI", sans-serif !important;
+    font-family: 'Inter', "Segoe UI", Arial, sans-serif !important;
   }
 
   body {
@@ -1350,7 +1350,7 @@ section:has(> .review-report-actions) {
     border-radius: 0 !important;
     box-shadow: none !important;
     background: transparent !important;
-    font-family: Arial, "Helvetica Neue", Helvetica, "Segoe UI", sans-serif !important;
+    font-family: 'Inter', "Segoe UI", Arial, sans-serif !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -1390,7 +1390,7 @@ section:has(> .review-report-actions) {
     break-after: avoid !important;
     page-break-after: avoid !important;
     color: #000000 !important;
-    font-size: 10.5px !important;
+    font-size: 11.5px !important;
     font-weight: 700 !important;
     margin: 3mm 0 1.5mm 0 !important;
     padding: 0 !important;
@@ -1416,7 +1416,7 @@ section:has(> .review-report-actions) {
     background-color: #ebf1f6 !important;
     color: #000000 !important;
     border: 1px solid #b8c5d2 !important;
-    font-size: 10px !important;
+    font-size: 11px !important;
     font-weight: 700 !important;
     text-align: center !important;
     vertical-align: middle !important;
@@ -1434,7 +1434,7 @@ section:has(> .review-report-actions) {
     background: #ffffff !important;
     color: #000000 !important;
     border: 1px solid #b8c5d2 !important;
-    font-size: 10px !important;
+    font-size: 11px !important;
     padding: 3px 5px !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
@@ -1457,6 +1457,7 @@ section:has(> .review-report-actions) {
     background-color: #ebf1f6 !important;
     color: #000000 !important;
     border: 1px solid #b8c5d2 !important;
+    font-size: 11.5px !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -1465,6 +1466,7 @@ section:has(> .review-report-actions) {
     background-color: #f4f7fa !important;
     color: #000000 !important;
     border: 1px solid #b8c5d2 !important;
+    font-size: 11px !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -1473,6 +1475,7 @@ section:has(> .review-report-actions) {
     background: #ffffff !important;
     color: #000000 !important;
     border: 1px solid #b8c5d2 !important;
+    font-size: 11px !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
