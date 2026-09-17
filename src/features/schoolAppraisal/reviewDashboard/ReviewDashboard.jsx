@@ -250,10 +250,12 @@ const archiveFileName = (submission, headers = {}) => {
   }
   if (plainName) return plainName;
 
+  const uniPrefix = submission?.universityCode ? `${safeArchiveName(submission.universityCode)}_` : "";
   const owner = submission.auditType === "academic"
-    ? submission.school
-    : submission.submittedByDesignation || submission.school;
-  return `${submission.auditType === "academic" ? "Academic" : "Administrative"}_${safeArchiveName(owner)}_${safeArchiveName(submission.auditCycle || "Attachments")}.zip`;
+    ? (submission.school || "School")
+    : (submission.submittedByDesignation || submission.administrativePost || "Administrative_Office");
+  const cycle = submission.auditCycle || submission.academicYear || "Attachments";
+  return `${uniPrefix}${submission.auditType === "academic" ? "Academic" : "Administrative"}_${safeArchiveName(owner)}_${safeArchiveName(cycle)}.zip`;
 };
 const isAttachmentValue = (value) =>
   value &&
