@@ -30,6 +30,7 @@ import AuditTable from "../components/AuditTable";
 import { TableButtonGroup } from "../components/TableButtonGroup";
 import { partitionTablesByButtons, getScopedTableRows, buildScopedTableKey, normalizeTableButtons, getSectionKey } from "../utils/tableButtonHelpers";
 import UserProfileModal from "../components/UserProfileModal";
+import SubmitConfirmModal from "../components/SubmitConfirmModal";
 import AdministrativeReportPanel from "../administrativeAudit/AdministrativeReportPanel";
 import UserManagementPanel from "../userManagement/UserManagementPanel";
 import {
@@ -3213,9 +3214,6 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
   };
 
   const completeAuditorReview = async (submission, values, auditorAttachments = submission.attachments, auditorTables = submission.tables, auditorRemarks = "") => {
-    const ok = window.confirm(`Submit your ${auditLabels[submission.auditType]} auditor review? The form will move to IQAC only after every assigned auditor submits.`);
-    if (!ok) return;
-
     const currentEmail = normalizeAuditAssignment(profile.email || sessionStorage.getItem("email") || "");
     if (currentEmail === "eaa@gmail.com") {
       alert("This auditor account (eaa@gmail.com) has been deleted. Please log out and sign in with an active auditor account.");
@@ -6168,6 +6166,7 @@ function FullFormReview({
       ? (currentUserAssignments.find((a) => a.remarks)?.remarks || "")
       : reviewRemarksForDisplay(submission)
   );
+  const [showAuditorSubmitConfirm, setShowAuditorSubmitConfirm] = useState(false);
 
   useEffect(() => {
     setDraftValues(initialDraftValues);
@@ -6337,6 +6336,11 @@ function FullFormReview({
       }
     }
 
+    setShowAuditorSubmitConfirm(true);
+  };
+
+  const handleConfirmAuditorSubmit = () => {
+    setShowAuditorSubmitConfirm(false);
     const finalRemarks = draftValues.reviewRemarks || reviewRemarks || "";
     onCompleteAuditorReview(draftValues, draftAttachments, draftTables, finalRemarks);
   };
@@ -6786,6 +6790,18 @@ function FullFormReview({
           </div>
         )}
       </div>
+
+      <SubmitConfirmModal
+        isOpen={showAuditorSubmitConfirm}
+        title="Confirm Auditor Review Submission"
+        message={`Are you sure you want to submit your ${auditLabels[submission.auditType] || "Academic"} auditor review? Once submitted, your observations will be locked and forwarded to IQAC.`}
+        warningNote="The appraisal form will advance to IQAC review once all assigned auditors complete and submit their reviews."
+        confirmText="Submit Review"
+        cancelText="Cancel"
+        submitting={reviewingStatus === "auditor-submit"}
+        onConfirm={handleConfirmAuditorSubmit}
+        onCancel={() => setShowAuditorSubmitConfirm(false)}
+      />
     </section>
   );
 }

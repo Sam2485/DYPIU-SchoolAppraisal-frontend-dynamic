@@ -14,6 +14,7 @@ import { columnsWithSerial, serialColumnFor } from "../components/tableHelpers";
 import AdministrativeReportPanel from "./AdministrativeReportPanel";
 import AppSidebar from "../components/AppSidebar";
 import UserProfileModal from "../components/UserProfileModal";
+import SubmitConfirmModal from "../components/SubmitConfirmModal";
 import { AuditorSectionReviewPanel, buildAuditorSectionReview, isAuditorSection } from "../components/AuditSection";
 import { getAttachmentUrl } from "../../../utils/attachment";
 import { scrollPageToTop } from "../../../utils/scrollToTop";
@@ -378,6 +379,7 @@ export default function AdministrativeAuditDashboard() {
   const [printReportAfterRender, setPrintReportAfterRender] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [submitStatus, setSubmitStatus] = useState("");
   const [status, setStatus] = useState("");
   const [loadingDraft, setLoadingDraft] = useState(true);
@@ -867,7 +869,7 @@ export default function AdministrativeAuditDashboard() {
     await saveDraft(payloadForModules([activeModule], nextFields), { isUpdate });
   };
 
-  const handleSubmitMyPart = async () => {
+  const handleOpenSubmitConfirm = () => {
     if (readOnly) return;
     if (!canSubmitPart) {
       setSubmitStatus({ type: "error", message: "Please confirm both declarations before submitting your part." });
@@ -877,7 +879,22 @@ export default function AdministrativeAuditDashboard() {
       setSubmitStatus({ type: "error", message: "Could not identify your administrative role for submission." });
       return;
     }
-    if (!window.confirm("Are you sure you want to submit your part of the Administrative Audit? This will lock your section from further edits.")) {
+    setShowSubmitModal(true);
+  };
+
+  const handleConfirmSubmit = async () => {
+    setShowSubmitModal(false);
+    await handleSubmitMyPart();
+  };
+
+  const handleSubmitMyPart = async () => {
+    if (readOnly) return;
+    if (!canSubmitPart) {
+      setSubmitStatus({ type: "error", message: "Please confirm both declarations before submitting your part." });
+      return;
+    }
+    if (!currentStatusRole) {
+      setSubmitStatus({ type: "error", message: "Could not identify your administrative role for submission." });
       return;
     }
 
@@ -1242,7 +1259,7 @@ export default function AdministrativeAuditDashboard() {
                       {savingDraftAction === "draft" && <InlineSpinner label="Saving section" />}
                       {savingDraftAction === "draft" ? "Saving..." : "Save Draft"}
                     </button>
-                    <button type="button" className="btn btn-primary" onClick={handleSubmitMyPart} disabled={submitting || savingDraft || !canSubmitPart} aria-busy={submitting}>
+                    <button type="button" className="btn btn-primary" onClick={handleOpenSubmitConfirm} disabled={submitting || savingDraft || !canSubmitPart} aria-busy={submitting}>
                       {submitting && <InlineSpinner label="Submitting section" />}
                       {submitting ? "Submitting..." : "Submit My Part"}
                     </button>
@@ -1279,6 +1296,18 @@ export default function AdministrativeAuditDashboard() {
           </>
           )}
         </main>
+
+        <SubmitConfirmModal
+          isOpen={showSubmitModal}
+          title="Confirm Section Submission"
+          message="Are you sure you want to submit your part of the Administrative Audit? This will lock your section from further edits and forward it for review."
+          warningNote="Once submitted, your section will be locked from further edits unless returned by the review committee."
+          confirmText="Submit My Part"
+          cancelText="Cancel"
+          submitting={submitting}
+          onConfirm={handleConfirmSubmit}
+          onCancel={() => setShowSubmitModal(false)}
+        />
 
         {showLogoutModal && <LogoutModal onCancel={() => setShowLogoutModal(false)} onConfirm={handleLogout} />}
         {showProfileModal && (
