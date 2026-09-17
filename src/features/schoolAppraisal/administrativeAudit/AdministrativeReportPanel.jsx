@@ -310,9 +310,9 @@ export default function AdministrativeReportPanel({
               );
 
               const reportContext = {
-                section,
-                sectionKey: getSectionKey(section),
-                role: isAuditorSection(section, "administrative") ? "internal" : "administrative",
+                section: module,
+                sectionKey: getSectionKey(module),
+                role: isAuditorModule(module) ? "internal" : "administrative",
               };
 
               const renderSingleAdminReportTable = (table, instance = null) => {
