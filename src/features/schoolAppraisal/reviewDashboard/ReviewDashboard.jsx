@@ -6339,10 +6339,13 @@ function FullFormReview({
     setShowAuditorSubmitConfirm(true);
   };
 
-  const handleConfirmAuditorSubmit = () => {
-    setShowAuditorSubmitConfirm(false);
-    const finalRemarks = draftValues.reviewRemarks || reviewRemarks || "";
-    onCompleteAuditorReview(draftValues, draftAttachments, draftTables, finalRemarks);
+  const handleConfirmAuditorSubmit = async () => {
+    try {
+      const finalRemarks = draftValues.reviewRemarks || reviewRemarks || "";
+      await onCompleteAuditorReview(draftValues, draftAttachments, draftTables, finalRemarks);
+    } finally {
+      setShowAuditorSubmitConfirm(false);
+    }
   };
   const handleAuditorFileUpload = async (fieldId, files, fieldKey) => {
     const uploaded = await uploadAttachments(files);
