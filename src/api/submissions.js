@@ -537,6 +537,47 @@ export const downloadSubmissionAttachments = (id, { includeAllContributors = fal
     params: includeAllContributors ? { includeAllContributors: true } : undefined,
     responseType: "blob",
   });
+
+export const downloadSubmissionPdfReport = (id) =>
+  apiClient.get(`/api/submissions/${id}/report/pdf`, {
+    responseType: "blob",
+  });
+
+export const downloadSubmissionExcelReport = (id) =>
+  apiClient.get(`/api/submissions/${id}/report/excel`, {
+    responseType: "blob",
+  });
+
+export const triggerBlobDownload = (data, defaultFilename = "download", headers = {}) => {
+  const blob = data instanceof Blob ? data : new Blob([data]);
+  if (!blob.size) {
+    throw new Error("The downloaded file is empty.");
+  }
+
+  const disposition = headers["content-disposition"] || headers.get?.("content-disposition") || "";
+  let filename = defaultFilename;
+  const encodedName = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+  const plainName = disposition.match(/filename="?([^";]+)"?/i)?.[1];
+  if (encodedName) {
+    try {
+      filename = decodeURIComponent(encodedName);
+    } catch {
+      filename = encodedName;
+    }
+  } else if (plainName) {
+    filename = plainName;
+  }
+
+  const objectUrl = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 1000);
+};
+
 export const createNextAuditCycle = (id, payload = {}) =>
   apiClient.post(`/api/submissions/${id}/next-cycle`, {
     preserveApprovedVersion: true,

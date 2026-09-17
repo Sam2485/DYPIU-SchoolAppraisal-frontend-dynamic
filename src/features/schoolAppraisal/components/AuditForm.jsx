@@ -1,6 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getApiErrorMessage } from "../../../api/client";
-import { buildSubmissionPayload, deleteAttachment, fetchMyDraft, fetchSubmissionSnapshots, normalizeDraft, saveDraft, signOffProfileFromSession, submitDraft, uploadAttachments, withSubmitterSignOff } from "../../../api/submissions";
+import {
+  buildSubmissionPayload,
+  deleteAttachment,
+  downloadSubmissionPdfReport,
+  downloadSubmissionExcelReport,
+  fetchMyDraft,
+  fetchSubmissionSnapshots,
+  normalizeDraft,
+  saveDraft,
+  signOffProfileFromSession,
+  submitDraft,
+  triggerBlobDownload,
+  uploadAttachments,
+  withSubmitterSignOff,
+} from "../../../api/submissions";
 import { fetchUniversityBranding } from "../../../api/config";
 import { getAttachmentUrl } from "../../../utils/attachment";
 import AuditReportPanel from "./AuditReportPanel";
@@ -414,6 +428,9 @@ export default function AuditForm({
   const [academicPartEReview, setAcademicPartEReview] = useState(null);
   const [printReportAfterRender, setPrintReportAfterRender] = useState(false);
   const [universityInfo, setUniversityInfo] = useState(null);
+  const [submissionId, setSubmissionId] = useState(null);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [downloadingExcel, setDownloadingExcel] = useState(false);
 
   useEffect(() => {
     let isActive = true;
@@ -502,6 +519,7 @@ export default function AuditForm({
         setAttachments(activeDraft.attachments);
         setHasExistingSubmission(activeDraft.exists);
         setIsSubmitted(activeDraft.isSubmitted);
+        setSubmissionId(activeDraft.id || null);
         setAcademicPartEReview(buildAcademicPartEReview(activeDraft, historyEntries));
       } catch (error) {
         if (isActive) setStatus(getApiErrorMessage(error, "Could not load your draft from the server."));
@@ -599,7 +617,8 @@ export default function AuditForm({
     setStatus("");
 
     try {
-      await saveDraft(currentPayload(), { isUpdate: hasExistingSubmission });
+      const res = await saveDraft(currentPayload(), { isUpdate: hasExistingSubmission });
+      if (res?.data?.id) setSubmissionId(res.data.id);
       setHasExistingSubmission(true);
       setStatus("Draft saved successfully.");
     } catch (error) {
@@ -626,7 +645,8 @@ export default function AuditForm({
     setStatus("");
 
     try {
-      await saveDraft(currentPayload(), { isUpdate: hasExistingSubmission });
+      const res = await saveDraft(currentPayload(), { isUpdate: hasExistingSubmission });
+      if (res?.data?.id) setSubmissionId(res.data.id);
       setHasExistingSubmission(true);
       setStatus("Draft saved successfully.");
 
@@ -657,6 +677,36 @@ export default function AuditForm({
     setPrintReportAfterRender(true);
   };
 
+  const handleDownloadPdf = async () => {
+    if (!submissionId) return;
+    setDownloadingPdf(true);
+    try {
+      const response = await downloadSubmissionPdfReport(submissionId);
+      const defaultName = `${auditType === "academic" ? "Academic" : "Administrative"}_Report_${submissionId}.pdf`;
+      triggerBlobDownload(response.data, defaultName, response.headers);
+    } catch (e) {
+      console.error("PDF download failed", e);
+      setStatus("Failed to download official PDF report. Please try again.");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
+  const handleDownloadExcel = async () => {
+    if (!submissionId) return;
+    setDownloadingExcel(true);
+    try {
+      const response = await downloadSubmissionExcelReport(submissionId);
+      const defaultName = `${auditType === "academic" ? "Academic" : "Administrative"}_Report_${submissionId}.xlsx`;
+      triggerBlobDownload(response.data, defaultName, response.headers);
+    } catch (e) {
+      console.error("Excel download failed", e);
+      setStatus("Failed to download Excel report. Please try again.");
+    } finally {
+      setDownloadingExcel(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!canSubmit) {
       setSubmitStatus("Please confirm both declarations before submitting.");
@@ -668,7 +718,8 @@ export default function AuditForm({
 
     try {
       const signedValues = withSubmitterSignOff(values, signOffProfileFromSession("director"));
-      await submitDraft(buildSubmissionPayload({ auditType, values: signedValues, tables, attachments, academicYear }), { isUpdate: hasExistingSubmission });
+      const res = await submitDraft(buildSubmissionPayload({ auditType, values: signedValues, tables, attachments, academicYear }), { isUpdate: hasExistingSubmission });
+      if (res?.data?.id) setSubmissionId(res.data.id);
       setValues(signedValues);
       setHasExistingSubmission(true);
       setIsSubmitted(true);
@@ -709,6 +760,26 @@ export default function AuditForm({
           <button type="button" className="btn btn-secondary" onClick={() => onReportModeChange(false)}>
             Close
           </button>
+          {submissionId && (
+            <>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleDownloadPdf}
+                disabled={downloadingPdf}
+              >
+                {downloadingPdf ? "Preparing PDF..." : "Download Official PDF"}
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleDownloadExcel}
+                disabled={downloadingExcel}
+              >
+                {downloadingExcel ? "Preparing Excel..." : "Download Excel"}
+              </button>
+            </>
+          )}
           <button type="button" className="btn btn-primary" onClick={() => window.print()}>
             Print Report
           </button>

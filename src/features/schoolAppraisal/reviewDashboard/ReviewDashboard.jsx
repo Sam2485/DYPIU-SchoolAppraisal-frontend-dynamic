@@ -6,6 +6,9 @@ import {
   buildSubmissionPayload,
   createNextAuditCycle,
   downloadSubmissionAttachments,
+  downloadSubmissionPdfReport,
+  downloadSubmissionExcelReport,
+  triggerBlobDownload,
   fetchAllSubmissions,
   fetchSubmissionById,
   fetchSubmissionSnapshots,
@@ -2254,6 +2257,8 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
   const [correctionAssignmentKeys, setCorrectionAssignmentKeys] = useState([]);
   const [startingNextCycleId, setStartingNextCycleId] = useState("");
   const [downloadingAttachmentsId, setDownloadingAttachmentsId] = useState("");
+  const [downloadingPdfId, setDownloadingPdfId] = useState("");
+  const [downloadingExcelId, setDownloadingExcelId] = useState("");
   const [academicYear, setAcademicYear] = useState(
     normalizeAcademicYear(sessionStorage.getItem("academicYear") || ""),
   );
@@ -3077,6 +3082,38 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
     }
   };
 
+  const handleDownloadPdfReport = async (submission) => {
+    if (!submission?.id) return;
+    setDownloadingPdfId(submission.id);
+    setError("");
+
+    try {
+      const response = await downloadSubmissionPdfReport(submission.id);
+      const defaultName = `${submission.auditType === "academic" ? "Academic" : "Administrative"}_Report_${submission.id}.pdf`;
+      triggerBlobDownload(response.data, defaultName, response.headers);
+    } catch (downloadError) {
+      setError(getApiErrorMessage(downloadError, "Could not download the official PDF report."));
+    } finally {
+      setDownloadingPdfId("");
+    }
+  };
+
+  const handleDownloadExcelReport = async (submission) => {
+    if (!submission?.id) return;
+    setDownloadingExcelId(submission.id);
+    setError("");
+
+    try {
+      const response = await downloadSubmissionExcelReport(submission.id);
+      const defaultName = `${submission.auditType === "academic" ? "Academic" : "Administrative"}_Report_${submission.id}.xlsx`;
+      triggerBlobDownload(response.data, defaultName, response.headers);
+    } catch (downloadError) {
+      setError(getApiErrorMessage(downloadError, "Could not download the Excel report."));
+    } finally {
+      setDownloadingExcelId("");
+    }
+  };
+
   const handleStartNextAcademicYear = async () => {
     const nextAcademicYear = nextAcademicYearFor(academicYear);
     setStartingAcademicYear(true);
@@ -3557,6 +3594,10 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
               submitterAvatarUrl={resolveSubmitterAvatar(selectedSubmission)}
               directoryUsers={directoryUsers}
               allSubmissions={allSubmissions}
+              onDownloadPdf={handleDownloadPdfReport}
+              downloadingPdf={downloadingPdfId === selectedSubmission.id}
+              onDownloadExcel={handleDownloadExcelReport}
+              downloadingExcel={downloadingExcelId === selectedSubmission.id}
             />
           ) : visibleActiveView === "overview" && isIqacDashboard ? (
             <AcademicAdministrativeSubmissionsPanel
@@ -3599,6 +3640,10 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
               startingNextCycleId={startingNextCycleId}
               onDownload={handleDownloadAttachments}
               downloadingAttachmentsId={downloadingAttachmentsId}
+              onDownloadPdf={handleDownloadPdfReport}
+              downloadingPdfId={downloadingPdfId}
+              onDownloadExcel={handleDownloadExcelReport}
+              downloadingExcelId={downloadingExcelId}
               resolveSubmitterAvatar={resolveSubmitterAvatar}
             />
           ) : visibleActiveView === "form-studio" ? (
@@ -5397,6 +5442,10 @@ function PreviousReportsPanel({
   startingNextCycleId,
   onDownload,
   downloadingAttachmentsId,
+  onDownloadPdf,
+  downloadingPdfId,
+  onDownloadExcel,
+  downloadingExcelId,
   resolveSubmitterAvatar,
 }) {
   const [activeAuditType, setActiveAuditType] = useState("all");
@@ -5431,6 +5480,10 @@ function PreviousReportsPanel({
         onBack={() => setReportSubmission(null)}
         onDownload={() => onDownload(reportSubmission)}
         downloadingAttachments={downloadingAttachmentsId === reportSubmission.id}
+        onDownloadPdf={onDownloadPdf}
+        downloadingPdf={downloadingPdfId === reportSubmission.id}
+        onDownloadExcel={onDownloadExcel}
+        downloadingExcel={downloadingExcelId === reportSubmission.id}
       />
     );
   }
@@ -5715,7 +5768,16 @@ function SubmissionCard({
   );
 }
 
-function PreviousReportOnlyView({ submission, onBack, onDownload, downloadingAttachments }) {
+function PreviousReportOnlyView({
+  submission,
+  onBack,
+  onDownload,
+  downloadingAttachments,
+  onDownloadPdf,
+  downloadingPdf,
+  onDownloadExcel,
+  downloadingExcel,
+}) {
   const [resolvedSchema, setResolvedSchema] = useState(submission.schema ? normalizeDynamicSchema(submission.schema) : null);
 
   useEffect(() => {
@@ -5773,6 +5835,26 @@ function PreviousReportOnlyView({ submission, onBack, onDownload, downloadingAtt
             {downloadingAttachments ? "Preparing ZIP..." : "Download Attachments"}
           </button>
         )}
+        {onDownloadPdf && (
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => onDownloadPdf(submission)}
+            disabled={downloadingPdf}
+          >
+            {downloadingPdf ? "Preparing PDF..." : "Download Official PDF"}
+          </button>
+        )}
+        {onDownloadExcel && (
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => onDownloadExcel(submission)}
+            disabled={downloadingExcel}
+          >
+            {downloadingExcel ? "Preparing Excel..." : "Download Excel"}
+          </button>
+        )}
         <button type="button" className="btn btn-primary" onClick={() => window.print()}>Print Report</button>
       </div>
       {submission.auditType === "academic" ? (
@@ -5809,6 +5891,7 @@ function PreviousReportOnlyView({ submission, onBack, onDownload, downloadingAtt
           currentAuditor={currentAuditor}
           previousInternalAuditor={previousInternalAuditor}
           iqacRemarks={submission.remarks}
+          submissionId={submission.id}
           onClose={onBack}
         />
       )}
@@ -5834,6 +5917,10 @@ function FullFormReview({
   submitterAvatarUrl,
   directoryUsers = [],
   allSubmissions = [],
+  onDownloadPdf,
+  downloadingPdf,
+  onDownloadExcel,
+  downloadingExcel,
 }) {
   const [resolvedSchema, setResolvedSchema] = useState(submission.schema ? normalizeDynamicSchema(submission.schema) : null);
 
@@ -6474,6 +6561,26 @@ function FullFormReview({
           <>
             <div className="review-report-actions" style={styles.cardActions}>
               <button type="button" className="btn btn-secondary" onClick={() => setReportMode(false)}>Close Report</button>
+              {onDownloadPdf && (
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => onDownloadPdf(submission)}
+                  disabled={downloadingPdf}
+                >
+                  {downloadingPdf ? "Preparing PDF..." : "Download Official PDF"}
+                </button>
+              )}
+              {onDownloadExcel && (
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => onDownloadExcel(submission)}
+                  disabled={downloadingExcel}
+                >
+                  {downloadingExcel ? "Preparing Excel..." : "Download Excel"}
+                </button>
+              )}
               <button type="button" className="btn btn-primary" onClick={() => window.print()}>Print Report</button>
             </div>
             <AuditReportPanel
@@ -6510,6 +6617,7 @@ function FullFormReview({
             currentAuditor={currentAuditor}
             previousInternalAuditor={previousInternalAuditor}
             iqacRemarks={submission.remarks}
+            submissionId={submission.id}
             onClose={() => setReportMode(false)}
           />
         )}

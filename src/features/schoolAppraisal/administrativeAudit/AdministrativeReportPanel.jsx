@@ -1,6 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { columnsWithSerial, serialColumnFor } from "../components/tableHelpers";
-import { SIGN_OFF_FIELD } from "../../../api/submissions";
+import { SIGN_OFF_FIELD, downloadSubmissionPdfReport, downloadSubmissionExcelReport, triggerBlobDownload } from "../../../api/submissions";
 import { formatDateDDMMYYYY } from "../../../utils/dateFormat";
 import { getAttachmentUrl } from "../../../utils/attachment";
 import {
@@ -208,7 +208,41 @@ export default function AdministrativeReportPanel({
   previousInternalAuditor = {},
   iqacRemarks = "",
   onClose,
+  submissionId = null,
 }) {
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [downloadingExcel, setDownloadingExcel] = useState(false);
+
+  const handleDownloadPdf = async () => {
+    if (!submissionId) return;
+    setDownloadingPdf(true);
+    try {
+      const response = await downloadSubmissionPdfReport(submissionId);
+      const defaultName = `Administrative_Report_${submissionId}.pdf`;
+      triggerBlobDownload(response.data, defaultName, response.headers);
+    } catch (e) {
+      console.error("PDF download failed", e);
+      alert("Failed to download official PDF report. Please try again.");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
+  const handleDownloadExcel = async () => {
+    if (!submissionId) return;
+    setDownloadingExcel(true);
+    try {
+      const response = await downloadSubmissionExcelReport(submissionId);
+      const defaultName = `Administrative_Report_${submissionId}.xlsx`;
+      triggerBlobDownload(response.data, defaultName, response.headers);
+    } catch (e) {
+      console.error("Excel download failed", e);
+      alert("Failed to download Excel report. Please try again.");
+    } finally {
+      setDownloadingExcel(false);
+    }
+  };
+
   const submittedAuditorAssignments = auditorAssignments.filter(isSubmittedAuditorAssignment);
   const resolvedUniversityLogo = getAttachmentUrl(sessionStorage.getItem("universityLogo")) || "";
   const resolvedIqacLogo = getAttachmentUrl(sessionStorage.getItem("iqacLogo")) || "";
@@ -249,10 +283,32 @@ export default function AdministrativeReportPanel({
             <span style={styles.generatedDate}>Prepared {formatDateDDMMYYYY(new Date())}</span>
           </div>
           <div className="admin-report-actions" style={styles.actions}>
+            {submissionId && (
+              <>
+                <button
+                  type="button"
+                  style={styles.secondary}
+                  onClick={handleDownloadPdf}
+                  disabled={downloadingPdf}
+                >
+                  {downloadingPdf ? "Preparing PDF..." : "Download Official PDF"}
+                </button>
+                <button
+                  type="button"
+                  style={styles.secondary}
+                  onClick={handleDownloadExcel}
+                  disabled={downloadingExcel}
+                >
+                  {downloadingExcel ? "Preparing Excel..." : "Download Excel"}
+                </button>
+              </>
+            )}
             <button type="button" className="btn btn-primary" onClick={() => window.print()}>Print</button>
-            <button type="button" style={styles.secondary} onClick={onClose}>
-              Close
-            </button>
+            {onClose && (
+              <button type="button" style={styles.secondary} onClick={onClose}>
+                Close
+              </button>
+            )}
           </div>
         </div>
       </div>

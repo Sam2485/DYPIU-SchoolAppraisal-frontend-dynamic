@@ -976,6 +976,7 @@ export default function AdministrativeAuditDashboard() {
               reportCategory={activeDraftData?.reportCategory || ""}
               auditorAssignments={activeDraftData?.auditorAssignments || []}
               iqacRemarks={activeDraftData?.remarks || ""}
+              submissionId={activeDraftData?.id}
               onClose={() => setReportMode(false)}
             />
           </main>
