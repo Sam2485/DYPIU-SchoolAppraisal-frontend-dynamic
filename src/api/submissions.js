@@ -339,7 +339,7 @@ export const extractAllUniqueAttachments = (attachmentsPayload, tablesData, valu
     if (!item || typeof item !== "object") return;
     const url = item.url || item.publicUrl || item.downloadUrl || "";
     const fileName = item.fileName || item.filename || item.name || "";
-    if (!url && !fileName) return;
+    if (!url || !fileName) return;
 
     const key = (url || fileName).trim().toLowerCase();
     if (key && seen.has(key)) return;
@@ -358,7 +358,9 @@ export const extractAllUniqueAttachments = (attachmentsPayload, tablesData, valu
     if (Array.isArray(node)) {
       node.forEach(processNode);
     } else if (typeof node === "object") {
-      if (node.url || node.publicUrl || node.downloadUrl || node.fileName || node.filename) {
+      const hasUrl = node.url || node.publicUrl || node.downloadUrl;
+      const hasFileName = node.fileName || node.filename;
+      if (hasUrl && hasFileName) {
         addAttachment(node);
       }
       Object.values(node).forEach(processNode);
