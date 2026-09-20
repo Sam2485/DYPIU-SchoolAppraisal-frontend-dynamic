@@ -4,7 +4,7 @@ import { uploadAttachment } from "../../../api/submissions";
 import { getApiErrorMessage } from "../../../api/client";
 import { getAttachmentUrl } from "../../../utils/attachment";
 
-const EMPTY_FORM = { universityName: "", domain: "", address: "", act: "", logoUrl: "", iqacLogoUrl: "" };
+const EMPTY_FORM = { universityName: "", address: "", act: "", logoUrl: "", iqacLogoUrl: "" };
 
 const field = { display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 };
 const label = { fontSize: 12.5, fontWeight: 650, color: "#1e293b" };
@@ -115,7 +115,6 @@ export default function UniversityControlsPanel({ onSaved }) {
         if (!active || !data) return;
         const next = {
           universityName: data.universityName || "",
-          domain: data.domain || "",
           address: data.address || "",
           act: data.act || "",
           logoUrl: data.logoUrl || "",
@@ -155,24 +154,24 @@ export default function UniversityControlsPanel({ onSaved }) {
       await updateUniversityBranding(form);
       setSaved(form);
       setIsEditing(false);
-      setStatus("University details updated successfully.");
+      setStatus("Institution details updated successfully.");
       await onSaved?.();
     } catch (err) {
-      setError(getApiErrorMessage(err, "Failed to update university details."));
+      setError(getApiErrorMessage(err, "Failed to update institution details."));
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <div style={{ padding: 24, color: "#64748b" }}>Loading university details...</div>;
+  if (loading) return <div style={{ padding: 24, color: "#64748b" }}>Loading institution details...</div>;
 
   return (
     <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, padding: 24 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, marginBottom: 20 }}>
         <div>
-          <h2 style={{ margin: "0 0 4px", fontSize: 18, color: "#0f172a" }}>University Controls</h2>
+          <h2 style={{ margin: "0 0 4px", fontSize: 18, color: "#0f172a" }}>Institution Profile</h2>
           <p style={{ margin: 0, fontSize: 13, color: "#64748b" }}>
-            {isEditing ? "Update your university's name, domain, address, and header logos." : "Current university details on record."}
+            {isEditing ? "Update your institution's name, campus address, establishment act, and header logos for official reports." : "Current institution details and report branding on record."}
           </p>
         </div>
         {!isEditing && (
@@ -190,25 +189,21 @@ export default function UniversityControlsPanel({ onSaved }) {
           <div className="university-controls-grid" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.1fr) minmax(0, 1fr)", gap: 28 }}>
             <div>
               <div style={field}>
-                <label style={label}>University Full Name</label>
-                <input style={input} value={form.universityName} onChange={update("universityName")} />
-              </div>
-              <div style={field}>
-                <label style={label}>Domain</label>
-                <input style={input} value={form.domain} onChange={update("domain")} placeholder="e.g. dypiu.ac.in" />
+                <label style={label}>Institution / University Full Name</label>
+                <input style={input} value={form.universityName} onChange={update("universityName")} placeholder="e.g. D Y Patil International University" />
               </div>
               <div style={field}>
                 <label style={label}>Campus Address</label>
-                <textarea style={{ ...input, resize: "vertical" }} rows={2} value={form.address} onChange={update("address")} />
+                <textarea style={{ ...input, resize: "vertical" }} rows={3} value={form.address} onChange={update("address")} placeholder="Full campus address for report headers" />
               </div>
               <div style={{ ...field, marginBottom: 0 }}>
-                <label style={label}>Establishment Act / Authority</label>
-                <input style={input} value={form.act} onChange={update("act")} />
+                <label style={label}>Establishment Act / Legal Authority</label>
+                <input style={input} value={form.act} onChange={update("act")} placeholder="e.g. Maharashtra Act No. VI of 2019" />
               </div>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <LogoPicker title="University Logo" icon="🏛️" value={form.logoUrl} onChange={setLogo("logoUrl")} uploadingKey="logo" onUploadingChange={markUploading} />
+              <LogoPicker title="Institution Logo" icon="🏛️" value={form.logoUrl} onChange={setLogo("logoUrl")} uploadingKey="logo" onUploadingChange={markUploading} />
               <LogoPicker title="IQAC Logo" icon="✨" value={form.iqacLogoUrl} onChange={setLogo("iqacLogoUrl")} uploadingKey="iqacLogo" onUploadingChange={markUploading} />
             </div>
           </div>
@@ -225,13 +220,12 @@ export default function UniversityControlsPanel({ onSaved }) {
       ) : (
         <div className="university-controls-grid" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.1fr) minmax(0, 1fr)", gap: 28 }}>
           <div>
-            <div style={readRow}><span style={readLabel}>University Full Name</span><span style={readValue}>{saved.universityName || "—"}</span></div>
-            <div style={readRow}><span style={readLabel}>Domain</span><span style={readValue}>{saved.domain || "—"}</span></div>
+            <div style={readRow}><span style={readLabel}>Institution / University Full Name</span><span style={readValue}>{saved.universityName || "—"}</span></div>
             <div style={readRow}><span style={readLabel}>Campus Address</span><span style={readValue}>{saved.address || "—"}</span></div>
             <div style={{ ...readRow, marginBottom: 0 }}><span style={readLabel}>Establishment Act / Authority</span><span style={readValue}>{saved.act || "—"}</span></div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <LogoDisplay title="University Logo" icon="🏛️" value={saved.logoUrl} />
+            <LogoDisplay title="Institution Logo" icon="🏛️" value={saved.logoUrl} />
             <LogoDisplay title="IQAC Logo" icon="✨" value={saved.iqacLogoUrl} />
           </div>
         </div>

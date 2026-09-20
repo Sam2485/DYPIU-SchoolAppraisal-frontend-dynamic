@@ -97,10 +97,10 @@ const BACKUP_RESTORE_NAV_ITEM = {
   group: "system-admin",
   groupLabel: "System Administration",
 };
-const UNIVERSITY_CONTROLS_NAV_ITEM = {
-  id: "university-controls",
-  title: "University Controls",
-  caption: "Edit name, domain & logos",
+const INSTITUTION_PROFILE_NAV_ITEM = {
+  id: "institution-profile",
+  title: "Institution Profile",
+  caption: "Institution name, address & logos",
   group: "system-admin",
   groupLabel: "System Administration",
 };
@@ -111,7 +111,7 @@ const REVIEW_ROUTE_VIEW_IDS = new Set([
   USER_MANAGEMENT_NAV_ITEM.id,
   APPRAISAL_FORM_STUDIO_NAV_ITEM.id,
   BACKUP_RESTORE_NAV_ITEM.id,
-  UNIVERSITY_CONTROLS_NAV_ITEM.id,
+  INSTITUTION_PROFILE_NAV_ITEM.id,
 ]);
 
 const routeViewFor = (value, fallback) => {
@@ -254,12 +254,12 @@ const archiveFileName = (submission, headers = {}) => {
   }
   if (plainName) return plainName;
 
-  const uniPrefix = submission?.universityCode ? `${safeArchiveName(submission.universityCode)}_` : "";
+  const uniPrefix = "";
   const owner = submission.auditType === "academic"
     ? (submission.school || "School")
     : (submission.submittedByDesignation || submission.administrativePost || "Administrative_Office");
   const cycle = submission.auditCycle || submission.academicYear || "Attachments";
-  return `${uniPrefix}${submission.auditType === "academic" ? "Academic" : "Administrative"}_${safeArchiveName(owner)}_${safeArchiveName(cycle)}.zip`;
+  return `${submission.auditType === "academic" ? "Academic" : "Administrative"}_${safeArchiveName(owner)}_${safeArchiveName(cycle)}.zip`;
 };
 const isAttachmentValue = (value) =>
   value &&
@@ -1016,15 +1016,14 @@ export const getSubmissionSchemaKey = (sub) => {
   if (isApprovedReport(sub) && sub.schemaVersionId) {
     return `ver:${sub.schemaVersionId}`;
   }
-  const universityCode = sub.universityCode || sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || "";
-  const schoolOrPost = sub.auditType === "academic"
-    ? (sub.school || sub.schoolName || sub.department)
-    : (sub.administrativePost || sub.department);
+  const schoolOrPost = sub.auditType === "administrative"
+    ? (sub.administrativePost || sub.department)
+    : (sub.school || sub.schoolName || sub.department);
   if (schoolOrPost) {
-    return `${sub.auditType || "academic"}:${universityCode}:${schoolOrPost}`;
+    return `${sub.auditType || "academic"}:${schoolOrPost}`;
   }
   if (sub.schemaVersionId) return `ver:${sub.schemaVersionId}`;
-  return `${sub.auditType || "academic"}:${universityCode}:default`;
+  return `${sub.auditType || "academic"}:default`;
 };
 
 export const resolveSubmissionSchema = async (sub) => {
@@ -1057,12 +1056,11 @@ export const resolveSubmissionSchema = async (sub) => {
     }
 
     if (!dynamicSchema) {
-      const universityCode = sub.universityCode || sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || "";
       const schoolOrPost = sub.auditType === "academic"
         ? (sub.school || sub.schoolName || sub.department)
         : (sub.administrativePost || sub.department);
       try {
-        const fetched = await fetchActiveSchema(sub.auditType || "academic", universityCode, schoolOrPost);
+        const fetched = await fetchActiveSchema(sub.auditType || "academic", schoolOrPost);
         if (fetched && Array.isArray(fetched.sections) && fetched.sections.length > 0) {
           dynamicSchema = normalizeDynamicSchema(fetched);
         }
@@ -2268,10 +2266,8 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
   const [universityInfo, setUniversityInfo] = useState(null);
 
   const refreshBranding = useCallback(async () => {
-    const universityCode = sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || "";
-    if (!universityCode) return;
     try {
-      const data = await fetchUniversityBranding(universityCode);
+      const data = await fetchUniversityBranding();
       if (data) {
         setUniversityInfo(data);
         if (data.logoUrl) sessionStorage.setItem("universityLogo", data.logoUrl);
@@ -2464,7 +2460,7 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
       items.push(AUDITOR_FINAL_REVIEW_NAV_ITEM, PREVIOUS_REPORTS_NAV_ITEM, START_NEXT_YEAR_NAV_ITEM);
       items.push(APPRAISAL_FORM_STUDIO_NAV_ITEM);
       items.push(BACKUP_RESTORE_NAV_ITEM);
-      items.push(UNIVERSITY_CONTROLS_NAV_ITEM);
+      items.push(INSTITUTION_PROFILE_NAV_ITEM);
     }
     return items;
   }, [isAuditor, role]);
@@ -3658,7 +3654,7 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
             <AppraisalFormStudio currentUser={profile} />
           ) : visibleActiveView === "backup-restore" ? (
             <BackupRestorePanel />
-          ) : visibleActiveView === "university-controls" ? (
+          ) : visibleActiveView === "institution-profile" ? (
             <UniversityControlsPanel onSaved={refreshBranding} />
           ) : null}
 

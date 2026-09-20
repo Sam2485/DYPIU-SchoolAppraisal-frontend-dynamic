@@ -82,19 +82,13 @@ export default function Login() {
     setItem("auditorType", profile.auditorType);
     setItem("auditorRole", profile.auditorRole);
     setItem("role", profile.role);
-    setItem("universityId", profile.universityId || authPayload.universityId || authPayload.user?.universityId || "");
-    setItem("universityCode", profile.universityCode || authPayload.universityCode || authPayload.user?.universityCode || "");
-    setItem("universityName", profile.universityName || authPayload.universityName || authPayload.user?.universityName || "");
     try {
-      const uCode = profile.universityCode || authPayload.universityCode || authPayload.user?.universityCode || "";
-      if (uCode) {
-        const branding = await fetchUniversityBranding(uCode);
-        if (branding) {
-          if (branding.logoUrl) setItem("universityLogo", branding.logoUrl);
-          if (branding.iqacLogoUrl) setItem("iqacLogo", branding.iqacLogoUrl);
-          if (branding.universityName) setItem("universityName", branding.universityName);
-          if (branding.address) setItem("universityAddress", branding.address);
-        }
+      const branding = await fetchUniversityBranding();
+      if (branding) {
+        if (branding.logoUrl) setItem("universityLogo", branding.logoUrl);
+        if (branding.iqacLogoUrl) setItem("iqacLogo", branding.iqacLogoUrl);
+        if (branding.universityName) setItem("universityName", branding.universityName);
+        if (branding.address) setItem("universityAddress", branding.address);
       }
     } catch {
       // non-blocking branding fetch

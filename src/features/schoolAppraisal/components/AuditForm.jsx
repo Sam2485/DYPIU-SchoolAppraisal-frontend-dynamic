@@ -434,20 +434,17 @@ export default function AuditForm({
 
   useEffect(() => {
     let isActive = true;
-    const universityCode = sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || "";
-    if (universityCode) {
-      fetchUniversityBranding(universityCode)
-        .then((data) => {
-          if (isActive && data) {
-            setUniversityInfo(data);
-            if (data.logoUrl) sessionStorage.setItem("universityLogo", data.logoUrl);
-            if (data.iqacLogoUrl) sessionStorage.setItem("iqacLogo", data.iqacLogoUrl);
-            if (data.universityName) sessionStorage.setItem("universityName", data.universityName);
-            if (data.address) sessionStorage.setItem("universityAddress", data.address);
-          }
-        })
-        .catch(() => {});
-    }
+    fetchUniversityBranding()
+      .then((data) => {
+        if (isActive && data) {
+          setUniversityInfo(data);
+          if (data.logoUrl) sessionStorage.setItem("universityLogo", data.logoUrl);
+          if (data.iqacLogoUrl) sessionStorage.setItem("iqacLogo", data.iqacLogoUrl);
+          if (data.universityName) sessionStorage.setItem("universityName", data.universityName);
+          if (data.address) sessionStorage.setItem("universityAddress", data.address);
+        }
+      })
+      .catch(() => {});
     return () => {
       isActive = false;
     };

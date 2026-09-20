@@ -271,24 +271,23 @@ export default function UserManagementPanel({ currentUser }) {
   const [avatarPreviewUser, setAvatarPreviewUser] = useState(null);
 
   const fetchUniversityMetadata = async () => {
-    const uId = currentUser?.universityId || sessionStorage.getItem("universityId") || 1;
     try {
       const [schoolData, postData] = await Promise.all([
-        getUniversitySchools(uId),
-        getUniversityPosts(uId),
+        getUniversitySchools(1),
+        getUniversityPosts(1),
       ]);
       setSchools(schoolData || []);
       const mapped = (postData || []).map((p) => ({ value: p.code.toLowerCase(), label: p.name }));
       setPosts(mapped);
       updateDynamicPostRegistry(mapped);
     } catch (err) {
-      console.error("Failed to load university metadata:", err);
+      console.error("Failed to load metadata:", err);
     }
   };
 
   useEffect(() => {
     fetchUniversityMetadata();
-  }, [currentUser?.universityId]);
+  }, []);
   const filteredUsers = useMemo(() =>
     users.filter((user) =>
       (categoryFilter === "all" || user.category === categoryFilter) &&
@@ -318,18 +317,7 @@ export default function UserManagementPanel({ currentUser }) {
       try {
         const { data } = await fetchUsers({ includeDeleted: false });
         const list = normalizeList(data).map(normalizeUser);
-        const filteredByTenant = (currentUser?.universityId || currentUser?.universityCode)
-          ? list.filter((u) => {
-              if (currentUser.universityId && u.universityId) {
-                return String(u.universityId) === String(currentUser.universityId);
-              }
-              if (currentUser.universityCode && u.universityCode) {
-                return u.universityCode.toLowerCase() === currentUser.universityCode.toLowerCase();
-              }
-              return true;
-            })
-          : list;
-        if (isActive) setUsers(filteredByTenant);
+        if (isActive) setUsers(list);
       } catch (error) {
         if (isActive) {
           setUsers([]);
@@ -431,8 +419,6 @@ export default function UserManagementPanel({ currentUser }) {
       name: form.name.trim(),
       email: form.email.trim().toLowerCase(),
       password: form.password,
-      universityId: currentUser?.universityId || undefined,
-      universityCode: currentUser?.universityCode || undefined,
     };
 
     setCreating(true);

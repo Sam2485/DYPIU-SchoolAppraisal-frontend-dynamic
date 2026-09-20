@@ -1,17 +1,12 @@
 import api from './client';
 
-const getSessionUniversityCode = () =>
-  sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || '';
-
 const getSessionSchool = () =>
   sessionStorage.getItem("userSchool") || localStorage.getItem("userSchool") || sessionStorage.getItem("school") || localStorage.getItem("school");
 
-export const fetchActiveSchema = async (auditType = 'academic', universityCode = null, school = null) => {
+export const fetchActiveSchema = async (auditType = 'academic', school = null) => {
   try {
-    const code = universityCode || getSessionUniversityCode();
     const sch = school || getSessionSchool();
     const params = { auditType };
-    if (code) params.universityCode = code;
     if (sch) params.school = sch;
     const response = await api.get('/api/config/active', { params });
     return response.data;
@@ -31,12 +26,9 @@ export const fetchSchemaByVersion = async (versionId) => {
   }
 };
 
-export const fetchUniversityBranding = async (universityCode = null) => {
+export const fetchUniversityBranding = async () => {
   try {
-    const code = universityCode || getSessionUniversityCode();
-    const response = await api.get('/api/config/branding', {
-      params: { universityCode: code },
-    });
+    const response = await api.get('/api/config/branding');
     return response.data;
   } catch (error) {
     console.warn('Failed to fetch branding:', error.message);
@@ -51,10 +43,9 @@ export const updateUniversityBranding = async (payload) => {
 
 export const fetchUniversitiesDirectory = async () => {
   try {
-    const response = await api.get('/api/config/universities');
-    return response.data;
+    const response = await api.get('/api/config/branding');
+    return response.data ? [response.data] : [];
   } catch (error) {
-    console.warn('Failed to fetch universities directory:', error.message);
     return [];
   }
 };

@@ -24,47 +24,12 @@ export default function AppraisalFormStudio({ currentUser }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const resolveUniversity = async () => {
-      try {
-        let universities = [];
-        try {
-          const uniRes = await apiClient.get('/api/config/universities');
-          universities = uniRes.data || [];
-        } catch {
-          const uniRes2 = await apiClient.get('/api/universities');
-          universities = uniRes2.data || [];
-        }
-
-        const userUniId = currentUser?.universityId;
-        const userUniCode = currentUser?.universityCode;
-
-        if (universities.length > 0) {
-          const matched = universities.find(
-            (u) => (userUniId && String(u.id) === String(userUniId)) ||
-                   (userUniCode && u.code?.toLowerCase() === userUniCode.toLowerCase())
-          ) || universities[0];
-          setCurrentUniversity(matched);
-        } else {
-          setCurrentUniversity({
-            id: userUniId || 1,
-            code: userUniCode || 'DYPIU',
-            name: currentUser?.universityName || (userUniCode ? userUniCode.toUpperCase() : 'Your University'),
-          });
-        }
-      } catch (err) {
-        console.error('Failed to load universities in Form Studio:', err);
-        const userUniId = currentUser?.universityId;
-        const userUniCode = currentUser?.universityCode;
-        setCurrentUniversity({
-          id: userUniId || 1,
-          code: userUniCode || 'DYPIU',
-          name: currentUser?.universityName || (userUniCode ? userUniCode.toUpperCase() : 'Your University'),
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    resolveUniversity();
+    setCurrentUniversity({
+      id: 1,
+      code: 'DYPIU',
+      name: currentUser?.universityName || 'University',
+    });
+    setLoading(false);
   }, [currentUser]);
 
   const handleOpenBuilder = (versionId) => {

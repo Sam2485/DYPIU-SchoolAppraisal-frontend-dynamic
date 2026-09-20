@@ -94,8 +94,6 @@ const storeUserProfile = (profile = {}) => {
   setSessionValue("auditorRole", auditorRole);
   setSessionValue("role", role);
   setSessionValue("academicYear", profile.academicYear || profile.currentAcademicYear || "");
-  setSessionValue("universityId", profile.universityId || "");
-  setSessionValue("universityCode", profile.universityCode || "");
 };
 
 const storeTokenSession = (accessToken, refreshToken) => {
@@ -115,8 +113,6 @@ const storeTokenSession = (accessToken, refreshToken) => {
     post: claims.post,
     currentAcademicYear: claims.currentAcademicYear,
     administrativePosts: claims.administrativePosts,
-    universityId: claims.universityId,
-    universityCode: claims.universityCode,
   });
 };
 
@@ -188,15 +184,6 @@ apiClient.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
-  const uId = sessionStorage.getItem("universityId") || localStorage.getItem("universityId");
-  if (uId && !config.headers["X-University-Id"]) {
-    config.headers["X-University-Id"] = uId;
-  }
-  const uCode = sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode");
-  if (uCode && !config.headers["X-University-Code"]) {
-    config.headers["X-University-Code"] = uCode;
-  }
-
   const userSchool = sessionStorage.getItem("userSchool") || localStorage.getItem("userSchool") || sessionStorage.getItem("school") || localStorage.getItem("school");
   if (userSchool && !config.headers["X-User-School"]) {
     config.headers["X-User-School"] = userSchool;
@@ -259,8 +246,7 @@ export const restoreAuthSession = async () => {
   const authKeys = [
     "token", "refreshToken", "userId", "email", "username", "name",
     "designation", "school", "post", "administrativePosts",
-    "accountType", "category", "auditorType", "auditorRole", "role", "academicYear",
-    "universityId", "universityCode"
+    "accountType", "category", "auditorType", "auditorRole", "role", "academicYear"
   ];
   authKeys.forEach((key) => {
     const val = localStorage.getItem(key);

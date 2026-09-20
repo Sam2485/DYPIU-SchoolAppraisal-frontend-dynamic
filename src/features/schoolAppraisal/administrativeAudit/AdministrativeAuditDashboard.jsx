@@ -270,14 +270,11 @@ export default function AdministrativeAuditDashboard() {
 
   useEffect(() => {
     let isActive = true;
-    const universityCode = sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || "";
-    if (universityCode) {
-      fetchUniversityBranding(universityCode)
-        .then((data) => {
-          if (isActive && data) setUniversityInfo(data);
-        })
-        .catch(() => {});
-    }
+    fetchUniversityBranding()
+      .then((data) => {
+        if (isActive && data) setUniversityInfo(data);
+      })
+      .catch(() => {});
     return () => {
       isActive = false;
     };
@@ -288,9 +285,8 @@ export default function AdministrativeAuditDashboard() {
     const loadDynamicAdminSchema = async () => {
       setSchemaLoading(true);
       try {
-        const universityCode = sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || "";
         const userPost = sessionStorage.getItem("post") || sessionStorage.getItem("designation") || "";
-        const schema = await fetchActiveSchema("administrative", universityCode, userPost);
+        const schema = await fetchActiveSchema("administrative", userPost);
         if (!isActive) return;
         if (schema && Array.isArray(schema.sections) && schema.sections.length > 0) {
           setDynamicSchema(schema);
@@ -470,29 +466,15 @@ export default function AdministrativeAuditDashboard() {
         const { data: draftResponse } = await fetchMyDraft("administrative", academicYear);
         const draft = normalizeDraft(draftResponse, initial.fields, initial.tables);
 
-        const currentUniversityId = sessionStorage.getItem("universityId") || localStorage.getItem("universityId");
-        const currentUniversityCode = sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode");
-
-        const rawPayload = draftResponse?.data?.data || draftResponse?.data || draftResponse || {};
-        const draftUniId = draft.universityId ?? rawPayload.universityId;
-        const draftUniCode = draft.universityCode ?? rawPayload.universityCode;
-
-        const isCrossTenantDraft = Boolean(
-          (currentUniversityId && draftUniId && String(draftUniId) !== String(currentUniversityId)) ||
-          (currentUniversityCode && draftUniCode && String(draftUniCode).toLowerCase() !== String(currentUniversityCode).toLowerCase())
-        );
-
-        const activeDraft = (!isCrossTenantDraft && draftBelongsToAcademicYear(draft, academicYear))
+        const activeDraft = draftBelongsToAcademicYear(draft, academicYear)
           ? draft
           : normalizeDraft({}, initial.fields, initial.tables);
 
-        let historyEntries = !isCrossTenantDraft
-          ? responseList(activeDraft.versionHistory).map((entry, index) =>
-              normalizeHistoryDraft(entry, initial.fields, initial.tables)
-            )
-          : [];
+        let historyEntries = responseList(activeDraft.versionHistory).map((entry, index) =>
+          normalizeHistoryDraft(entry, initial.fields, initial.tables)
+        );
 
-        if (!isCrossTenantDraft && activeDraft.id) {
+        if (activeDraft.id) {
           try {
             const { data: snapshotsData } = await fetchSubmissionSnapshots(activeDraft.id);
             historyEntries = [

@@ -405,9 +405,6 @@ export const extractAttachments = (tables) => {
 };
 
 export const buildSubmissionPayload = ({ auditType, values, tables, attachments, academicYear }) => {
-  const universityId = sessionStorage.getItem("universityId") || localStorage.getItem("universityId");
-  const universityCode = sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode");
-
   return {
     auditType,
     ...(academicYear ? {
@@ -418,8 +415,6 @@ export const buildSubmissionPayload = ({ auditType, values, tables, attachments,
     valuesData: JSON.stringify(values || {}),
     tablesData: JSON.stringify(tables || {}),
     attachments: JSON.stringify(attachments || extractAttachments(tables)),
-    ...(universityId ? { universityId: Number(universityId) } : {}),
-    ...(universityCode ? { universityCode } : {}),
   };
 };
 
@@ -427,15 +422,10 @@ export const fetchMyDraft = (auditType, academicYear) =>
   fetchMyDraftForAcademicYearAliases(auditType, academicYear);
 
 const fetchMyDraftVariant = (auditType, yearAlias, sharedParams, extraParams = {}) => {
-  const universityId = sessionStorage.getItem("universityId") || localStorage.getItem("universityId");
-  const universityCode = sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode");
-
   return apiClient.get("/api/submissions/my-draft", {
     params: {
       auditType,
       ...(yearAlias ? academicYearParams(yearAlias) : {}),
-      ...(universityId ? { universityId } : {}),
-      ...(universityCode ? { universityCode } : {}),
       ...sharedParams,
       ...extraParams,
     },
@@ -591,27 +581,11 @@ export const startNextAcademicYear = (payload) =>
   apiClient.post("/api/audit-cycles/start-next", payload);
 
 export const submitAdministrativePart = (cycleId) => {
-  const universityId = sessionStorage.getItem("universityId") || localStorage.getItem("universityId");
-  const universityCode = sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode");
-
-  return apiClient.post(`/api/submissions/administrative/${encodeURIComponent(cycleId)}/submit`, null, {
-    params: {
-      ...(universityId ? { universityId } : {}),
-      ...(universityCode ? { universityCode } : {}),
-    },
-  });
+  return apiClient.post(`/api/submissions/administrative/${encodeURIComponent(cycleId)}/submit`, null);
 };
 
 export const fetchAdministrativeStatus = (cycleId) => {
-  const universityId = sessionStorage.getItem("universityId") || localStorage.getItem("universityId");
-  const universityCode = sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode");
-
-  return apiClient.get(`/api/submissions/administrative/${encodeURIComponent(cycleId)}/status`, {
-    params: {
-      ...(universityId ? { universityId } : {}),
-      ...(universityCode ? { universityCode } : {}),
-    },
-  });
+  return apiClient.get(`/api/submissions/administrative/${encodeURIComponent(cycleId)}/status`);
 };
 
 export const parseSubmissionFormData = (submission = {}) => {

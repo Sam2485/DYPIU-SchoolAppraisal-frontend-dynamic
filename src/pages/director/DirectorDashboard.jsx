@@ -40,8 +40,7 @@ export default function DirectorDashboard() {
   // Fetch University Branding
   useEffect(() => {
     let isActive = true;
-    const universityCode = sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || "";
-    fetchUniversityBranding(universityCode)
+    fetchUniversityBranding()
       .then((data) => {
         if (isActive && data) setUniversityInfo(data);
       })
@@ -66,15 +65,14 @@ export default function DirectorDashboard() {
     };
   }, []);
 
-  // Fetch Dynamic Active Schema for School & University
+  // Fetch Dynamic Active Schema for School
   useEffect(() => {
     let isActive = true;
     const loadDynamicSchema = async () => {
       setSchemaLoading(true);
       try {
-        const universityCode = sessionStorage.getItem("universityCode") || localStorage.getItem("universityCode") || "";
         const userSchool = sessionStorage.getItem("userSchool") || sessionStorage.getItem("school") || "";
-        const dynamicSchema = await fetchActiveSchema("academic", universityCode, userSchool);
+        const dynamicSchema = await fetchActiveSchema("academic", userSchool);
         if (!isActive) return;
 
         if (dynamicSchema && Array.isArray(dynamicSchema.sections) && dynamicSchema.sections.length > 0) {
