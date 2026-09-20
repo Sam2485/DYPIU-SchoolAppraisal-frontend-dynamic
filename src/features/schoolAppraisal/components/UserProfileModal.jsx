@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { getApiErrorMessage } from "../../../api/client";
-import { changeCurrentUserPassword, fetchCurrentUser, updateCurrentUser, uploadCurrentUserAvatar } from "../../../api/users";
+import { changeCurrentUserPassword, fetchCurrentUser, uploadCurrentUserAvatar } from "../../../api/users";
 import { getAttachmentUrl } from "../../../utils/attachment";
 
 const AVATAR_EDITOR_SIZE = 220;
@@ -311,7 +311,6 @@ export default function UserProfileModal({ profile, onClose, onSaved }) {
         const adjustedAvatarFile = await createAdjustedAvatarFile(avatarPreview, avatarCrop, baseSize);
         nextAvatarUrl = (await uploadCurrentUserAvatar(adjustedAvatarFile)) || avatarUrl;
       }
-      await updateCurrentUser({ name, email });
       onSaved({ name, email, avatarUrl: nextAvatarUrl });
       onClose();
     } catch (err) {
@@ -411,19 +410,8 @@ export default function UserProfileModal({ profile, onClose, onSaved }) {
         </div>
 
         <div style={styles.profileModalFields}>
-          <label style={styles.readOnlyField}>
-            <span style={styles.readOnlyLabel}>Name</span>
-            <input style={styles.editableInput} value={name} onChange={(event) => setName(event.target.value)} />
-          </label>
-          <label style={styles.readOnlyField}>
-            <span style={styles.readOnlyLabel}>Email</span>
-            <input
-              style={styles.editableInput}
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-            />
-          </label>
+          <LockedProfileField label="Name" value={name} />
+          <LockedProfileField label="Email" value={email} />
           <LockedProfileField label="Role" value={profile.designation || profile.role} />
           {profile.school && <LockedProfileField label="School" value={profile.school} />}
         </div>
@@ -432,8 +420,8 @@ export default function UserProfileModal({ profile, onClose, onSaved }) {
 
         <div style={styles.modalActions}>
           <button type="button" onClick={onClose} style={styles.cancelButton} disabled={saving}>Cancel</button>
-          <button type="button" onClick={handleSave} style={styles.saveButton} disabled={saving || loadingProfile}>
-            {saving ? "Saving..." : "Save changes"}
+          <button type="button" onClick={handleSave} style={styles.saveButton} disabled={saving || loadingProfile || !avatarFile}>
+            {saving ? "Saving..." : "Save photo"}
           </button>
         </div>
 

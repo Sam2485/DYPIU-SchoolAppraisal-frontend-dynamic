@@ -117,7 +117,7 @@ const collectAttachments = (value, attachments = []) => {
     return attachments;
   }
   if (!value || typeof value !== "object") return attachments;
-  if (value.url || value.publicUrl || value.downloadUrl) {
+  if ((value.url || value.publicUrl || value.downloadUrl) && (value.fileName || value.filename || value.name)) {
     attachments.push(value);
     return attachments;
   }

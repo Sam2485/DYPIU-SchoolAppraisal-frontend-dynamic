@@ -2286,6 +2286,16 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
 
   useEffect(() => {
     refreshBranding();
+    const onFocus = () => refreshBranding();
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") refreshBranding();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [refreshBranding]);
 
   const resolvedUniversityLogo = getAttachmentUrl(universityInfo?.logoUrl || sessionStorage.getItem("universityLogo")) || "";
@@ -3625,8 +3635,6 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
               submissions={auditorReviewedSubmissions}
               loading={loadingSubmissions}
               onOpen={openSubmission}
-              onDownload={handleDownloadAttachments}
-              downloadingAttachmentsId={downloadingAttachmentsId}
               resolveSubmitterAvatar={resolveSubmitterAvatar}
             />
           ) : visibleActiveView === "previous-reports" ? (
@@ -3667,8 +3675,6 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
               onGroupChange={(group) => setActiveGroup((current) => ({ ...current, academic: group }))}
               onOpen={openSubmission}
               onForward={canManageUsers ? openForwardModal : null}
-              onDownload={!isAuditor ? handleDownloadAttachments : null}
-              downloadingAttachmentsId={downloadingAttachmentsId}
               loading={loadingSubmissions}
               resolveSubmitterAvatar={resolveSubmitterAvatar}
             />
@@ -3684,8 +3690,6 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
               onGroupChange={(group) => setActiveGroup((current) => ({ ...current, administrative: group }))}
               onOpen={openSubmission}
               onForward={canManageUsers ? openForwardModal : null}
-              onDownload={!isAuditor ? handleDownloadAttachments : null}
-              downloadingAttachmentsId={downloadingAttachmentsId}
               loading={loadingSubmissions}
               resolveSubmitterAvatar={resolveSubmitterAvatar}
             />
