@@ -1,5 +1,6 @@
 import { toast, confirmAction } from "../../../components/feedback/feedbackBus";
 import React, { useState, useEffect } from 'react';
+import { Trash2 } from 'lucide-react';
 import { GraduationCapIcon, BuildingIcon, IconBadge, EmptyState, InfoBadgeIcon, TipBadgeIcon } from './StudioIcons';
 import {
   getSchemas,
@@ -8,7 +9,6 @@ import {
   updateSchema,
   cloneSchema,
   deleteSchema,
-  clearAllSchemas,
   createDraftVersion,
   deleteVersion,
   rollbackVersion,
@@ -137,20 +137,6 @@ export const SchemaManager = ({
     }
   };
 
-  const handleClearAllSchemas = async () => {
-    if (!(await confirmAction('Are you sure you want to delete ALL form schemas for this university and start completely fresh?', { tone: 'danger', confirmLabel: 'Delete' }))) {
-      return;
-    }
-    try {
-      await clearAllSchemas(selectedUniversity?.id || 1);
-      setSelectedSchema(null);
-      setVersions([]);
-      await loadSchemas();
-    } catch (err) {
-      toast.error('Failed to clear schemas: ' + (err.response?.data?.message || err.message));
-    }
-  };
-
   const handleDeleteVersion = async (version) => {
     if (!(await confirmAction(`Are you sure you want to delete Version V${version.versionNumber} (${version.status})?`, { tone: 'danger', confirmLabel: 'Delete' }))) {
       return;
@@ -164,6 +150,15 @@ export const SchemaManager = ({
     } catch (err) {
       toast.error('Failed to delete version: ' + (err.response?.data?.message || err.message));
     }
+  };
+
+  // Delete from the version-history Actions column. A form must keep at least one version, so
+  // deleting its only remaining version removes the whole form (after the usual confirmation).
+  const handleDeleteFromRow = (version) => {
+    if (versions.length > 1 || !selectedSchema) {
+      return handleDeleteVersion(version);
+    }
+    return handleDeleteSchema(selectedSchema);
   };
 
   // Open Create Modal
@@ -308,16 +303,6 @@ export const SchemaManager = ({
           </div>
         </div>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          {schemas.length > 0 && (
-            <button
-              type="button"
-              className="btn btn-outline-danger px-3 py-2 fw-semibold"
-              style={{ borderRadius: '8px', border: '1px solid #fca5a5', background: '#fff', color: '#dc2626', cursor: 'pointer', padding: '8px 16px', fontWeight: 600 }}
-              onClick={handleClearAllSchemas}
-            >
-              🗑️ Clear All
-            </button>
-          )}
           {(!isAdministrative || schemas.length === 0) && (
             <button
               type="button"
@@ -484,16 +469,15 @@ export const SchemaManager = ({
                                       Rollback
                                     </button>
                                   )}
-                                  {versions.length > 1 && (
-                                    <button
-                                      type="button"
-                                      style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #fecaca', background: '#fff', color: '#b91c1c', cursor: 'pointer' }}
-                                      onClick={() => handleDeleteVersion(v)}
-                                      title="Delete this version"
-                                    >
-                                      🗑️
-                                    </button>
-                                  )}
+                                  <button
+                                    type="button"
+                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', border: '1px solid #fecaca', background: '#fff', color: '#b91c1c', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}
+                                    onClick={() => handleDeleteFromRow(v)}
+                                    title={versions.length > 1 ? 'Delete this version' : 'Delete this form and all its versions'}
+                                  >
+                                    <Trash2 size={14} strokeWidth={2} aria-hidden="true" />
+                                    Delete
+                                  </button>
                                 </>
                               )}
                             </div>
@@ -719,16 +703,15 @@ export const SchemaManager = ({
                                         Rollback
                                       </button>
                                     )}
-                                    {versions.length > 1 && (
-                                      <button
-                                        type="button"
-                                        style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid #fecaca', background: '#fff', color: '#b91c1c', cursor: 'pointer' }}
-                                        onClick={() => handleDeleteVersion(v)}
-                                        title="Delete this version"
-                                      >
-                                        🗑️
-                                      </button>
-                                    )}
+                                    <button
+                                      type="button"
+                                      style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '5px 11px', borderRadius: '6px', border: '1px solid #fecaca', background: '#fff', color: '#b91c1c', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}
+                                      onClick={() => handleDeleteFromRow(v)}
+                                      title={versions.length > 1 ? 'Delete this version' : 'Delete this form and all its versions'}
+                                    >
+                                      <Trash2 size={14} strokeWidth={2} aria-hidden="true" />
+                                      Delete
+                                    </button>
                                   </>
                                 )}
                               </div>
