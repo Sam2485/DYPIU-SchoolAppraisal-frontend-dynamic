@@ -1,7 +1,5 @@
 import { toast, confirmAction } from "../../../components/feedback/feedbackBus";
-import React, { useState, useEffect } from 'react';
-import { Trash2 } from 'lucide-react';
-import { GraduationCapIcon, BuildingIcon, IconBadge, EmptyState, InfoBadgeIcon, TipBadgeIcon } from './StudioIcons';
+import React, { useState, useEffect } from 'react';import { GraduationCapIcon, BuildingIcon, IconBadge, EmptyState, InfoBadgeIcon, TipBadgeIcon } from './StudioIcons';
 import {
   getSchemas,
   getSchemaDetails,
@@ -150,15 +148,6 @@ export const SchemaManager = ({
     } catch (err) {
       toast.error('Failed to delete version: ' + (err.response?.data?.message || err.message));
     }
-  };
-
-  // Delete from the version-history Actions column. A form must keep at least one version, so
-  // deleting its only remaining version removes the whole form (after the usual confirmation).
-  const handleDeleteFromRow = (version) => {
-    if (versions.length > 1 || !selectedSchema) {
-      return handleDeleteVersion(version);
-    }
-    return handleDeleteSchema(selectedSchema);
   };
 
   // Open Create Modal
@@ -469,15 +458,6 @@ export const SchemaManager = ({
                                       Rollback
                                     </button>
                                   )}
-                                  <button
-                                    type="button"
-                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', border: '1px solid #fecaca', background: '#fff', color: '#b91c1c', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}
-                                    onClick={() => handleDeleteFromRow(v)}
-                                    title={versions.length > 1 ? 'Delete this version' : 'Delete this form and all its versions'}
-                                  >
-                                    <Trash2 size={14} strokeWidth={2} aria-hidden="true" />
-                                    Delete
-                                  </button>
                                 </>
                               )}
                             </div>
@@ -703,15 +683,6 @@ export const SchemaManager = ({
                                         Rollback
                                       </button>
                                     )}
-                                    <button
-                                      type="button"
-                                      style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '5px 11px', borderRadius: '6px', border: '1px solid #fecaca', background: '#fff', color: '#b91c1c', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}
-                                      onClick={() => handleDeleteFromRow(v)}
-                                      title={versions.length > 1 ? 'Delete this version' : 'Delete this form and all its versions'}
-                                    >
-                                      <Trash2 size={14} strokeWidth={2} aria-hidden="true" />
-                                      Delete
-                                    </button>
                                   </>
                                 )}
                               </div>
