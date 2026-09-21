@@ -1,20 +1,15 @@
+import { initialsFromName } from "../../../utils/initials";
+import { ClipboardCheck, ChartNoAxesColumn, Mail, LogOut, ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { getAttachmentUrl } from "../../../utils/attachment";
 import { scrollPageToTop } from "../../../utils/scrollToTop";
 
-const Icon = ({ children, size = 18 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    {children}
-  </svg>
-);
+const ClipboardIcon = () => <ClipboardCheck size={18} strokeWidth={1.8} aria-hidden="true" />;
+const SummaryIcon = () => <ChartNoAxesColumn size={18} strokeWidth={1.8} aria-hidden="true" />;
+const MailIcon = () => <Mail size={18} strokeWidth={1.8} aria-hidden="true" />;
+const LogoutIcon = () => <LogOut size={18} strokeWidth={1.8} aria-hidden="true" />;
+const ChevronIcon = () => <ChevronDown size={16} strokeWidth={1.8} aria-hidden="true" />;
 
-const ClipboardIcon = () => <Icon><path d="M9 5h6"/><path d="M9 3h6v4H9z"/><path d="M7 5H5v16h14V5h-2"/><path d="m9 14 2 2 4-4"/></Icon>;
-const SummaryIcon = () => <Icon><path d="M4 19V9"/><path d="M10 19V5"/><path d="M16 19v-7"/><path d="M22 19H2"/></Icon>;
-const MailIcon = () => <Icon><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></Icon>;
-const LogoutIcon = () => <Icon><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M15 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/></Icon>;
-const ChevronIcon = () => <Icon size={16}><path d="m7 10 5 5 5-5"/></Icon>;
-
-const initialsFor = (name = "") => name.split(" ").filter(Boolean).map((word) => word[0]).join("").slice(0, 2).toUpperCase();
 
 export default function AppSidebar({
   title,
@@ -271,7 +266,7 @@ export default function AppSidebar({
           {profile.avatarUrl ? (
             <img className="app-sidebar__avatar-img" src={getAttachmentUrl(profile.avatarUrl)} alt="" />
           ) : (
-            initialsFor(profile.name) || badge
+            initialsFromName(profile.name) || badge
           )}
         </div>
         <div className="app-sidebar__profile-copy">

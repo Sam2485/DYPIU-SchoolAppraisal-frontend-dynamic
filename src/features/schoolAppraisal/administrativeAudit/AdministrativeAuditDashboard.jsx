@@ -1,3 +1,4 @@
+import { confirmAction } from "../../../components/feedback/feedbackBus";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { clearAuthState, getApiErrorMessage } from "../../../api/client";
@@ -654,9 +655,9 @@ export default function AdministrativeAuditDashboard() {
     }));
   };
 
-  const resetActiveModule = () => {
+  const resetActiveModule = async () => {
     if (!canEditActiveModule) return;
-    if (!window.confirm(`Reset Section ${activeModule.number}? Unsaved data in this section will be cleared.`)) return;
+    if (!(await confirmAction(`Reset Section ${activeModule.number}? Unsaved data in this section will be cleared.`, { tone: 'danger', confirmLabel: 'Clear' }))) return;
 
     setData((current) => {
       const initial = buildInitialData(dynamicModules);
@@ -1389,7 +1390,7 @@ function AttachmentField({
       setError("Could not delete attachment because its URL is missing.");
       return;
     }
-    if (!window.confirm(`Remove ${attachment.name || attachment.fileName || "this attachment"}?`)) return;
+    if (!(await confirmAction(`Remove ${attachment.name || attachment.fileName || "this attachment"}?`, { tone: 'danger', confirmLabel: 'Remove' }))) return;
 
     setDeletingUrl(attachment.url);
     setError("");

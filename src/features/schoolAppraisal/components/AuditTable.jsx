@@ -1,4 +1,6 @@
 //academic & administrative table add rows and delete last row functionality , sr no, table heading(blue)
+import { FileText, Upload } from "lucide-react";
+import { confirmAction } from "../../../components/feedback/feedbackBus";
 import { useState } from "react";
 import { getApiErrorMessage } from "../../../api/client";
 import { columnsWithSerial, serialColumnFor, numberedRowFor, withSerialNumbers } from "./tableHelpers";
@@ -278,7 +280,7 @@ export default function AuditTable({
       return;
     }
 
-    if (!window.confirm(`Remove ${attachment.name || attachment.fileName || "this attachment"}?`)) return;
+    if (!(await confirmAction(`Remove ${attachment.name || attachment.fileName || "this attachment"}?`, { tone: 'danger', confirmLabel: 'Remove' }))) return;
 
     const attachmentKey = `${rowIndex}-${column}-${attachment.url}`;
     setDeletingAttachment(attachmentKey);
@@ -379,10 +381,7 @@ export default function AuditTable({
                               <article className="audit-attachment-card" key={`${file.url || file.name || "attachment"}-${fileIndex}`} style={styles.fileSummary}>
                                 <div style={styles.fileHeader}>
                                   <span style={styles.pdfIcon} aria-hidden="true">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ width: 18, height: 18 }}>
-                                      <path d="M6 2.75h8l4 4V21.25H6z" />
-                                      <path d="M14 2.75v4h4" />
-                                    </svg>
+                                    <FileText size={18} strokeWidth={1.8} />
                                   </span>
                                   <span style={styles.fileDetails}>
                                     <span style={styles.fileName} title={file.name || file.fileName}>
@@ -441,20 +440,7 @@ export default function AuditTable({
                           </div>
                         ) : (
                           <label className="audit-attachment-button" style={styles.attachmentButton}>
-                            <svg
-                              aria-hidden="true"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              style={styles.attachmentIcon}
-                            >
-                              <path d="M12 16V4" />
-                              <path d="m7 9 5-5 5 5" />
-                              <path d="M5 20h14" />
-                            </svg>
+                            <Upload aria-hidden="true" strokeWidth={2} style={styles.attachmentIcon} />
                             <span>{uploadingCell === `${rowIndex}-${column}` ? "Uploading..." : "Attach PDFs"}</span>
                             <input
                               type="file"

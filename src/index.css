@@ -1500,3 +1500,71 @@ section:has(> .review-report-actions) {
     text-decoration: none !important;
   }
 }
+
+/* =============================================================
+   Interaction polish layer
+   Purely visual. Written with :where() so it never out-ranks
+   existing component rules; inline styles and classes still win.
+   ============================================================= */
+
+/* Smooth state changes on interactive elements */
+:where(button, a[href]) {
+  transition:
+    background-color .15s ease,
+    color .15s ease,
+    border-color .15s ease,
+    box-shadow .15s ease,
+    opacity .15s ease;
+}
+
+/* Consistent, visible keyboard focus */
+:where(button, a[href], summary, [role="button"], [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Soft focus ring on text-like fields */
+input:where(:not([type="checkbox"], [type="radio"], [type="file"], [type="range"], [type="color"], [type="button"], [type="submit"])):focus,
+textarea:focus,
+select:focus {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .16);
+}
+input:where(:not([type="checkbox"], [type="radio"], [type="file"], [type="range"], [type="color"], [type="button"], [type="submit"], [aria-invalid="true"])):focus,
+textarea:where(:not([aria-invalid="true"])):focus,
+select:where(:not([aria-invalid="true"])):focus {
+  border-color: var(--primary);
+}
+
+/* Sidebar: keyboard focus, elevated active item, entrance motion */
+.app-sidebar {
+  box-shadow: 4px 0 18px rgba(15, 23, 42, .05);
+}
+:where(.app-sidebar__nav-item, .app-sidebar__menu-item, .app-sidebar__select-card, .app-sidebar__nav-label, .app-sidebar__logout, .app-sidebar__support):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.app-sidebar__nav-item.is-active {
+  box-shadow: inset 0 0 0 1px var(--accent-border), 0 2px 8px rgba(37, 99, 235, .10);
+  animation: app-sidebar-select-in .24s cubic-bezier(.22, 1, .36, 1) both;
+}
+.app-sidebar__nav-item:not(.is-active):hover .app-sidebar__nav-icon {
+  color: var(--primary-dark);
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
+}
+.app-sidebar__nav-icon {
+  transition: color .18s ease, background-color .18s ease, border-color .18s ease;
+}
+@keyframes app-sidebar-select-in {
+  from { opacity: .55; transform: translateX(-6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-sidebar__nav-item.is-active { animation: none; }
+}
+
+@media print {
+  .app-toast-region,
+  .app-confirm__backdrop { display: none !important; }
+}

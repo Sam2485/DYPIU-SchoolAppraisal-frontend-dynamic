@@ -1,3 +1,4 @@
+import { confirmAction } from "../../../components/feedback/feedbackBus";
 import React, { useState, useEffect, useRef } from 'react';
 import { getVersionTree } from './formStudioApi';
 import { TableButtonGroup } from '../components/TableButtonGroup';
@@ -430,14 +431,14 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
     setTablesData((prev) => ({ ...prev, [tableKey]: updated }));
   };
 
-  const handleClearTable = (tableKey) => {
-    if (window.confirm('Are you sure you want to clear all rows in this simulated table?')) {
+  const handleClearTable = async (tableKey) => {
+    if (await confirmAction('Are you sure you want to clear all rows in this simulated table?', { tone: 'danger', confirmLabel: 'Clear' })) {
       setTablesData((prev) => ({ ...prev, [tableKey]: [] }));
     }
   };
 
-  const handleResetAllData = () => {
-    if (window.confirm('Reset all simulated input fields and table records?')) {
+  const handleResetAllData = async () => {
+    if (await confirmAction('Reset all simulated input fields and table records?', { tone: 'danger', confirmLabel: 'Reset' })) {
       setValuesData({});
       setTablesData({});
     }

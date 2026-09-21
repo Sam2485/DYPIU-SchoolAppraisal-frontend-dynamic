@@ -1,3 +1,4 @@
+import { toast } from "../../../components/feedback/feedbackBus";
 import { useMemo, useState } from "react";
 import { columnsWithSerial, serialColumnFor } from "../components/tableHelpers";
 import { SIGN_OFF_FIELD, downloadSubmissionPdfReport, downloadSubmissionExcelReport, triggerBlobDownload } from "../../../api/submissions";
@@ -222,7 +223,7 @@ export default function AdministrativeReportPanel({
       triggerBlobDownload(response.data, defaultName, response.headers);
     } catch (e) {
       console.error("PDF download failed", e);
-      alert("Failed to download official PDF report. Please try again.");
+      toast.error("Failed to download official PDF report. Please try again.");
     } finally {
       setDownloadingPdf(false);
     }
@@ -237,7 +238,7 @@ export default function AdministrativeReportPanel({
       triggerBlobDownload(response.data, defaultName, response.headers);
     } catch (e) {
       console.error("Excel download failed", e);
-      alert("Failed to download Excel report. Please try again.");
+      toast.error("Failed to download Excel report. Please try again.");
     } finally {
       setDownloadingExcel(false);
     }

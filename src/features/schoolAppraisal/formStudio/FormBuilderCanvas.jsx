@@ -1,3 +1,4 @@
+import { toast, confirmAction } from "../../../components/feedback/feedbackBus";
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -182,7 +183,7 @@ export const FormBuilderCanvas = ({
       });
       await loadTree();
     } catch (err) {
-      alert('Error updating auditor designation: ' + err.message);
+      toast.error('Error updating auditor designation: ' + err.message);
     }
   };
 
@@ -234,17 +235,17 @@ export const FormBuilderCanvas = ({
       setSectionModal({ ...sectionModal, show: false });
       await loadTree();
     } catch (err) {
-      alert('Error saving section: ' + err.message);
+      toast.error('Error saving section: ' + err.message);
     }
   };
 
   const handleDeleteSection = async (secId) => {
-    if (!window.confirm('Are you sure you want to delete this entire section and all its tables?')) return;
+    if (!(await confirmAction('Are you sure you want to delete this entire section and all its tables?', { tone: 'danger', confirmLabel: 'Delete' }))) return;
     try {
       await deleteSection(secId);
       await loadTree();
     } catch (err) {
-      alert('Error deleting section: ' + err.message);
+      toast.error('Error deleting section: ' + err.message);
     }
   };
 
@@ -265,7 +266,7 @@ export const FormBuilderCanvas = ({
       await loadTree();
     } catch (err) {
       console.error('Failed to reorder sections:', err);
-      alert('Failed to save section order: ' + err.message);
+      toast.error('Failed to save section order: ' + err.message);
       await loadTree();
     }
   };
@@ -321,7 +322,7 @@ export const FormBuilderCanvas = ({
     const toAdd = incoming.filter((item) => !existing.includes(item));
 
     if (toAdd.length === 0) {
-      alert('Option already added.');
+      toast.warning('Option already added.');
       return;
     }
 
@@ -397,15 +398,15 @@ export const FormBuilderCanvas = ({
     }
 
     if (!tableButtonModal.data.label.trim()) {
-      alert('Please enter a button label (e.g. Add School Data).');
+      toast.warning('Please enter a button label (e.g. Add School Data).');
       return;
     }
     if (opts.length === 0) {
-      alert('Please add at least one dropdown option using "+ Add Option".');
+      toast.warning('Please add at least one dropdown option using "+ Add Option".');
       return;
     }
     if (tableButtonModal.data.assignedTableKeys.length === 0) {
-      alert('Please assign at least one table to this button.');
+      toast.warning('Please assign at least one table to this button.');
       return;
     }
 
@@ -444,12 +445,12 @@ export const FormBuilderCanvas = ({
       setTableButtonModal((prev) => ({ ...prev, show: false }));
       await loadTree();
     } catch (err) {
-      alert('Error saving table button: ' + err.message);
+      toast.error('Error saving table button: ' + err.message);
     }
   };
 
   const handleDeleteTableButton = async (btnId) => {
-    if (!window.confirm('Are you sure you want to delete this dynamic button? Its assigned tables will become permanently visible.')) return;
+    if (!(await confirmAction('Are you sure you want to delete this dynamic button? Its assigned tables will become permanently visible.', { tone: 'danger', confirmLabel: 'Delete' }))) return;
     if (!currentSection) return;
 
     const currentButtons = normalizeTableButtons(currentSection.tableButtons);
@@ -465,7 +466,7 @@ export const FormBuilderCanvas = ({
       });
       await loadTree();
     } catch (err) {
-      alert('Error deleting table button: ' + err.message);
+      toast.error('Error deleting table button: ' + err.message);
     }
   };
 
@@ -549,17 +550,17 @@ export const FormBuilderCanvas = ({
       setTableModal({ ...tableModal, show: false });
       await loadTree();
     } catch (err) {
-      alert('Error saving table: ' + err.message);
+      toast.error('Error saving table: ' + err.message);
     }
   };
 
   const handleDeleteTable = async (tblId) => {
-    if (!window.confirm('Are you sure you want to delete this table?')) return;
+    if (!(await confirmAction('Are you sure you want to delete this table?', { tone: 'danger', confirmLabel: 'Delete' }))) return;
     try {
       await deleteTable(tblId);
       await loadTree();
     } catch (err) {
-      alert('Error deleting table: ' + err.message);
+      toast.error('Error deleting table: ' + err.message);
     }
   };
 
@@ -583,7 +584,7 @@ export const FormBuilderCanvas = ({
       await loadTree();
     } catch (err) {
       console.error('Failed to reorder tables:', err);
-      alert('Failed to save table order: ' + err.message);
+      toast.error('Failed to save table order: ' + err.message);
       await loadTree();
     }
   };
@@ -602,7 +603,7 @@ export const FormBuilderCanvas = ({
         newTableKey: '',
       });
     } catch (err) {
-      alert('Failed to load available tables: ' + err.message);
+      toast.error('Failed to load available tables: ' + err.message);
     } finally {
       setLoadingTables(false);
     }
@@ -611,7 +612,7 @@ export const FormBuilderCanvas = ({
   const handleExecuteCopyTable = async (e) => {
     e.preventDefault();
     if (!copyTableModal.sourceTableId) {
-      alert('Please select a source table to copy.');
+      toast.warning('Please select a source table to copy.');
       return;
     }
     try {
@@ -624,7 +625,7 @@ export const FormBuilderCanvas = ({
       setCopyTableModal({ ...copyTableModal, show: false });
       await loadTree();
     } catch (err) {
-      alert('Failed to copy table: ' + (err.response?.data?.message || err.message));
+      toast.error('Failed to copy table: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -723,17 +724,17 @@ export const FormBuilderCanvas = ({
       setFieldModal({ ...fieldModal, show: false });
       await loadTree();
     } catch (err) {
-      alert('Error saving field/column: ' + err.message);
+      toast.error('Error saving field/column: ' + err.message);
     }
   };
 
   const handleDeleteField = async (fId) => {
-    if (!window.confirm('Are you sure you want to delete this field/column?')) return;
+    if (!(await confirmAction('Are you sure you want to delete this field/column?', { tone: 'danger', confirmLabel: 'Delete' }))) return;
     try {
       await deleteField(fId);
       await loadTree();
     } catch (err) {
-      alert('Error deleting field: ' + err.message);
+      toast.error('Error deleting field: ' + err.message);
     }
   };
 
@@ -753,14 +754,14 @@ export const FormBuilderCanvas = ({
       await loadTree();
     } catch (err) {
       console.error('Failed to reorder fields:', err);
-      alert('Failed to save column order: ' + err.message);
+      toast.error('Failed to save column order: ' + err.message);
       await loadTree();
     }
   };
 
   // Publish
   const handlePublish = async () => {
-    if (!window.confirm('Publishing will freeze this schema version and activate it immediately for all contributors. Continue?')) {
+    if (!(await confirmAction('Publishing will freeze this schema version and activate it immediately for all contributors. Continue?', { confirmLabel: 'Publish' }))) {
       return;
     }
     setPublishing(true);
@@ -771,7 +772,7 @@ export const FormBuilderCanvas = ({
       if (onPublishSuccess) onPublishSuccess(published);
       await loadTree();
     } catch (err) {
-      alert('Publish Failed: ' + (err.response?.data?.message || err.message));
+      toast.error('Publish Failed: ' + (err.response?.data?.message || err.message));
     } finally {
       setPublishing(false);
     }

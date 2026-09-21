@@ -1,3 +1,4 @@
+import { toast, confirmAction } from "../../../components/feedback/feedbackBus";
 import React, { useState, useEffect } from 'react';
 import { GraduationCapIcon, BuildingIcon, IconBadge, EmptyState, InfoBadgeIcon, TipBadgeIcon } from './StudioIcons';
 import {
@@ -107,37 +108,37 @@ export const SchemaManager = ({
         onOpenBuilder(draft.id);
       }
     } catch (err) {
-      alert('Error creating/opening draft: ' + (err.response?.data?.message || err.message));
+      toast.error('Error creating/opening draft: ' + (err.response?.data?.message || err.message));
     }
   };
 
   const handleRollback = async (targetVersionId) => {
-    if (!window.confirm('Are you sure you want to rollback the active form to Version ' + targetVersionId + '?')) {
+    if (!(await confirmAction('Are you sure you want to rollback the active form to Version ' + targetVersionId + '?', { tone: 'danger', confirmLabel: 'Roll back' }))) {
       return;
     }
     try {
       await rollbackVersion(selectedSchema.id, targetVersionId);
       await loadSchemas();
-      alert('Rollback successful.');
+      toast.success('Rollback successful.');
     } catch (err) {
-      alert('Error rolling back: ' + err.message);
+      toast.error('Error rolling back: ' + err.message);
     }
   };
 
   const handleDeleteSchema = async (schema) => {
-    if (!window.confirm(`Are you sure you want to permanently delete the Form Schema "${schema.name}" and all its versions?`)) {
+    if (!(await confirmAction(`Are you sure you want to permanently delete the Form Schema "${schema.name}" and all its versions?`, { tone: 'danger', confirmLabel: 'Delete' }))) {
       return;
     }
     try {
       await deleteSchema(schema.id);
       await loadSchemas();
     } catch (err) {
-      alert('Failed to delete schema: ' + (err.response?.data?.message || err.message));
+      toast.error('Failed to delete schema: ' + (err.response?.data?.message || err.message));
     }
   };
 
   const handleClearAllSchemas = async () => {
-    if (!window.confirm('Are you sure you want to delete ALL form schemas for this university and start completely fresh?')) {
+    if (!(await confirmAction('Are you sure you want to delete ALL form schemas for this university and start completely fresh?', { tone: 'danger', confirmLabel: 'Delete' }))) {
       return;
     }
     try {
@@ -146,12 +147,12 @@ export const SchemaManager = ({
       setVersions([]);
       await loadSchemas();
     } catch (err) {
-      alert('Failed to clear schemas: ' + (err.response?.data?.message || err.message));
+      toast.error('Failed to clear schemas: ' + (err.response?.data?.message || err.message));
     }
   };
 
   const handleDeleteVersion = async (version) => {
-    if (!window.confirm(`Are you sure you want to delete Version V${version.versionNumber} (${version.status})?`)) {
+    if (!(await confirmAction(`Are you sure you want to delete Version V${version.versionNumber} (${version.status})?`, { tone: 'danger', confirmLabel: 'Delete' }))) {
       return;
     }
     try {
@@ -161,7 +162,7 @@ export const SchemaManager = ({
       }
       await loadSchemas();
     } catch (err) {
-      alert('Failed to delete version: ' + (err.response?.data?.message || err.message));
+      toast.error('Failed to delete version: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -229,7 +230,7 @@ export const SchemaManager = ({
       setShowCreateModal(false);
       await loadSchemas();
     } catch (err) {
-      alert('Failed to create/clone schema: ' + (err.response?.data?.message || err.message));
+      toast.error('Failed to create/clone schema: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -267,7 +268,7 @@ export const SchemaManager = ({
       setShowEditScopeModal(false);
       await loadSchemas();
     } catch (err) {
-      alert('Failed to update schema scope: ' + (err.response?.data?.message || err.message));
+      toast.error('Failed to update schema scope: ' + (err.response?.data?.message || err.message));
     }
   };
 

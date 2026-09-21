@@ -1,3 +1,4 @@
+import { TriangleAlert, Download, Upload } from "lucide-react";
 import { useState, useRef } from "react";
 import apiClient, { getApiErrorMessage } from "../../../api/client";
 
@@ -143,11 +144,7 @@ export default function BackupRestorePanel() {
       {/* Banner */}
       <div style={styles.banner}>
         <div style={styles.bannerIcon}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-            <line x1="12" y1="9" x2="12" y2="13"/>
-            <line x1="12" y1="17" x2="12.01" y2="17"/>
-          </svg>
+          <TriangleAlert size={20} strokeWidth={2} />
         </div>
         <div style={styles.bannerText}>
           <strong style={styles.bannerTitle}>BROWSER UPLOAD & SIZE LIMITATIONS</strong>
@@ -181,11 +178,7 @@ export default function BackupRestorePanel() {
               disabled={dbLoading}
               style={dbLoading ? styles.buttonDisabled : styles.button}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={styles.btnIcon}>
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
+              <Download size={16} strokeWidth={2} style={styles.btnIcon} />
               {dbLoading ? "Generating SQL..." : "Download Database SQL"}
             </button>
           </div>
@@ -213,11 +206,7 @@ export default function BackupRestorePanel() {
               disabled={dbRestoring}
               style={dbRestoring ? styles.dropzoneDisabled : styles.dropzone}
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={styles.dropzoneIcon}>
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="17 8 12 3 7 8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
+              <Upload size={24} strokeWidth={2} style={styles.dropzoneIcon} />
               <span>{dbRestoring ? "Restoring Database..." : "Click to choose SQL dump file"}</span>
               <small style={styles.dropzoneSmall}>Only .sql files are allowed</small>
             </button>
@@ -251,11 +240,7 @@ export default function BackupRestorePanel() {
               disabled={uploadsLoading}
               style={uploadsLoading ? styles.buttonDisabled : styles.button}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={styles.btnIcon}>
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
+              <Download size={16} strokeWidth={2} style={styles.btnIcon} />
               {uploadsLoading ? "Zipping files..." : "Download Uploads ZIP"}
             </button>
           </div>
@@ -283,11 +268,7 @@ export default function BackupRestorePanel() {
               disabled={uploadsRestoring}
               style={uploadsRestoring ? styles.dropzoneDisabled : styles.dropzone}
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={styles.dropzoneIcon}>
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="17 8 12 3 7 8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
+              <Upload size={24} strokeWidth={2} style={styles.dropzoneIcon} />
               <span>{uploadsRestoring ? "Uploading & Restoring..." : "Click to choose ZIP backup archive"}</span>
               <small style={styles.dropzoneSmall}>Only .zip files are allowed</small>
             </button>

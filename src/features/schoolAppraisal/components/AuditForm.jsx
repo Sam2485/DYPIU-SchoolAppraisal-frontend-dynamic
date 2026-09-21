@@ -1,3 +1,4 @@
+import { confirmAction } from "../../../components/feedback/feedbackBus";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getApiErrorMessage } from "../../../api/client";
 import {
@@ -658,8 +659,8 @@ export default function AuditForm({
     }
   };
 
-  const handleClear = () => {
-    if (!window.confirm("Are you sure you want to clear the form? All unsaved changes will be lost.")) return;
+  const handleClear = async () => {
+    if (!(await confirmAction("Are you sure you want to clear the form? All unsaved changes will be lost.", { tone: 'danger', confirmLabel: 'Clear' }))) return;
 
     setValues(initialValues);
     setTables(initialTables);

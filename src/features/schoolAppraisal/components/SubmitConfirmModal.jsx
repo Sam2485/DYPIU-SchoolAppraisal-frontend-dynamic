@@ -1,3 +1,4 @@
+import { FileCheck, CircleAlert } from "lucide-react";
 import React, { useEffect } from "react";
 
 /**
@@ -45,22 +46,7 @@ export default function SubmitConfirmModal({
       <div style={styles.card} onClick={(e) => e.stopPropagation()}>
         <div style={styles.header}>
           <div style={styles.iconCircle}>
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#2563eb"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-              <line x1="9" y1="15" x2="15" y2="15" />
-              <line x1="9" y1="11" x2="11" y2="11" />
-              <path d="m16.5 14.5 2 2 3.5-3.5" />
-            </svg>
+            <FileCheck size={24} color="#2563eb" strokeWidth={2.2} />
           </div>
           <div>
             <h3 id="submit-confirm-modal-title" style={styles.title}>
@@ -74,21 +60,7 @@ export default function SubmitConfirmModal({
           <p style={styles.messageText}>{message}</p>
           {warningNote && (
             <div style={styles.warningBox}>
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#1d4ed8"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ flexShrink: 0, marginTop: 2 }}
-              >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
+              <CircleAlert size={16} color="#1d4ed8" strokeWidth={2} style={{ flexShrink: 0, marginTop: 2 }} />
               <span>{warningNote}</span>
             </div>
           )}
