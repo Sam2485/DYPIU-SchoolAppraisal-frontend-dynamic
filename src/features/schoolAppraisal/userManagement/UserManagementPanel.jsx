@@ -1,7 +1,7 @@
 import { Pencil, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { getApiErrorMessage } from "../../../api/client";
+import { getApiErrorMessage, refreshAccessToken, setSessionValue } from "../../../api/client";
 import { createUser, deleteUser, fetchUsers, updateUser } from "../../../api/users";
 import { getAttachmentUrl } from "../../../utils/attachment";
 import { formatDateDDMMYYYY } from "../../../utils/dateFormat";
@@ -596,6 +596,29 @@ export default function UserManagementPanel({ currentUser }) {
       setUsers((current) =>
         current.map((user) => user.id === editTarget.id ? normalizeUser({ ...user, ...payload, ...updated }) : user)
       );
+      const isSelf = String(currentUser?.id || currentUser?.userId || "") === String(editTarget.id) ||
+                     (currentUser?.email && String(currentUser.email).toLowerCase() === String(editTarget.email).toLowerCase());
+      if (isSelf) {
+        if (payload.email) {
+          setSessionValue("email", payload.email);
+          setSessionValue("username", payload.email);
+        }
+        if (payload.name) {
+          setSessionValue("name", payload.name);
+        }
+        if (payload.designation) {
+          setSessionValue("designation", payload.designation);
+        }
+        const storedRefreshToken = sessionStorage.getItem("refreshToken") || localStorage.getItem("refreshToken");
+        if (storedRefreshToken) {
+          try {
+            await refreshAccessToken(storedRefreshToken);
+          } catch {
+            // safe fallback
+          }
+        }
+      }
+
       setStatus(`${payload.name} updated successfully.`);
       closeEdit();
     } catch (error) {

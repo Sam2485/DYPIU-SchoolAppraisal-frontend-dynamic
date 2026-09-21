@@ -27,7 +27,7 @@ const apiClient = axios.create({
   baseURL: apiBaseUrl,
 });
 
-const setSessionValue = (key, value) => {
+export const setSessionValue = (key, value) => {
   const strVal = value == null ? "" : String(value);
   sessionStorage.setItem(key, strVal);
   localStorage.setItem(key, strVal);
@@ -228,7 +228,7 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
-const refreshAccessToken = async (storedRefreshToken) => {
+export const refreshAccessToken = async (storedRefreshToken) => {
   const res = await axios.post(`${apiBaseUrl}/api/auth/refresh`, {
     refreshToken: storedRefreshToken,
   });
@@ -319,24 +319,32 @@ apiClient.interceptors.response.use(
                           error.response?.data?.correlationId ||
                           originalRequest?.metadata?.correlationId;
 
-    // Structured error diagnostics
-    try {
-      console.groupCollapsed(`[API ERROR] ${originalRequest?.method?.toUpperCase()} ${originalRequest?.url} → ${error.response?.status || "NETWORK_ERROR"} (${durationMs}ms) [corr: ${correlationId}]`);
-      console.error({
-        method: originalRequest?.method?.toUpperCase(),
-        url: originalRequest?.url,
-        status: error.response?.status,
-        durationMs,
-        correlationId,
-        params: originalRequest?.params,
-        requestBody: sanitizePayload(originalRequest?.data),
-        responseBody: sanitizePayload(error.response?.data),
-        errorMessage: error.message,
-        errorCode: error.response?.data?.code || "UNKNOWN_ERROR"
-      });
-      console.groupEnd();
-    } catch {
-      // safe fallback
+    const willAttemptRefresh =
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes("/api/auth/");
+
+    // Structured error diagnostics (suppressed for handled transient 401 token refreshes)
+    if (!willAttemptRefresh) {
+      try {
+        console.groupCollapsed(`[API ERROR] ${originalRequest?.method?.toUpperCase()} ${originalRequest?.url} → ${error.response?.status || "NETWORK_ERROR"} (${durationMs}ms) [corr: ${correlationId}]`);
+        console.error({
+          method: originalRequest?.method?.toUpperCase(),
+          url: originalRequest?.url,
+          status: error.response?.status,
+          durationMs,
+          correlationId,
+          params: originalRequest?.params,
+          requestBody: sanitizePayload(originalRequest?.data),
+          responseBody: sanitizePayload(error.response?.data),
+          errorMessage: error.message,
+          errorCode: error.response?.data?.code || "UNKNOWN_ERROR"
+        });
+        console.groupEnd();
+      } catch {
+        // safe fallback
+      }
     }
 
     if (
