@@ -1,3 +1,4 @@
+import { Pencil, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { getApiErrorMessage } from "../../../api/client";
@@ -811,10 +812,7 @@ export default function UserManagementPanel({ currentUser }) {
                         title={`Edit ${user.name}`}
                       >
                         <span style={styles.editIcon} aria-hidden="true">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                            <path d="M4 16.5V20h3.5L18.1 9.4l-3.5-3.5L4 16.5Z" fill="currentColor" />
-                            <path d="m16 4.5 1.2-1.2a1.7 1.7 0 0 1 2.4 0l1.1 1.1a1.7 1.7 0 0 1 0 2.4L19.5 8 16 4.5Z" fill="currentColor" opacity=".75" />
-                          </svg>
+                          <Pencil size={14} strokeWidth={2} />
                         </span>
                       </button>
                       {canDeleteUser(user) && (
@@ -828,10 +826,7 @@ export default function UserManagementPanel({ currentUser }) {
                           title={`Delete ${user.name}`}
                         >
                           <span style={styles.deleteIcon} aria-hidden="true">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                              <path d="M9 3h6l1 2h4v2H4V5h4l1-2Z" fill="currentColor" />
-                              <path d="M6.5 9h11l-.7 10.2A2 2 0 0 1 14.8 21H9.2a2 2 0 0 1-2-1.8L6.5 9Z" fill="currentColor" opacity=".78" />
-                            </svg>
+                            <Trash2 size={15} strokeWidth={2} />
                           </span>
                         </button>
                       )}
@@ -899,10 +894,7 @@ export default function UserManagementPanel({ currentUser }) {
           <form style={styles.editModalCard} onSubmit={handleUpdate}>
             <div style={styles.editModalHeader}>
               <span style={styles.editModalIcon} aria-hidden="true">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <path d="M4 16.5V20h3.5L18.1 9.4l-3.5-3.5L4 16.5Z" fill="currentColor" />
-                  <path d="m16 4.5 1.2-1.2a1.7 1.7 0 0 1 2.4 0l1.1 1.1a1.7 1.7 0 0 1 0 2.4L19.5 8 16 4.5Z" fill="currentColor" opacity=".75" />
-                </svg>
+                <Pencil size={18} strokeWidth={2} />
               </span>
               <div>
                 <p style={styles.kicker}>Edit user</p>

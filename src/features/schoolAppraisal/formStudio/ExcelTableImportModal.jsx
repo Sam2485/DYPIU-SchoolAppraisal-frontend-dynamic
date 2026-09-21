@@ -1,3 +1,4 @@
+import { toast } from "../../../components/feedback/feedbackBus";
 import React, { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { importBatchTables } from './formStudioApi';
@@ -301,7 +302,7 @@ export const ExcelTableImportModal = ({
       XLSX.writeFile(wb, `Appraisal_Table_Template_Section_${section.number || 'A'}.xlsx`);
     } catch (err) {
       console.error('Failed to generate template:', err);
-      alert('Failed to generate template: ' + err.message);
+      toast.error('Failed to generate template: ' + err.message);
     }
   };
 
@@ -379,7 +380,7 @@ export const ExcelTableImportModal = ({
 
   const handleDeleteTable = (tblIdx) => {
     if (parsedTables.length <= 1) {
-      alert('You must have at least one table.');
+      toast.warning('You must have at least one table.');
       return;
     }
     const updated = parsedTables.filter((_, idx) => idx !== tblIdx);
@@ -400,7 +401,7 @@ export const ExcelTableImportModal = ({
   const handleDeleteField = (tblIdx, fIdx) => {
     const updated = [...parsedTables];
     if (updated[tblIdx].fields.length <= 1) {
-      alert('Each table must have at least one column.');
+      toast.warning('Each table must have at least one column.');
       return;
     }
     updated[tblIdx].fields = updated[tblIdx].fields.filter((_, idx) => idx !== fIdx);
@@ -425,7 +426,7 @@ export const ExcelTableImportModal = ({
   // Execute Batch Import
   const handleExecuteImport = async () => {
     if (parsedTables.length === 0) {
-      alert('No tables to import.');
+      toast.warning('No tables to import.');
       return;
     }
 

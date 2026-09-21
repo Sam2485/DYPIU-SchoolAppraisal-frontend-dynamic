@@ -1,3 +1,4 @@
+import { confirmAction } from "../../../components/feedback/feedbackBus";
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   getActiveInstancesForButton,
@@ -87,10 +88,10 @@ export const TableButtonGroup = ({
     }
   };
 
-  const handleRemoveInstance = () => {
+  const handleRemoveInstance = async () => {
     if (!selectedInstance) return;
     const confirmMsg = `Are you sure you want to remove "${selectedInstance}" and all its entered table data?`;
-    if (!window.confirm(confirmMsg)) return;
+    if (!(await confirmAction(confirmMsg, { tone: 'danger', confirmLabel: 'Remove' }))) return;
 
     const nextInstances = instances.filter((i) => i !== selectedInstance);
     setInstances(nextInstances);

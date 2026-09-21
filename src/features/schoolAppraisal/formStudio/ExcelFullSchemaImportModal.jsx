@@ -1,3 +1,4 @@
+import { toast } from "../../../components/feedback/feedbackBus";
 import React, { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { importFullSchema } from './formStudioApi';
@@ -304,7 +305,7 @@ export const ExcelFullSchemaImportModal = ({
       XLSX.writeFile(wb, `Appraisal_Full_Form_Multi_Part_Template.xlsx`);
     } catch (err) {
       console.error('Failed to generate full template:', err);
-      alert('Failed to generate template: ' + err.message);
+      toast.error('Failed to generate template: ' + err.message);
     }
   };
 
@@ -409,7 +410,7 @@ export const ExcelFullSchemaImportModal = ({
 
   const handleDeleteSection = (sIdx) => {
     if (parsedSections.length <= 1) {
-      alert('You must have at least one section.');
+      toast.warning('You must have at least one section.');
       return;
     }
     const updated = parsedSections.filter((_, idx) => idx !== sIdx);
@@ -458,7 +459,7 @@ export const ExcelFullSchemaImportModal = ({
   const handleDeleteTable = (tIdx) => {
     const updated = [...parsedSections];
     if (updated[activeSectionIndex].tables.length <= 1) {
-      alert('Each section must have at least one table.');
+      toast.warning('Each section must have at least one table.');
       return;
     }
     updated[activeSectionIndex].tables = updated[activeSectionIndex].tables.filter((_, idx) => idx !== tIdx);
@@ -479,7 +480,7 @@ export const ExcelFullSchemaImportModal = ({
     const updated = [...parsedSections];
     const fields = updated[activeSectionIndex].tables[activeTableIndex].fields;
     if (fields.length <= 1) {
-      alert('Each table must have at least one column.');
+      toast.warning('Each table must have at least one column.');
       return;
     }
     updated[activeSectionIndex].tables[activeTableIndex].fields = fields.filter((_, idx) => idx !== fIdx);
@@ -505,7 +506,7 @@ export const ExcelFullSchemaImportModal = ({
   // Submit full schema
   const handleExecuteImport = async () => {
     if (parsedSections.length === 0) {
-      alert('No sections to import.');
+      toast.warning('No sections to import.');
       return;
     }
 

@@ -1,3 +1,5 @@
+import { UserRound, Shield, CircleCheck, Clock, FileText, Calendar } from "lucide-react";
+import { toast, confirmAction } from "../../../components/feedback/feedbackBus";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { clearAuthState, getApiErrorMessage } from "../../../api/client";
@@ -3032,8 +3034,9 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
       return;
     }
 
-    const ok = window.confirm(
+    const ok = await confirmAction(
       `Start the next audit cycle for ${submission.school}? The approved Version ${submission.version} report will remain unchanged.`,
+      { confirmLabel: "Start next cycle" },
     );
     if (!ok) return;
 
@@ -3259,7 +3262,7 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
   const completeAuditorReview = async (submission, values, auditorAttachments = submission.attachments, auditorTables = submission.tables, auditorRemarks = "") => {
     const currentEmail = normalizeAuditAssignment(profile.email || sessionStorage.getItem("email") || "");
     if (currentEmail === "eaa@gmail.com") {
-      alert("This auditor account (eaa@gmail.com) has been deleted. Please log out and sign in with an active auditor account.");
+      toast.error("This auditor account (eaa@gmail.com) has been deleted. Please log out and sign in with an active auditor account.");
       return;
     }
 
@@ -3499,7 +3502,7 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
         setSelectedSubmission(null);
         setDashboardRouteState(submission.auditType, { replace: true });
         setRefreshKey((current) => current + 1);
-        window.alert("Your auditor review has been submitted successfully.");
+        toast.success("Your auditor review has been submitted successfully.");
       }
     } catch (reviewError) {
       setError(getApiErrorMessage(reviewError, "Could not submit your auditor review."));
@@ -4767,43 +4770,20 @@ const TILE_TONE_COLORS = {
 };
 
 function StatTileIcon({ name }) {
-  const common = { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, style: { width: 18, height: 18 } };
+  const common = { size: 18, strokeWidth: 1.8 };
   switch (name) {
     case "person":
-      return (
-        <svg {...common}>
-          <circle cx="12" cy="8" r="3.6" />
-          <path d="M4.5 20c.6-4 3.8-6.5 7.5-6.5s6.9 2.5 7.5 6.5" />
-        </svg>
-      );
+      return <UserRound {...common} />;
     case "shield":
-      return (
-        <svg {...common}>
-          <path d="M12 3l7 2.6v5.4c0 4.6-3 8.4-7 9.6-4-1.2-7-5-7-9.6V5.6L12 3z" />
-        </svg>
-      );
+      return <Shield {...common} />;
     case "checkCircle":
-      return (
-        <svg {...common}>
-          <circle cx="12" cy="12" r="8.6" />
-          <path d="M8.2 12.2l2.6 2.6 5-5.2" />
-        </svg>
-      );
+      return <CircleCheck {...common} />;
     case "clock":
-      return (
-        <svg {...common}>
-          <circle cx="12" cy="12" r="8.6" />
-          <path d="M12 7.4V12l3.2 1.9" />
-        </svg>
-      );
+      return <Clock {...common} />;
     case "document":
+      return <FileText {...common} />;
     default:
-      return (
-        <svg {...common}>
-          <path d="M6 2.75h8l4 4V21.25H6z" />
-          <path d="M14 2.75v4h4" />
-        </svg>
-      );
+      return null;
   }
 }
 
@@ -5115,10 +5095,7 @@ function AcademicAdministrativeSubmissionsPanel({
           </label>
           <div style={styles.iqacDateCard}>
             <span style={styles.iqacDateIconWrap} aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ width: 18, height: 18 }}>
-                <rect x="3" y="4.5" width="18" height="16" rx="2" />
-                <path d="M16 2.5v4M8 2.5v4M3 10h18" />
-              </svg>
+              <Calendar size={18} strokeWidth={1.8} />
             </span>
             <span>
               <strong style={styles.iqacDateStrong}>{todayLabel}</strong>
@@ -6416,7 +6393,7 @@ function FullFormReview({
               setActiveSectionIndex(secIdx);
               scrollPageToTop();
             }
-            alert(`Please complete the mandatory field "${field.label || 'Review Remarks'}" in ${sec.title || 'Auditor Section'} before submitting.`);
+            toast.warning(`Please complete the mandatory field "${field.label || 'Review Remarks'}" in ${sec.title || 'Auditor Section'} before submitting.`);
             return;
           }
         }
@@ -6550,7 +6527,7 @@ function FullFormReview({
     if (!auditorCorrectionMode) return;
     const alertKey = `auditor-correction-${submission.id}-${submission.auditorCorrectionRequestedOn || ""}`;
     if (sessionStorage.getItem(alertKey)) return;
-    window.alert("You should submit again after rectifying the mistake in your auditor review.");
+    toast.warning("You should submit again after rectifying the mistake in your auditor review.", { duration: 12000 });
     sessionStorage.setItem(alertKey, "shown");
   }, [auditorCorrectionMode, submission.auditorCorrectionRequestedOn, submission.id]);
 
@@ -8129,10 +8106,7 @@ function renderValue(rawValue) {
     return (
       <div style={styles.attachmentPreview}>
         <span style={styles.attachmentDocumentIcon} aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ width: 18, height: 18 }}>
-            <path d="M6 2.75h8l4 4V21.25H6z" />
-            <path d="M14 2.75v4h4" />
-          </svg>
+          <FileText size={18} strokeWidth={1.8} />
         </span>
         <span style={styles.attachmentDocumentDetails}>
           <strong style={styles.attachmentDocumentName} title={name}>{name}</strong>

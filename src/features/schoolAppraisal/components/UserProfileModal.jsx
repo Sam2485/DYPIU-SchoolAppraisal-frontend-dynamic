@@ -1,3 +1,5 @@
+import { initialsFromName } from "../../../utils/initials";
+import { Lock } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { getApiErrorMessage } from "../../../api/client";
 import { changeCurrentUserPassword, fetchCurrentUser, uploadCurrentUserAvatar } from "../../../api/users";
@@ -6,10 +8,6 @@ import { getAttachmentUrl } from "../../../utils/attachment";
 const AVATAR_EDITOR_SIZE = 220;
 const AVATAR_OUTPUT_SIZE = 512;
 const AVATAR_ZOOM_STEP = 0.08;
-
-function initialsFromName(name = "") {
-  return name.split(" ").filter(Boolean).map((word) => word[0]).join("").slice(0, 2).toUpperCase();
-}
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
@@ -73,10 +71,7 @@ async function createAdjustedAvatarFile(src, crop, baseSize) {
 
 function LockIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ width: 12, height: 12 }}>
-      <rect x="5" y="10.5" width="14" height="9" rx="2" />
-      <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" />
-    </svg>
+    <Lock size={12} strokeWidth={1.8} />
   );
 }
 

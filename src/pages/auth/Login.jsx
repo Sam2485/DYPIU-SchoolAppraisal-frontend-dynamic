@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 import { getApiErrorMessage } from "../../api/client";
 import { login, verifyOtp, resendOtp, requestPasswordReset } from "../../api/auth";
 import { dashboardForRole, normalizeUserProfile, fetchCurrentAuditCycle } from "../../api/submissions";
@@ -431,7 +432,7 @@ export default function Login() {
                     tabIndex={-1}
                     aria-label={showPw ? "Hide password" : "Show password"}
                   >
-                    {showPw ? "Hide" : "Show"}
+                    {showPw ? <EyeOff size={18} strokeWidth={2} aria-hidden="true" /> : <Eye size={18} strokeWidth={2} aria-hidden="true" />}
                   </button>
                 </div>
 
@@ -651,6 +652,10 @@ const s = {
     padding: 4,
     color: "rgba(255,255,255,0.6)",
     lineHeight: 1,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 6,
   },
 
   error: {

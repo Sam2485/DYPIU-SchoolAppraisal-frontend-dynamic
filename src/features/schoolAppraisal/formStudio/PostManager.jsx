@@ -1,3 +1,4 @@
+import { toast, confirmAction } from "../../../components/feedback/feedbackBus";
 import React, { useState, useEffect } from 'react';
 import { UsersIcon, IconBadge, EmptyState, InfoBadgeIcon, ErrorState } from './StudioIcons';
 import {
@@ -80,19 +81,19 @@ export const PostManager = ({ selectedUniversity }) => {
       setShowModal(false);
       await loadPosts();
     } catch (err) {
-      alert('Error saving post: ' + (err.response?.data?.message || err.message));
+      toast.error('Error saving post: ' + (err.response?.data?.message || err.message));
     }
   };
 
   const handleDelete = async (post) => {
-    if (!window.confirm(`Are you sure you want to delete administrative post "${post.name} (${post.code})"?`)) {
+    if (!(await confirmAction(`Are you sure you want to delete administrative post "${post.name} (${post.code})"?`, { tone: 'danger', confirmLabel: 'Delete' }))) {
       return;
     }
     try {
       await deleteUniversityPost(effectiveUniversityId, post.id);
       await loadPosts();
     } catch (err) {
-      alert('Failed to delete post: ' + (err.response?.data?.message || err.message));
+      toast.error('Failed to delete post: ' + (err.response?.data?.message || err.message));
     }
   };
 

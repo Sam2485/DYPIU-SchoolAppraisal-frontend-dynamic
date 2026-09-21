@@ -1,3 +1,4 @@
+import { toast, confirmAction } from "../../../components/feedback/feedbackBus";
 import React, { useState, useEffect } from 'react';
 import { SchoolHouseIcon, IconBadge, EmptyState, ErrorState } from './StudioIcons';
 import {
@@ -80,19 +81,19 @@ export const SchoolManager = ({ selectedUniversity }) => {
       setShowModal(false);
       await loadSchools();
     } catch (err) {
-      alert('Error saving school: ' + (err.response?.data?.message || err.message));
+      toast.error('Error saving school: ' + (err.response?.data?.message || err.message));
     }
   };
 
   const handleDelete = async (school) => {
-    if (!window.confirm(`Are you sure you want to delete "${school.name} (${school.code})"?`)) {
+    if (!(await confirmAction(`Are you sure you want to delete "${school.name} (${school.code})"?`, { tone: 'danger', confirmLabel: 'Delete' }))) {
       return;
     }
     try {
       await deleteUniversitySchool(effectiveUniversityId, school.id);
       await loadSchools();
     } catch (err) {
-      alert('Failed to delete school: ' + (err.response?.data?.message || err.message));
+      toast.error('Failed to delete school: ' + (err.response?.data?.message || err.message));
     }
   };
 
