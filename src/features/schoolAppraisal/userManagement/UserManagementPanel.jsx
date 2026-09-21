@@ -148,12 +148,15 @@ const postLabelFor = (value) => {
 
 const titleCase = (value = "") => String(value).replaceAll("-", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 const auditorRoleForForm = (form) => `${form.category}-${form.auditorType}-auditor`;
-const roleForForm = (form) => form.accountType === "auditor"
-  ? auditorRoleForForm(form)
-  : form.category === "academic"
-    ? "director"
-    : "administrative";
+const roleForForm = (form) => {
+  if (form.accountType === "iqac" || form.role === "iqac" || form.category === "iqac") return "iqac";
+  if (form.accountType === "vice-chancellor" || form.role === "vice-chancellor" || form.category === "vice-chancellor") return "vice-chancellor";
+  if (form.accountType === "auditor") return auditorRoleForForm(form);
+  return form.category === "academic" ? "director" : "administrative";
+};
 const designationForForm = (form, postsList = []) => {
+  if (form.accountType === "iqac" || form.role === "iqac" || form.category === "iqac") return form.designation || "Head of Quality Assurance";
+  if (form.accountType === "vice-chancellor" || form.role === "vice-chancellor" || form.category === "vice-chancellor") return form.designation || "Vice Chancellor";
   if (form.accountType === "auditor") return `${titleCase(form.auditorType)} ${titleCase(form.category)} Auditor`;
   if (form.category === "academic") return "Director";
   const found = (postsList && postsList.length ? postsList : dynamicPostRegistry)
@@ -204,16 +207,19 @@ function validate(form) {
 
 function validateEdit(form) {
   const errors = {};
-  if (!form.category) errors.category = "Select Academic or Administrative.";
-  if (form.accountType === "auditor" && !form.auditorType) errors.auditorType = "Select Internal or External auditor.";
-  if (form.category === "academic" && form.accountType === "auditor" && !form.schools.length) errors.schools = "Select at least one school.";
-  if (form.category === "academic" && form.accountType !== "auditor" && !canonicalSchoolCode(form.school)) errors.school = "Select a valid school.";
-  if (
-    form.category === "administrative" &&
-    form.accountType === "auditor" &&
-    !form.administrativePosts.length
-  ) errors.administrativePosts = "Select at least one administrative post.";
-  if (form.category === "administrative" && form.accountType !== "auditor" && !form.post) errors.post = "Select an administrative post.";
+  const isReviewer = form.accountType === "iqac" || form.accountType === "vice-chancellor" || form.role === "iqac" || form.role === "vice-chancellor" || form.category === "iqac" || form.category === "vice-chancellor";
+  if (!isReviewer) {
+    if (!form.category) errors.category = "Select Academic or Administrative.";
+    if (form.accountType === "auditor" && !form.auditorType) errors.auditorType = "Select Internal or External auditor.";
+    if (form.category === "academic" && form.accountType === "auditor" && !form.schools.length) errors.schools = "Select at least one school.";
+    if (form.category === "academic" && form.accountType !== "auditor" && !canonicalSchoolCode(form.school)) errors.school = "Select a valid school.";
+    if (
+      form.category === "administrative" &&
+      form.accountType === "auditor" &&
+      !form.administrativePosts.length
+    ) errors.administrativePosts = "Select at least one administrative post.";
+    if (form.category === "administrative" && form.accountType !== "auditor" && !form.post) errors.post = "Select an administrative post.";
+  }
   if (!form.name.trim()) errors.name = "Enter the user's name.";
   if (!form.email.trim()) errors.email = "Enter an email address.";
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errors.email = "Enter a valid email address.";
@@ -223,6 +229,8 @@ function validateEdit(form) {
 }
 
 const editFormFromUser = (user = {}) => {
+  const isReviewer = user.accountType === "iqac" || user.accountType === "vice-chancellor" || user.role === "iqac" || user.role === "vice-chancellor" || user.category === "iqac" || user.category === "vice-chancellor";
+  const reviewerRole = user.role === "vice-chancellor" || user.accountType === "vice-chancellor" || user.category === "vice-chancellor" ? "vice-chancellor" : "iqac";
   const isAuditor = user.accountType === "auditor";
   const isAcademic = user.category === "academic";
   const isAdministrative = user.category === "administrative";
@@ -231,11 +239,11 @@ const editFormFromUser = (user = {}) => {
     : [];
 
   return {
-    accountType: user.accountType || "user",
-    category: user.category || "",
+    accountType: isReviewer ? reviewerRole : (user.accountType || "user"),
+    category: isReviewer ? reviewerRole : (user.category || ""),
     auditorType: user.auditorType || "",
     auditorRole: user.auditorRole || "",
-    role: user.role || "",
+    role: isReviewer ? reviewerRole : (user.role || ""),
     school: !isAuditor && isAcademic ? user.school || "" : "",
     schools: currentSchools,
     designation: user.designation || "",
@@ -529,33 +537,50 @@ export default function UserManagementPanel({ currentUser }) {
     setEditErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
 
-    const isAcademic = editForm.category === "academic";
+    const isReviewer = editTarget.role === "iqac" || editTarget.role === "vice-chancellor" || editForm.accountType === "iqac" || editForm.accountType === "vice-chancellor" || editForm.category === "iqac" || editForm.category === "vice-chancellor";
+    const reviewerRole = editTarget.role === "vice-chancellor" || editForm.role === "vice-chancellor" || editForm.accountType === "vice-chancellor" || editForm.category === "vice-chancellor" ? "vice-chancellor" : "iqac";
+
+    const isAcademic = !isReviewer && editForm.category === "academic";
     const academicSchools = isAcademic && editForm.accountType === "auditor"
       ? editForm.schools
       : [canonicalSchoolCode(editForm.school)].filter(Boolean);
-    const assignmentPayload = isAcademic
-      ? academicAssignmentPayload(academicSchools, editForm.accountType === "auditor")
-      : { school: "Administrative Office", schoolName: "Administrative Office", schools: [] };
-    const payload = {
-      accountType: editForm.accountType,
-      userType: editForm.accountType,
-      category: editForm.category,
-      auditCategory: editForm.category,
-      auditorType: editForm.accountType === "auditor" ? editForm.auditorType : null,
-      auditorRole: editForm.accountType === "auditor" ? auditorRoleForForm(editForm) : null,
-      role: roleForForm(editForm),
-      ...assignmentPayload,
-      designation: designationForForm(editForm, posts),
-      post: isAcademic
-        ? null
-        : editForm.accountType === "auditor"
-          ? editForm.administrativePosts[0] || null
-          : editForm.post,
-      administrativePosts: !isAcademic && editForm.accountType === "auditor" ? editForm.administrativePosts : [],
-      name: editForm.name.trim(),
-      email: editForm.email.trim().toLowerCase(),
-      ...(editForm.password ? { password: editForm.password } : {}),
-    };
+    const assignmentPayload = isReviewer
+      ? { school: null, schoolName: null, schools: [] }
+      : isAcademic
+        ? academicAssignmentPayload(academicSchools, editForm.accountType === "auditor")
+        : { school: "Administrative Office", schoolName: "Administrative Office", schools: [] };
+
+    const payload = isReviewer
+      ? {
+          accountType: reviewerRole,
+          userType: reviewerRole,
+          category: reviewerRole,
+          role: reviewerRole,
+          designation: editForm.designation || (reviewerRole === "iqac" ? "Head of Quality Assurance" : "Vice Chancellor"),
+          name: editForm.name.trim(),
+          email: editForm.email.trim().toLowerCase(),
+          ...(editForm.password ? { password: editForm.password } : {}),
+        }
+      : {
+          accountType: editForm.accountType,
+          userType: editForm.accountType,
+          category: editForm.category,
+          auditCategory: editForm.category,
+          auditorType: editForm.accountType === "auditor" ? editForm.auditorType : null,
+          auditorRole: editForm.accountType === "auditor" ? auditorRoleForForm(editForm) : null,
+          role: roleForForm(editForm),
+          ...assignmentPayload,
+          designation: designationForForm(editForm, posts),
+          post: isAcademic
+            ? null
+            : editForm.accountType === "auditor"
+              ? editForm.administrativePosts[0] || null
+              : editForm.post,
+          administrativePosts: !isAcademic && editForm.accountType === "auditor" ? editForm.administrativePosts : [],
+          name: editForm.name.trim(),
+          email: editForm.email.trim().toLowerCase(),
+          ...(editForm.password ? { password: editForm.password } : {}),
+        };
 
     setUpdatingId(editTarget.id);
     setStatus("");
@@ -903,79 +928,107 @@ export default function UserManagementPanel({ currentUser }) {
               </div>
             </div>
 
-            <div style={styles.formSection}>
-              <div style={styles.formSectionHeader}>
-                <h4 style={styles.sectionTitle}>Assignment Details</h4>
-                <span style={styles.sectionHint}>Update account type, category and assignment.</span>
+            {editTarget && (editTarget.role === "iqac" || editTarget.role === "vice-chancellor" || editTarget.accountType === "iqac" || editTarget.accountType === "vice-chancellor") ? (
+              <div style={styles.formSection}>
+                <div style={styles.formSectionHeader}>
+                  <h4 style={styles.sectionTitle}>Reviewer Assignment</h4>
+                  <span style={styles.sectionHint}>Institutional leadership account with system-wide appraisal access.</span>
+                </div>
+                <div style={styles.editFieldGrid}>
+                  <Field label="Role">
+                    <input
+                      className="audit-control"
+                      style={styles.control}
+                      value={editTarget.role === "vice-chancellor" || editForm.accountType === "vice-chancellor" ? "Vice Chancellor" : "IQAC Coordinator"}
+                      disabled
+                    />
+                  </Field>
+                  <Field label="Designation">
+                    <input
+                      className="audit-control"
+                      style={styles.control}
+                      value={editForm.designation}
+                      onChange={(event) => updateEditField("designation", event.target.value)}
+                      placeholder="Enter designation"
+                    />
+                  </Field>
+                </div>
               </div>
-              <div style={styles.editFieldGrid}>
-                <Field label="Account Type">
-                  <select className="audit-control" style={styles.control} value={editForm.accountType} onChange={(event) => updateEditField("accountType", event.target.value)}>
-                    <option value="user">Regular User</option>
-                    <option value="auditor">Auditor</option>
-                  </select>
-                </Field>
-
-                <Field label={editForm.accountType === "auditor" ? "Audit Category" : "User Category"} error={editErrors.category}>
-                  <select className="audit-control" style={styles.control} value={editForm.category} onChange={(event) => updateEditField("category", event.target.value)}>
-                    <option value="">Select category</option>
-                    <option value="academic">Academic</option>
-                    <option value="administrative">Administrative</option>
-                  </select>
-                </Field>
-
-                {editForm.accountType === "auditor" && (
-                  <Field label="Auditor Type" error={editErrors.auditorType}>
-                    <select className="audit-control" style={styles.control} value={editForm.auditorType} onChange={(event) => updateEditField("auditorType", event.target.value)}>
-                      <option value="">Select auditor type</option>
-                      <option value="internal">Internal</option>
-                      <option value="external">External</option>
+            ) : (
+              <div style={styles.formSection}>
+                <div style={styles.formSectionHeader}>
+                  <h4 style={styles.sectionTitle}>Assignment Details</h4>
+                  <span style={styles.sectionHint}>Update account type, category and assignment.</span>
+                </div>
+                <div style={styles.editFieldGrid}>
+                  <Field label="Account Type">
+                    <select className="audit-control" style={styles.control} value={editForm.accountType} onChange={(event) => updateEditField("accountType", event.target.value)}>
+                      <option value="user">Regular User</option>
+                      <option value="auditor">Auditor</option>
                     </select>
                   </Field>
-                )}
 
-                {editForm.category === "academic" && (
-                <Field label={editForm.accountType === "auditor" ? "Schools" : "School"} error={editForm.accountType === "auditor" ? editErrors.schools : editErrors.school}>
-                  {editForm.accountType === "auditor" ? (
-                    <AcademicSchoolMultiSelect
-                      selected={editForm.schools}
-                      onToggle={toggleEditAcademicSchool}
-                      schools={schools}
-                    />
-                  ) : (
-                    <select className="audit-control" style={styles.control} value={editForm.school} onChange={(event) => updateEditField("school", event.target.value)}>
-                      <option value="">{schools.length === 0 ? "-- No schools configured (Add in Form Studio) --" : "Select school"}</option>
-                      {schools.map((school) => (
-                        <option key={school.code} value={school.code.toUpperCase()}>
-                          {school.name} ({school.code})
-                        </option>
-                      ))}
+                  <Field label={editForm.accountType === "auditor" ? "Audit Category" : "User Category"} error={editErrors.category}>
+                    <select className="audit-control" style={styles.control} value={editForm.category} onChange={(event) => updateEditField("category", event.target.value)}>
+                      <option value="">Select category</option>
+                      <option value="academic">Academic</option>
+                      <option value="administrative">Administrative</option>
                     </select>
-                  )}
-                </Field>
-                )}
+                  </Field>
 
-                {editForm.category === "administrative" && (
-                <Field
-                  label={editForm.accountType === "auditor" ? "Administrative Posts" : "Administrative Post"}
-                  error={editForm.accountType === "auditor" ? editErrors.administrativePosts : editErrors.post}
-                >
-                  {editForm.accountType === "auditor" ? (
-                    <AdministrativePostMultiSelect
-                      selected={editForm.administrativePosts}
-                      onToggle={toggleEditAdministrativePost}
-                      posts={posts}
-                    />
-                  ) : (
-                    <select className="audit-control" style={styles.control} value={editForm.post} onChange={(event) => updateEditField("post", event.target.value)}>
-                      <option value="">Select post</option>
-                      {posts.map((post) => <option key={post.value} value={post.value}>{post.label}</option>)}
-                    </select>
+                  {editForm.accountType === "auditor" && (
+                    <Field label="Auditor Type" error={editErrors.auditorType}>
+                      <select className="audit-control" style={styles.control} value={editForm.auditorType} onChange={(event) => updateEditField("auditorType", event.target.value)}>
+                        <option value="">Select auditor type</option>
+                        <option value="internal">Internal</option>
+                        <option value="external">External</option>
+                      </select>
+                    </Field>
                   )}
-                </Field>
-                )}
+
+                  {editForm.category === "academic" && (
+                  <Field label={editForm.accountType === "auditor" ? "Schools" : "School"} error={editForm.accountType === "auditor" ? editErrors.schools : editErrors.school}>
+                    {editForm.accountType === "auditor" ? (
+                      <AcademicSchoolMultiSelect
+                        selected={editForm.schools}
+                        onToggle={toggleEditAcademicSchool}
+                        schools={schools}
+                      />
+                    ) : (
+                      <select className="audit-control" style={styles.control} value={editForm.school} onChange={(event) => updateEditField("school", event.target.value)}>
+                        <option value="">{schools.length === 0 ? "-- No schools configured (Add in Form Studio) --" : "Select school"}</option>
+                        {schools.map((school) => (
+                          <option key={school.code} value={school.code.toUpperCase()}>
+                            {school.name} ({school.code})
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </Field>
+                  )}
+
+                  {editForm.category === "administrative" && (
+                  <Field
+                    label={editForm.accountType === "auditor" ? "Administrative Posts" : "Administrative Post"}
+                    error={editForm.accountType === "auditor" ? editErrors.administrativePosts : editErrors.post}
+                  >
+                    {editForm.accountType === "auditor" ? (
+                      <AdministrativePostMultiSelect
+                        selected={editForm.administrativePosts}
+                        onToggle={toggleEditAdministrativePost}
+                        posts={posts}
+                      />
+                    ) : (
+                      <select className="audit-control" style={styles.control} value={editForm.post} onChange={(event) => updateEditField("post", event.target.value)}>
+                        <option value="">Select post</option>
+                        {posts.map((post) => <option key={post.value} value={post.value}>{post.label}</option>)}
+                      </select>
+                    )}
+                  </Field>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             <div style={styles.formSection}>
               <div style={styles.formSectionHeader}>
