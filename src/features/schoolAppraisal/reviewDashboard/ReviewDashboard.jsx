@@ -5669,7 +5669,10 @@ function SubmissionCard({
           {submitterAvatarUrl ? <img src={submitterAvatarUrl} alt="" style={styles.schoolAvatarImg} /> : submitterInitials}
         </div>
         <div style={styles.submissionTitleBlock}>
-          <h3 style={styles.schoolName}>{submission.school}</h3>
+          <div style={styles.submissionNameRow}>
+            <h3 style={styles.schoolName}>{submission.school}</h3>
+            <StatusBadge status={submission.status} />
+          </div>
           {(submission.auditType === "academic" || (submission.submittedBy && submission.submittedBy !== "-")) && (
             <p style={styles.schoolMeta}>
               {submission.auditType === "academic" ? "Director" : "Submitted by"}: {submission.submittedBy}
@@ -5679,9 +5682,6 @@ function SubmissionCard({
           {submission.auditType === "academic" && (
             <small style={styles.schoolGroup}>{SCHOOL_GROUPS[submission.group] || titleCase(submission.group || "")}</small>
           )}
-          <div style={styles.submissionTitleBadge}>
-            <StatusBadge status={submission.status} />
-          </div>
         </div>
         <div style={styles.submissionTopStatus}>
           <AuditorProgressPanel submission={submission} compact directoryUsers={directoryUsers} />
@@ -9790,6 +9790,12 @@ const styles = {
     flex: 1,
     minWidth: 0,
   },
+  submissionNameRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 9,
+    flexWrap: "wrap",
+  },
   schoolName: {
     margin: 0,
     color: "#0f172a",
@@ -9808,9 +9814,6 @@ const styles = {
     marginTop: 3,
     color: "#64748b",
     fontSize: 10.5,
-  },
-  submissionTitleBadge: {
-    marginTop: 8,
   },
   statusBadge: {
     borderWidth: 1,
