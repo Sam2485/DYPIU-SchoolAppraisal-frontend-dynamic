@@ -178,15 +178,47 @@ const normalizeAuditCycleCategory = (value = "") => {
   return "internal";
 };
 
+// An auditor mapped to several administrative posts gets one assignment record per post from the
+// backend. They fill the Part E form once, so collapse those duplicates down to a single card per
+// auditor, keeping whichever record was submitted most recently.
+const dedupeAssignmentsByAuditor = (assignments = []) => {
+  const latestByAuditor = new Map();
+  const order = [];
+
+  assignments.forEach((assignment) => {
+    const key = String(assignment.auditorEmail || assignment.auditorName || "").trim().toLowerCase();
+    if (!key) {
+      order.push(assignment);
+      return;
+    }
+    const existing = latestByAuditor.get(key);
+    if (!existing) {
+      latestByAuditor.set(key, assignment);
+      order.push(assignment);
+      return;
+    }
+    const existingTime = new Date(existing.submittedAt || existing.auditorReviewedOn || 0).getTime();
+    const currentTime = new Date(assignment.submittedAt || assignment.auditorReviewedOn || 0).getTime();
+    if (currentTime > existingTime) {
+      latestByAuditor.set(key, assignment);
+      order[order.indexOf(existing)] = assignment;
+    }
+  });
+
+  return order;
+};
+
 const assignmentsForType = (assignments = [], auditorType = "") =>
-  (Array.isArray(assignments) ? assignments : []).filter((assignment) =>
-    normalizeCategory(assignment.auditorType || assignment.forwardedAuditorType || assignment.type || "").includes(auditorType) &&
-    (
-      assignment.status === "submitted" ||
-      assignment.reviewStatus === "submitted" ||
-      assignment.status === "completed" ||
-      hasPartEValues(assignmentPartEValues(assignment)) ||
-      Boolean(assignment.submittedAt || assignment.auditorReviewedOn)
+  dedupeAssignmentsByAuditor(
+    (Array.isArray(assignments) ? assignments : []).filter((assignment) =>
+      normalizeCategory(assignment.auditorType || assignment.forwardedAuditorType || assignment.type || "").includes(auditorType) &&
+      (
+        assignment.status === "submitted" ||
+        assignment.reviewStatus === "submitted" ||
+        assignment.status === "completed" ||
+        hasPartEValues(assignmentPartEValues(assignment)) ||
+        Boolean(assignment.submittedAt || assignment.auditorReviewedOn)
+      )
     )
   );
 
@@ -959,7 +991,7 @@ export function AuditorSectionReviewPanel({ section, review, tables = {}, values
     ? review.internalAssignments
     : Array.isArray(review?.previousInternalAssignments) && review.previousInternalAssignments.length > 0
       ? review.previousInternalAssignments
-      : (review?.auditorAssignments || []).filter((a) => normalizeCategory(a.auditorType || a.type || "").includes("internal"));
+      : dedupeAssignmentsByAuditor((review?.auditorAssignments || []).filter((a) => normalizeCategory(a.auditorType || a.type || "").includes("internal")));
 
   if (
     internalAssignments.length === 0 &&
@@ -980,10 +1012,10 @@ export function AuditorSectionReviewPanel({ section, review, tables = {}, values
 
   const externalAssignments = Array.isArray(review?.externalAssignments) && review.externalAssignments.length > 0
     ? review.externalAssignments
-    : (review?.auditorAssignments || []).filter((a) =>
+    : dedupeAssignmentsByAuditor((review?.auditorAssignments || []).filter((a) =>
         normalizeCategory(a.auditorType || a.type || "").includes("external") ||
         (review?.reportCategory === "external" && !normalizeCategory(a.auditorType || a.type || "").includes("internal"))
-      );
+      ));
 
   if (
     externalAssignments.length === 0 &&
