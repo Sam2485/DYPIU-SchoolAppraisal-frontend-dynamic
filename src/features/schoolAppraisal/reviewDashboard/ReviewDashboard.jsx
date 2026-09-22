@@ -5592,7 +5592,7 @@ function PreviousReportAuditSection({
         })}
       </div>
 
-      <div style={styles.reviewList}>
+      <div style={styles.previousReportsList}>
         {!filteredReports.length && (
           <div style={styles.previousReportEmpty}>No {activeCategory} audit reports.</div>
         )}
@@ -9698,6 +9698,13 @@ const styles = {
   reviewList: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(min(360px, 100%), 1fr))",
+    gap: 16,
+  },
+  // Previous Reports cards stay full-width, one per row, instead of the 3-up grid the other
+  // review lists use — matching the approved horizontal card layout.
+  previousReportsList: {
+    display: "flex",
+    flexDirection: "column",
     gap: 16,
   },
   previousReportGroups: {
