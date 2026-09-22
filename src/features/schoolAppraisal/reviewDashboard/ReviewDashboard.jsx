@@ -1082,9 +1082,18 @@ export const resolveSubmissionSchema = async (sub) => {
       }
     }
 
-    schemaCache.set(key, dynamicSchema);
-    if (dynamicSchema && Array.isArray(dynamicSchema.sections)) {
-      schemaSectionCountCache.set(key, dynamicSchema.sections.length);
+    // A "ver:<id>" key points at one immutable published version, so it's always safe to keep
+    // cached. A school/post key ("academic:SOD", …) instead points at "whatever schema is
+    // currently active for this school" — IQAC can republish that at any time, so caching it
+    // indefinitely serves a stale schema (missing newly-added sections/fields, e.g. an Auditor
+    // review remarks block) to any tab that resolved it earlier. Only persist the immutable kind.
+    if (key.startsWith("ver:")) {
+      schemaCache.set(key, dynamicSchema);
+      if (dynamicSchema && Array.isArray(dynamicSchema.sections)) {
+        schemaSectionCountCache.set(key, dynamicSchema.sections.length);
+      }
+    } else {
+      schemaCache.delete(key);
     }
     return dynamicSchema;
   })();
@@ -1093,6 +1102,7 @@ export const resolveSubmissionSchema = async (sub) => {
   try {
     return await promise;
   } catch (err) {
+    schemaCache.delete(key);
     return null;
   }
 };
