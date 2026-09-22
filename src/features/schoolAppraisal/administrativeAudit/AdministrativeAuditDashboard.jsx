@@ -489,7 +489,7 @@ export default function AdministrativeAuditDashboard() {
           }
         }
 
-        const review = !isCrossTenantDraft ? buildAuditorSectionReview(activeDraft, historyEntries) : null;
+        const review = buildAuditorSectionReview(activeDraft, historyEntries);
 
         if (!isActive) return;
         setData({
@@ -498,11 +498,11 @@ export default function AdministrativeAuditDashboard() {
           attachments: activeDraft.attachments,
           lastSavedAt: new Date().toISOString(),
         });
-        setHasExistingSubmission(!isCrossTenantDraft && Boolean(activeDraft.exists && activeDraft.id));
-        setIsSubmitted(!isCrossTenantDraft && activeDraft.isSubmitted);
-        setWorkflow(workflowFromDraft(!isCrossTenantDraft ? activeDraft : {}));
-        setAdministrativeProgress(!isCrossTenantDraft ? (activeDraft.administrativeProgress || {}) : {});
-        setActiveDraftData(!isCrossTenantDraft ? activeDraft : null);
+        setHasExistingSubmission(Boolean(activeDraft.exists && activeDraft.id));
+        setIsSubmitted(Boolean(activeDraft.isSubmitted));
+        setWorkflow(workflowFromDraft(activeDraft));
+        setAdministrativeProgress(activeDraft.administrativeProgress || {});
+        setActiveDraftData(activeDraft);
         setAuditorSectionReview(review);
         const storedAdminStatus = storedAdministrativeStatusFor(activeDraft.values);
         const myStoredInfo = storedAdminStatus?.[currentStatusRole?.key] || storedAdminStatus?.[userPost];
@@ -519,7 +519,7 @@ export default function AdministrativeAuditDashboard() {
         const isProgressSubmitted = ["approved", "submitted"].includes(progressStatus) &&
           !(currentDraftVersion > 1 && !isStoredSubmitted && (activeDraft.status === "DRAFT" || activeDraft.overallStatus === "DRAFT"));
 
-        const isPostSubmitted = !isCrossTenantDraft && (isStoredSubmitted || isProgressSubmitted);
+        const isPostSubmitted = Boolean(isStoredSubmitted || isProgressSubmitted);
         setContributionApproved(isPostSubmitted);
       } catch (error) {
         if (isActive) setStatus(getApiErrorMessage(error, "Could not load your draft from the server."));
