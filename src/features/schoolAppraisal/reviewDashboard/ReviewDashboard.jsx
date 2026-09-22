@@ -2573,6 +2573,10 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
       setError("");
 
       try {
+        // The active schema for a school/post can be republished (e.g. a new Auditor review field)
+        // while this tab stays open. Drop the cached schema so the refreshed list resolves the
+        // latest published version instead of silently keeping whatever was cached earlier.
+        clearSchemaCache();
         const { data } = await fetchAllSubmissions();
         const next = { academic: [], administrative: [] };
         const rawList = responseList(data).map(normalizeSubmission);
