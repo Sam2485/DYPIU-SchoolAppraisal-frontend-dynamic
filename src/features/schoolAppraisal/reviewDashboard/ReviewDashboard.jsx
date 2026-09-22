@@ -6250,6 +6250,16 @@ function FullFormReview({
 
   const activeSection = sections[activeSectionIndex] || sections[0];
   const activeSectionIsAuditorOwned = activeSection ? isAuditorSection(activeSection, submission.auditType) : false;
+  // When an auditor is assigned several sections, the submit action should only appear on the last
+  // of those sections rather than on every one of them.
+  const lastAuditorSectionIndex = useMemo(() => {
+    let lastIndex = -1;
+    sections.forEach((sec, index) => {
+      if (isAuditorSection(sec, submission.auditType)) lastIndex = index;
+    });
+    return lastIndex;
+  }, [sections, submission.auditType]);
+  const isLastAuditorOwnedSection = activeSectionIndex === lastAuditorSectionIndex;
   const userRole = normalizeUserRole(currentProfile?.role || sessionStorage.getItem("role") || "");
   const isAuditorUser = isAuditorRole(userRole) || isAuditorRole(currentProfile?.auditorRole);
   const isReviewerRole = ["iqac", "vice-chancellor"].includes(userRole) || !isAuditorUser;
@@ -6787,7 +6797,7 @@ function FullFormReview({
               </button>
             )}
           </div>
-        ) : canEditAuditorSection && activeSectionIsAuditorOwned ? (
+        ) : canEditAuditorSection && activeSectionIsAuditorOwned && isLastAuditorOwnedSection ? (
           <div style={styles.finalReviewPanel}>
             <div style={styles.finalActionRow}>
               {activeSectionIndex > 0 && (

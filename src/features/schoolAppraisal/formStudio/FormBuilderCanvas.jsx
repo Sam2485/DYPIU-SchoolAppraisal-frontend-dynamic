@@ -761,6 +761,17 @@ export const FormBuilderCanvas = ({
 
   // Publish
   const handlePublish = async () => {
+    const hasAuditorSection = tree?.sections?.some((sec) => {
+      const role = (sec.ownerRole || '').toLowerCase();
+      const key = (sec.sectionKey || sec.key || '').toLowerCase();
+      const title = (sec.title || '').toLowerCase();
+      return role.includes('auditor') || key.includes('auditor') || title.includes('auditor');
+    });
+    if (!hasAuditorSection) {
+      toast.error('Cannot publish: Every form must contain at least one section designated for the Auditor (Auditor Section).');
+      return;
+    }
+
     if (!(await confirmAction('Publishing will freeze this schema version and activate it immediately for all contributors. Continue?', { confirmLabel: 'Publish' }))) {
       return;
     }

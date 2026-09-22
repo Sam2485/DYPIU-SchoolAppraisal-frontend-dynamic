@@ -271,6 +271,21 @@ export const SchemaManager = ({
     return { isAll: false, label: `🏫 Assigned to: ${assignedSchools}` };
   };
 
+  // Find another active schema of the same audit type that already claims this school code.
+  const isAssignedToOther = (schoolCode, currentSchemaId) => {
+    return schemas.find((s) => {
+      if (s.id === currentSchemaId) return false;
+      if (s.auditType !== formType || s.status !== 'ACTIVE') return false;
+      try {
+        const list = JSON.parse(s.assignedSchools || '[]');
+        if (Array.isArray(list)) return list.map((c) => String(c).toUpperCase()).includes(schoolCode.toUpperCase());
+      } catch {
+        if (s.assignedSchools) return s.assignedSchools.toUpperCase().includes(schoolCode.toUpperCase());
+      }
+      return false;
+    });
+  };
+
   return (
     <div className="form-studio-container" style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '24px' }}>
       {/* Header section with instructions & actions */}
@@ -823,14 +838,32 @@ export const SchemaManager = ({
                           <div style={{ maxHeight: '140px', overflowY: 'auto', display: 'grid', gap: '6px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '8px' }}>
                             {universitySchools.map((sch) => {
                               const isChecked = selectedSchoolCodes.includes(sch.code) || selectedSchoolCodes.includes(sch.name);
+                              // Cloning still creates a brand-new schema, so the clone source itself isn't "current" here.
+                              const conflictSchema = isAssignedToOther(sch.code || sch.name, null);
                               return (
-                                <label key={sch.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', cursor: 'pointer' }}>
+                                <label
+                                  key={sch.id}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    fontSize: '12.5px',
+                                    cursor: conflictSchema ? 'not-allowed' : 'pointer',
+                                    opacity: conflictSchema ? 0.5 : 1,
+                                  }}
+                                >
                                   <input
                                     type="checkbox"
                                     checked={isChecked}
+                                    disabled={Boolean(conflictSchema)}
                                     onChange={() => handleToggleSchoolCode(sch.code || sch.name)}
                                   />
                                   <span><strong>{sch.name}</strong> <span style={{ color: '#64748b' }}>({sch.code})</span></span>
+                                  {conflictSchema && (
+                                    <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 6px', borderRadius: '5px', background: '#fef3c7', color: '#92400e' }}>
+                                      (Assigned to: {conflictSchema.name})
+                                    </span>
+                                  )}
                                 </label>
                               );
                             })}
@@ -943,11 +976,23 @@ export const SchemaManager = ({
                     <div style={{ maxHeight: '160px', overflowY: 'auto', display: 'grid', gap: '6px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '8px' }}>
                       {universitySchools.map((sch) => {
                         const isChecked = editScopeSchools.includes(sch.code) || editScopeSchools.includes(sch.name);
+                        const conflictSchema = isAssignedToOther(sch.code || sch.name, editScopeSchema?.id);
                         return (
-                          <label key={sch.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', cursor: 'pointer' }}>
+                          <label
+                            key={sch.id}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              fontSize: '12.5px',
+                              cursor: conflictSchema ? 'not-allowed' : 'pointer',
+                              opacity: conflictSchema ? 0.5 : 1,
+                            }}
+                          >
                             <input
                               type="checkbox"
                               checked={isChecked}
+                              disabled={Boolean(conflictSchema)}
                               onChange={() => {
                                 const code = sch.code || sch.name;
                                 if (editScopeSchools.includes(code)) {
@@ -958,6 +1003,11 @@ export const SchemaManager = ({
                               }}
                             />
                             <span><strong>{sch.name}</strong> <span style={{ color: '#64748b' }}>({sch.code})</span></span>
+                            {conflictSchema && (
+                              <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 6px', borderRadius: '5px', background: '#fef3c7', color: '#92400e' }}>
+                                (Assigned to: {conflictSchema.name})
+                              </span>
+                            )}
                           </label>
                         );
                       })}
