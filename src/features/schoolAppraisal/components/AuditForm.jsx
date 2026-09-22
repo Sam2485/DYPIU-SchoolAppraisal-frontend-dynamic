@@ -182,15 +182,47 @@ const assignmentAuditor = (assignment = {}) => ({
   date: assignment.submittedAt || assignment.auditorReviewedOn || "",
 });
 
+// An auditor mapped to several posts/sections gets one assignment record per section from the
+// backend. They fill the Part E form once, so collapse those duplicates down to a single card per
+// auditor, keeping whichever record was submitted most recently.
+const dedupeAssignmentsByAuditor = (assignments = []) => {
+  const latestByAuditor = new Map();
+  const order = [];
+
+  assignments.forEach((assignment) => {
+    const key = String(assignment.auditorEmail || assignment.auditorName || "").trim().toLowerCase();
+    if (!key) {
+      order.push(assignment);
+      return;
+    }
+    const existing = latestByAuditor.get(key);
+    if (!existing) {
+      latestByAuditor.set(key, assignment);
+      order.push(assignment);
+      return;
+    }
+    const existingTime = new Date(existing.submittedAt || existing.auditorReviewedOn || 0).getTime();
+    const currentTime = new Date(assignment.submittedAt || assignment.auditorReviewedOn || 0).getTime();
+    if (currentTime > existingTime) {
+      latestByAuditor.set(key, assignment);
+      order[order.indexOf(existing)] = assignment;
+    }
+  });
+
+  return order;
+};
+
 const assignmentsForType = (assignments = [], auditorType = "") =>
-  assignments.filter((assignment) =>
-    normalizeCategory(assignment.auditorType || assignment.forwardedAuditorType || assignment.type || "").includes(auditorType) &&
-    (
-      assignment.status === "submitted" ||
-      assignment.reviewStatus === "submitted" ||
-      hasAcademicPartEValues(normalizedAssignmentValues(assignment)) ||
-      Object.keys(normalizedAssignmentTables(assignment)).length > 0 ||
-      Boolean(assignment.submittedAt || assignment.auditorReviewedOn)
+  dedupeAssignmentsByAuditor(
+    assignments.filter((assignment) =>
+      normalizeCategory(assignment.auditorType || assignment.forwardedAuditorType || assignment.type || "").includes(auditorType) &&
+      (
+        assignment.status === "submitted" ||
+        assignment.reviewStatus === "submitted" ||
+        hasAcademicPartEValues(normalizedAssignmentValues(assignment)) ||
+        Object.keys(normalizedAssignmentTables(assignment)).length > 0 ||
+        Boolean(assignment.submittedAt || assignment.auditorReviewedOn)
+      )
     )
   ).map((assignment) => ({
     ...assignment,
