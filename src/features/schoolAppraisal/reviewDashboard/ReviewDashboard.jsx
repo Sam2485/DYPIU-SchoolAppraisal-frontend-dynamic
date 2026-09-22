@@ -5380,7 +5380,7 @@ function AuditReviewPanel({ auditType, submissions, activeGroup, onGroupChange, 
   );
 }
 
-function AuditorFinalReviewPanel({ submissions, loading, onOpen, onDownload, downloadingAttachmentsId, resolveSubmitterAvatar }) {
+function AuditorFinalReviewPanel({ submissions, loading, onOpen, resolveSubmitterAvatar }) {
   return (
     <section style={styles.panel}>
       <div style={styles.pageTitleRow}>
@@ -5400,8 +5400,6 @@ function AuditorFinalReviewPanel({ submissions, loading, onOpen, onDownload, dow
             key={`${submission.auditType}-${submission.id}`}
             submission={submission}
             onOpen={() => onOpen(submission)}
-            onDownload={() => onDownload(submission)}
-            downloadingAttachments={downloadingAttachmentsId === submission.id}
             submitterAvatarUrl={resolveSubmitterAvatar?.(submission)}
           />
         ))}
@@ -5598,7 +5596,7 @@ function PreviousReportAuditSection({
               startingNextCycle={startingNextCycleId === submission.id}
               onDownload={() => onDownload(submission)}
               downloadingAttachments={downloadingAttachmentsId === submission.id}
-              onGenerateReport={reportOnly ? () => onGenerateReport(submission) : null}
+              onGenerateReport={() => onGenerateReport(submission)}
               submitterAvatarUrl={resolveSubmitterAvatar?.(submission)}
             />
           );
@@ -5722,6 +5720,11 @@ function SubmissionCard({
                 : "Start External Cycle"}
           </button>
         )}
+        {onGenerateReport && (
+          <button type="button" className="btn btn-primary" onClick={onGenerateReport}>
+            Generate Report
+          </button>
+        )}
         {onDownload && (
           <button
             type="button"
@@ -5732,11 +5735,6 @@ function SubmissionCard({
           >
             {downloadingAttachments && <InlineSpinner label="Preparing attachment archive" />}
             {downloadingAttachments ? "Preparing ZIP..." : "Download Attachments"}
-          </button>
-        )}
-        {onGenerateReport && (
-          <button type="button" className="btn btn-primary" onClick={onGenerateReport}>
-            Generate Report
           </button>
         )}
         {onOpen && <button type="button" className="btn btn-secondary" onClick={onOpen}>View Form</button>}
