@@ -5681,7 +5681,10 @@ function SubmissionCard({
             <small style={styles.schoolGroup}>{SCHOOL_GROUPS[submission.group] || titleCase(submission.group || "")}</small>
           )}
         </div>
-        <StatusBadge status={submission.status} />
+        <div style={styles.submissionTopStatus}>
+          <StatusBadge status={submission.status} />
+          <AuditorProgressPanel submission={submission} compact directoryUsers={directoryUsers} />
+        </div>
       </div>
 
       <div style={styles.submissionInfoGrid}>
@@ -5713,8 +5716,6 @@ function SubmissionCard({
           </small>
         </div>
       )}
-
-      <AuditorProgressPanel submission={submission} compact directoryUsers={directoryUsers} />
 
       <div style={styles.cardActions}>
         {onForward && canForwardSubmissionToAuditor(submission) && !isAuditorCompleted(submission) && (
@@ -8342,8 +8343,22 @@ function AuditorProgressPanel({ submission, compact = false, directoryUsers = []
     ? `${progress.pending} pending`
     : "All submitted";
 
+  // The card view gets a compact badge + bar + caption cluster (no title/box), so it can sit
+  // beside the status badge in the card header instead of taking its own full-width block.
+  if (compact) {
+    return (
+      <div style={styles.auditorProgressMini}>
+        <span style={progress.pending ? styles.auditorProgressPending : styles.auditorProgressDone}>{pendingLabel}</span>
+        <div style={styles.auditorProgressTrack}>
+          <span style={{ ...styles.auditorProgressBar, width: `${percentage}%` }} />
+        </div>
+        <span style={styles.auditorProgressMiniCaption}>{progress.submitted} / {progress.total} matching auditors</span>
+      </div>
+    );
+  }
+
   return (
-    <div style={compact ? styles.auditorProgressCompact : styles.auditorProgressPanel}>
+    <div style={styles.auditorProgressPanel}>
       <div style={styles.auditorProgressHeader}>
         <div>
           <strong style={styles.auditorProgressTitle}>Auditor progress</strong>
@@ -9757,6 +9772,13 @@ const styles = {
     alignItems: "flex-start",
     gap: 12,
   },
+  submissionTopStatus: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-end",
+    gap: 8,
+    flexShrink: 0,
+  },
   schoolAvatar: {
     width: 44,
     height: 44,
@@ -9919,6 +9941,7 @@ const styles = {
     fontWeight: 850,
   },
   auditorProgressTrack: {
+    width: "100%",
     height: 10,
     overflow: "hidden",
     borderRadius: 999,
@@ -9930,6 +9953,18 @@ const styles = {
     height: "100%",
     borderRadius: 999,
     background: "linear-gradient(90deg, #60a5fa, #2563eb)",
+  },
+  auditorProgressMini: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-end",
+    gap: 6,
+    width: 160,
+  },
+  auditorProgressMiniCaption: {
+    fontSize: 11,
+    fontWeight: 600,
+    color: "#64748b",
   },
   auditorPostGrid: {
     display: "grid",
