@@ -8207,7 +8207,7 @@ function InfoPill({ label, value }) {
     <div style={styles.infoPill}>
       <small style={styles.infoPillLabel}>
         {icon && (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={styles.infoPillIcon}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={styles.infoPillIcon}>
             {icon}
           </svg>
         )}
@@ -9804,38 +9804,40 @@ const styles = {
   submissionInfoGrid: {
     display: "flex",
     flexWrap: "wrap",
-    gap: 16,
+    gap: 10,
   },
   infoPill: {
     border: "1px solid #e2e8f0",
     borderRadius: 10,
     background: "#f8fafc",
-    padding: "12px 16px",
+    padding: "9px 12px",
     display: "flex",
     flexDirection: "column",
-    gap: 4,
+    gap: 3,
     color: "#64748b",
     fontSize: 11,
-    minWidth: 148,
-    flex: "1 1 148px",
+    minWidth: 128,
+    flex: "1 1 128px",
   },
   infoPillLabel: {
     display: "flex",
     alignItems: "center",
-    gap: 7,
-    fontSize: 13,
+    gap: 6,
+    fontSize: 11,
     color: "#64748b",
     fontWeight: 500,
   },
   infoPillIcon: {
     color: "#94a3b8",
     flexShrink: 0,
+    width: 12,
+    height: 12,
   },
   infoPillValue: {
-    fontSize: 16,
-    fontWeight: 700,
+    fontSize: 13.5,
+    fontWeight: 650,
     color: "#0f172a",
-    marginTop: 2,
+    marginTop: 1,
   },
   forwardedNotice: {
     display: "grid",
