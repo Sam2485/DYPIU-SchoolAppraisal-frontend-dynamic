@@ -5632,7 +5632,6 @@ function SubmissionCard({
   submitterAvatarUrl,
   directoryUsers = [],
 }) {
-  const forwardedAuditorCount = submission.forwardedToAuditorNames?.length || submission.forwardedToAuditorIds?.length || 0;
   const submitterInitials = submission.submittedBy && submission.submittedBy !== "-"
     ? initialsFor(submission.submittedBy)
     : initialsFor(submission.school);
@@ -5680,9 +5679,11 @@ function SubmissionCard({
           {submission.auditType === "academic" && (
             <small style={styles.schoolGroup}>{SCHOOL_GROUPS[submission.group] || titleCase(submission.group || "")}</small>
           )}
+          <div style={styles.submissionTitleBadge}>
+            <StatusBadge status={submission.status} />
+          </div>
         </div>
         <div style={styles.submissionTopStatus}>
-          <StatusBadge status={submission.status} />
           <AuditorProgressPanel submission={submission} compact directoryUsers={directoryUsers} />
         </div>
       </div>
@@ -5704,18 +5705,6 @@ function SubmissionCard({
         {isApprovedReport(submission) && <InfoPill label="Audit category" value={`${titleCase(submission.reportCategory || "unclassified")} Audit`} />}
         {isApprovedReport(submission) && <InfoPill label="Cycle / Version" value={`${submission.auditCycle} / V${submission.version}`} />}
       </div>
-
-      {submission.forwardedToAuditorName && (
-        <div style={styles.forwardedNotice}>
-          <span>Forwarded to {submission.forwardedAuditorType ? `${submission.forwardedAuditorType} auditor` : "auditor"}</span>
-          <strong>{submission.forwardedToAuditorName}</strong>
-          <small>
-            {forwardedAuditorCount
-              ? `${forwardedAuditorCount} matching auditor${forwardedAuditorCount === 1 ? "" : "s"}`
-              : submission.forwardedToAuditorEmail}
-          </small>
-        </div>
-      )}
 
       <div style={styles.cardActions}>
         {onForward && canForwardSubmissionToAuditor(submission) && !isAuditorCompleted(submission) && (
@@ -9819,6 +9808,9 @@ const styles = {
     marginTop: 3,
     color: "#64748b",
     fontSize: 10.5,
+  },
+  submissionTitleBadge: {
+    marginTop: 8,
   },
   statusBadge: {
     borderWidth: 1,
