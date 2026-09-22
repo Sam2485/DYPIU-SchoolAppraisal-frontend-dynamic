@@ -69,7 +69,7 @@ const AUDITOR_FINAL_REVIEW_NAV_ITEM = {
 };
 const PREVIOUS_REPORTS_NAV_ITEM = {
   id: "previous-reports",
-  title: "Previous Reports",
+  title: "Reports",
   caption: "Approved report history",
   group: "final-verification",
   groupLabel: "Final Verification",
@@ -5481,7 +5481,7 @@ function PreviousReportsPanel({
     <section style={styles.panel}>
       <div style={styles.previousReportsHeader}>
         <div style={styles.previousReportsHeading}>
-          <h2 style={styles.sectionTitle}>Previous Reports</h2>
+          <h2 style={styles.sectionTitle}>{showingHistoricalYear ? "Previous Reports" : "Current Reports"}</h2>
           <p style={styles.previousReportsIntro}>Approved audit versions are preserved here as immutable historical records.</p>
         </div>
         <div style={styles.pageTitleActions}>
@@ -7994,14 +7994,14 @@ function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType,
               </div>
             )}
 
-            {Boolean(finalRemarks && String(finalRemarks).trim()) && (
+            {Boolean(reviewRemarkField || (finalRemarks && String(finalRemarks).trim())) && (
               <div style={{ marginTop: 14, width: "100%" }}>
                 <div style={styles.auditorReviewDocsField}>
                   <div style={styles.readOnlyLabel}>
                     {reviewRemarkField?.label || "Review Remarks / Observations"}
                   </div>
                   <div style={styles.auditorReviewValue}>
-                    {renderValue(finalRemarks)}
+                    {String(finalRemarks || "").trim() ? renderValue(finalRemarks) : "-"}
                   </div>
                 </div>
               </div>
