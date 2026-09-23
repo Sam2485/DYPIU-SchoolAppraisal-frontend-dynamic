@@ -801,12 +801,12 @@ export const FormBuilderCanvas = ({
   if (error || !tree) {
     return (
       <div className="p-5 text-center">
-        <div className="alert alert-danger" style={{ padding: '16px', background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', borderRadius: '8px', marginBottom: '16px' }}>
+        <div className="alert alert-danger" style={{ padding: "var(--space-7)", background: 'var(--red-50)', border: '1px solid var(--red-200)', color: 'var(--red-700)', borderRadius: "var(--radius-sm)", marginBottom: "var(--space-7)" }}>
           {error || 'Version tree not found'}
         </div>
         <button
           className="btn btn-secondary"
-          style={{ padding: '8px 18px', borderRadius: '7px', border: '1px solid #cbd5e1', background: '#fff', color: '#334155', fontWeight: 600, cursor: 'pointer' }}
+          style={{ padding: '8px 18px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', background: 'var(--card)', color: '#334155', fontWeight: 600, cursor: 'pointer' }}
           onClick={onBackToSchemas}
         >
           Back to Schemas
@@ -826,46 +826,46 @@ export const FormBuilderCanvas = ({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#f8fafc' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg)' }}>
       {/* Top Toolbar */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div style={{ background: 'var(--card)', borderBottom: '1px solid var(--border)', padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: "var(--space-5)" }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-5)" }}>
           <button
             type="button"
-            style={{ padding: '6px 12px', borderRadius: '7px', border: '1px solid #cbd5e1', background: '#fff', color: '#334155', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}
+            style={{ padding: '6px 12px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', background: 'var(--card)', color: '#334155', fontWeight: 600, fontSize: "var(--text-base)", cursor: 'pointer' }}
             onClick={onBackToSchemas}
           >
             ← Back
           </button>
           <div>
-            <h3 style={{ margin: 0, fontWeight: 800, color: '#0f172a', fontSize: '17px' }}>{tree.title}</h3>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
-              <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 7px', borderRadius: '5px', background: '#fef3c7', color: '#92400e' }}>
+            <h3 style={{ margin: 0, fontWeight: 800, color: 'var(--ink)', fontSize: "var(--text-lg)" }}>{tree.title}</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-3)", marginTop: '2px' }}>
+              <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, padding: '2px 7px', borderRadius: "var(--radius-2xs)", background: 'var(--amber-100)', color: 'var(--amber-700)' }}>
                 Draft Version {tree.versionNumber}
               </span>
-              <small style={{ color: '#64748b', fontSize: '12px' }}>
+              <small style={{ color: 'var(--muted)', fontSize: "var(--text-base)" }}>
                 Type: <strong>{isAdministrative ? 'ADMINISTRATIVE (Single Form)' : 'ACADEMIC (School-Based)'}</strong>
               </small>
             </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {publishMessage && <span style={{ color: '#059669', fontWeight: 600, fontSize: '13px' }}>{publishMessage}</span>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-4)" }}>
+          {publishMessage && <span style={{ color: 'var(--green-650)', fontWeight: 600, fontSize: "var(--text-base)" }}>{publishMessage}</span>}
           <button
             type="button"
             style={{
               padding: '7px 14px',
-              borderRadius: '7px',
-              border: '1px solid #bfdbfe',
-              background: '#eff6ff',
-              color: '#1d4ed8',
+              borderRadius: "var(--radius-sm)",
+              border: '1px solid var(--accent-border)',
+              background: 'var(--accent-soft)',
+              color: 'var(--primary-dark)',
               fontWeight: 700,
-              fontSize: '13px',
+              fontSize: "var(--text-base)",
               cursor: 'pointer',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px',
+              gap: "var(--space-2)",
             }}
             onClick={() => setFullSchemaImportModal(true)}
             title="Upload a multi-sheet Excel file to create all Parts/Sections with their tables and columns at once"
@@ -875,14 +875,14 @@ export const FormBuilderCanvas = ({
           </button>
           <button
             type="button"
-            style={{ padding: '7px 14px', borderRadius: '7px', border: '1px solid #93c5fd', background: '#eff6ff', color: '#1d4ed8', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}
+            style={{ padding: '7px 14px', borderRadius: "var(--radius-sm)", border: '1px solid #93c5fd', background: 'var(--accent-soft)', color: 'var(--primary-dark)', fontWeight: 600, fontSize: "var(--text-base)", cursor: 'pointer' }}
             onClick={() => onOpenPreview(versionId)}
           >
             👁️ Interactive Preview
           </button>
           <button
             type="button"
-            style={{ padding: '7px 18px', borderRadius: '7px', border: 'none', background: '#059669', color: '#fff', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
+            style={{ padding: '7px 18px', borderRadius: "var(--radius-sm)", border: 'none', background: 'var(--green-650)', color: 'var(--card)', fontWeight: 700, fontSize: "var(--text-base)", cursor: 'pointer' }}
             onClick={handlePublish}
             disabled={publishing}
           >
@@ -894,21 +894,21 @@ export const FormBuilderCanvas = ({
       {/* Main 2-Pane Editor Layout */}
       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', flex: 1, minHeight: 'calc(100vh - 140px)' }}>
         {/* Left Tree Navigator */}
-        <div style={{ background: '#fff', borderRight: '1px solid #e2e8f0', padding: '16px', overflowY: 'auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-            <span style={{ fontSize: '11.5px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+        <div style={{ background: 'var(--card)', borderRight: '1px solid var(--border)', padding: "var(--space-7)", overflowY: 'auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: "var(--space-6)" }}>
+            <span style={{ fontSize: "var(--text-sm)", fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Form Sections
             </span>
             <button
               type="button"
-              style={{ padding: '4px 10px', borderRadius: '6px', border: 'none', background: '#2563eb', color: '#fff', fontWeight: 700, fontSize: '11.5px', cursor: 'pointer' }}
+              style={{ padding: '4px 10px', borderRadius: "var(--radius-sm)", border: 'none', background: 'var(--primary)', color: 'var(--card)', fontWeight: 700, fontSize: "var(--text-sm)", cursor: 'pointer' }}
               onClick={handleOpenAddSection}
             >
               + Section
             </button>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: "var(--space-1)" }}>
             {tree.sections?.map((sec, idx) => {
               const isSelected = sec.id === currentSection?.id;
               const isAuditor = sec.ownerRole === 'auditor';
@@ -917,22 +917,22 @@ export const FormBuilderCanvas = ({
                   key={sec.id}
                   style={{
                     padding: '8px 10px',
-                    borderRadius: '8px',
+                    borderRadius: "var(--radius-sm)",
                     cursor: 'pointer',
-                    background: isSelected ? '#eff6ff' : '#fff',
-                    border: isSelected ? '1.5px solid #93c5fd' : '1px solid #e2e8f0',
-                    color: isSelected ? '#1d4ed8' : '#0f172a',
+                    background: isSelected ? 'var(--accent-soft)' : 'var(--card)',
+                    border: isSelected ? '1.5px solid #93c5fd' : '1px solid var(--border)',
+                    color: isSelected ? 'var(--primary-dark)' : 'var(--ink)',
                     fontWeight: isSelected ? 700 : 500,
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    fontSize: '13px',
+                    fontSize: "var(--text-base)",
                     transition: 'all 0.15s ease',
                     boxShadow: isSelected ? '0 1px 2px rgba(37,99,235,0.08)' : 'none',
                   }}
                   onClick={() => setActiveSectionId(sec.id)}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', minWidth: 0, flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-1)", minWidth: 0, flex: 1 }}>
                     {/* Section Sequence Up/Down Arrows */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
                       <button
@@ -941,12 +941,12 @@ export const FormBuilderCanvas = ({
                         style={{
                           border: 'none',
                           background: 'transparent',
-                          color: idx === 0 ? '#cbd5e1' : '#64748b',
+                          color: idx === 0 ? 'var(--border-strong)' : 'var(--muted)',
                           cursor: idx === 0 ? 'not-allowed' : 'pointer',
-                          fontSize: '9px',
+                          fontSize: "var(--text-3xs)",
                           lineHeight: '1',
                           padding: '1px 3px',
-                          borderRadius: '3px',
+                          borderRadius: "var(--radius-2xs)",
                         }}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -962,12 +962,12 @@ export const FormBuilderCanvas = ({
                         style={{
                           border: 'none',
                           background: 'transparent',
-                          color: idx === tree.sections.length - 1 ? '#cbd5e1' : '#64748b',
+                          color: idx === tree.sections.length - 1 ? 'var(--border-strong)' : 'var(--muted)',
                           cursor: idx === tree.sections.length - 1 ? 'not-allowed' : 'pointer',
-                          fontSize: '9px',
+                          fontSize: "var(--text-3xs)",
                           lineHeight: '1',
                           padding: '1px 3px',
-                          borderRadius: '3px',
+                          borderRadius: "var(--radius-2xs)",
                         }}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -979,21 +979,21 @@ export const FormBuilderCanvas = ({
                       </button>
                     </div>
 
-                    <span style={{ display: 'inline-block', minWidth: '18px', padding: '1px 5px', background: isSelected ? '#dbeafe' : '#f1f5f9', color: isSelected ? '#1e40af' : '#475569', borderRadius: '4px', fontSize: '10.5px', fontWeight: 800, textAlign: 'center', flexShrink: 0 }}>
+                    <span style={{ display: 'inline-block', minWidth: '18px', padding: '1px 5px', background: isSelected ? '#dbeafe' : 'var(--bg-alt)', color: isSelected ? '#1e40af' : '#475569', borderRadius: "var(--radius-2xs)", fontSize: "var(--text-2xs)", fontWeight: 800, textAlign: 'center', flexShrink: 0 }}>
                       {sec.number || idx + 1}
                     </span>
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '12.5px' }}>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: "var(--text-base)" }}>
                       {sec.title}
                     </span>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-1)", flexShrink: 0 }}>
                     {isAuditor && (
-                      <span style={{ fontSize: '9.5px', fontWeight: 700, padding: '1px 4px', borderRadius: '4px', background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }} title="Auditor Section">
+                      <span style={{ fontSize: "var(--text-3xs)", fontWeight: 700, padding: '1px 4px', borderRadius: "var(--radius-2xs)", background: 'var(--amber-100)', color: 'var(--amber-700)', border: '1px solid var(--amber-200)' }} title="Auditor Section">
                         🔒 Auditor
                       </span>
                     )}
-                    <span style={{ fontSize: '10.5px', color: '#64748b', background: '#f1f5f9', padding: '1px 5px', borderRadius: '999px', fontWeight: 600 }}>
+                    <span style={{ fontSize: "var(--text-2xs)", color: 'var(--muted)', background: 'var(--bg-alt)', padding: '1px 5px', borderRadius: "var(--radius-pill)", fontWeight: 600 }}>
                       {sec.tables?.length || 0}
                     </span>
                   </div>
@@ -1004,25 +1004,25 @@ export const FormBuilderCanvas = ({
         </div>
 
         {/* Right Canvas / Section Editor */}
-        <div style={{ padding: '24px', overflowY: 'auto', background: '#f8fafc' }}>
+        <div style={{ padding: "var(--space-9)", overflowY: 'auto', background: 'var(--bg)' }}>
           {currentSection ? (
             <div>
               {/* Section Header Card */}
-              <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px', marginBottom: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+              <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: "var(--radius-lg)", padding: "var(--space-8)", marginBottom: "var(--space-8)", boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: "var(--space-5)" }}>
                   <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '11px', fontWeight: 800, padding: '3px 8px', borderRadius: '5px', background: '#dbeafe', color: '#1e40af' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-3)", marginBottom: "var(--space-3)" }}>
+                      <span style={{ fontSize: "var(--text-xs)", fontWeight: 800, padding: '3px 8px', borderRadius: "var(--radius-2xs)", background: '#dbeafe', color: '#1e40af' }}>
                         Section {currentSection.number || 'A'}
                       </span>
                       {currentSection.ownerRole === 'auditor' && (
-                        <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '5px', background: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d' }}>
+                        <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, padding: '3px 8px', borderRadius: "var(--radius-2xs)", background: 'var(--amber-100)', color: 'var(--amber-700)', border: '1px solid #fcd34d' }}>
                           🔒 Designated for Auditor
                         </span>
                       )}
                     </div>
-                    <h3 style={{ margin: '0 0 4px', fontWeight: 800, color: '#0f172a', fontSize: '18px' }}>{currentSection.title}</h3>
-                    <p style={{ margin: 0, color: '#64748b', fontSize: '12.5px' }}>
+                    <h3 style={{ margin: '0 0 4px', fontWeight: 800, color: 'var(--ink)', fontSize: "var(--text-xl)" }}>{currentSection.title}</h3>
+                    <p style={{ margin: 0, color: 'var(--muted)', fontSize: "var(--text-base)" }}>
                       {isAdministrative ? (
                         <span>
                           👔 Assigned Administrative Post: <strong className="text-primary">{getPostLabel(currentSection.ownerRole)}</strong>
@@ -1034,19 +1034,19 @@ export const FormBuilderCanvas = ({
                       )}
                     </p>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-3)", flexWrap: 'wrap' }}>
                     <label
                       style={{
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '6px',
-                        fontSize: '12.5px',
+                        gap: "var(--space-2)",
+                        fontSize: "var(--text-base)",
                         fontWeight: 650,
-                        color: currentSection.ownerRole === 'auditor' ? '#92400e' : '#475569',
-                        background: currentSection.ownerRole === 'auditor' ? '#fef3c7' : '#f1f5f9',
-                        border: currentSection.ownerRole === 'auditor' ? '1px solid #fcd34d' : '1px solid #cbd5e1',
+                        color: currentSection.ownerRole === 'auditor' ? 'var(--amber-700)' : '#475569',
+                        background: currentSection.ownerRole === 'auditor' ? 'var(--amber-100)' : 'var(--bg-alt)',
+                        border: currentSection.ownerRole === 'auditor' ? '1px solid #fcd34d' : '1px solid var(--border-strong)',
                         padding: '6px 12px',
-                        borderRadius: '6px',
+                        borderRadius: "var(--radius-sm)",
                         cursor: 'pointer',
                         userSelect: 'none',
                       }}
@@ -1062,14 +1062,14 @@ export const FormBuilderCanvas = ({
                     </label>
                     <button
                       type="button"
-                      style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#fff', color: '#334155', fontWeight: 600, fontSize: '12.5px', cursor: 'pointer' }}
+                      style={{ padding: '6px 12px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', background: 'var(--card)', color: '#334155', fontWeight: 600, fontSize: "var(--text-base)", cursor: 'pointer' }}
                       onClick={() => handleOpenEditSection(currentSection)}
                     >
                       ✏️ Edit Section
                     </button>
                     <button
                       type="button"
-                      style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #fecaca', background: '#fff', color: '#b91c1c', cursor: 'pointer' }}
+                      style={{ padding: '6px 10px', borderRadius: "var(--radius-sm)", border: '1px solid var(--red-200)', background: 'var(--card)', color: 'var(--red-700)', cursor: 'pointer' }}
                       onClick={() => handleDeleteSection(currentSection.id)}
                     >
                       🗑️
@@ -1079,12 +1079,12 @@ export const FormBuilderCanvas = ({
               </div>
 
               {/* Top-Level Fields in Section */}
-              <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '18px', marginBottom: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                  <h4 style={{ margin: 0, fontWeight: 700, color: '#0f172a', fontSize: '14px' }}>📌 Header Fields (Non-table Inputs)</h4>
+              <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: "var(--radius-lg)", padding: "var(--space-7)", marginBottom: "var(--space-9)", boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: "var(--space-6)" }}>
+                  <h4 style={{ margin: 0, fontWeight: 700, color: 'var(--ink)', fontSize: "var(--text-md)" }}>📌 Header Fields (Non-table Inputs)</h4>
                   <button
                     type="button"
-                    style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid #93c5fd', background: '#eff6ff', color: '#1d4ed8', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}
+                    style={{ padding: '5px 12px', borderRadius: "var(--radius-sm)", border: '1px solid #93c5fd', background: 'var(--accent-soft)', color: 'var(--primary-dark)', fontWeight: 600, fontSize: "var(--text-base)", cursor: 'pointer' }}
                     onClick={() => handleOpenAddField(currentSection.id, null)}
                   >
                     + Add Header Field
@@ -1096,17 +1096,17 @@ export const FormBuilderCanvas = ({
                     (f) => !isReviewRemarkField(f)
                   );
                   return headerFields.length > 0 ? (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '10px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: "var(--space-4)" }}>
                       {headerFields.map((f) => (
-                        <div key={f.id} style={{ padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div key={f.id} style={{ padding: '10px 12px', border: '1px solid var(--border)', borderRadius: "var(--radius-sm)", background: 'var(--bg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div>
-                            <span style={{ fontWeight: 700, fontSize: '13px', color: '#0f172a' }}>{f.label}</span>
-                            <span style={{ fontSize: '10.5px', fontWeight: 700, padding: '2px 6px', background: '#e0f2fe', color: '#0369a1', borderRadius: '4px', marginLeft: '6px' }}>
+                            <span style={{ fontWeight: 700, fontSize: "var(--text-base)", color: 'var(--ink)' }}>{f.label}</span>
+                            <span style={{ fontSize: "var(--text-2xs)", fontWeight: 700, padding: '2px 6px', background: '#e0f2fe', color: '#0369a1', borderRadius: "var(--radius-2xs)", marginLeft: "var(--space-2)" }}>
                               {f.fieldType}
                             </span>
-                            {f.isRequired && <span style={{ color: '#ef4444', marginLeft: '3px' }}>*</span>}
+                            {f.isRequired && <span style={{ color: 'var(--red-500)', marginLeft: "var(--space-1)" }}>*</span>}
                           </div>
-                          <div style={{ display: 'flex', gap: '4px' }}>
+                          <div style={{ display: 'flex', gap: "var(--space-1)" }}>
                             <button
                               type="button"
                               style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px' }}
@@ -1116,7 +1116,7 @@ export const FormBuilderCanvas = ({
                             </button>
                             <button
                               type="button"
-                              style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px', color: '#ef4444' }}
+                              style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px', color: 'var(--red-500)' }}
                               onClick={() => handleDeleteField(f.id)}
                             >
                               ✕
@@ -1126,25 +1126,25 @@ export const FormBuilderCanvas = ({
                       ))}
                     </div>
                   ) : (
-                    <p style={{ color: '#94a3b8', fontSize: '12.5px', margin: 0 }}>No header fields in this section.</p>
+                    <p style={{ color: 'var(--muted)', fontSize: "var(--text-base)", margin: 0 }}>No header fields in this section.</p>
                   );
                 })()}
               </div>
 
               {/* Dynamic Table Buttons (Repeater Groups) Panel */}
-              <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '18px', marginBottom: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: "var(--radius-lg)", padding: "var(--space-7)", marginBottom: "var(--space-9)", boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: "var(--space-6)", flexWrap: 'wrap', gap: "var(--space-4)" }}>
                   <div>
-                    <h4 style={{ margin: 0, fontWeight: 700, color: '#0f172a', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <h4 style={{ margin: 0, fontWeight: 700, color: 'var(--ink)', fontSize: "var(--text-md)", display: 'flex', alignItems: 'center', gap: "var(--space-2)" }}>
                       <span>⚡ Dynamic Table Buttons (Repeater Groups)</span>
                     </h4>
-                    <p style={{ margin: '3px 0 0', color: '#64748b', fontSize: '12px' }}>
+                    <p style={{ margin: '3px 0 0', color: 'var(--muted)', fontSize: "var(--text-base)" }}>
                       Assign tables to action buttons. In the form, assigned tables stay hidden until the user clicks the button and switches entries via dropdown.
                     </p>
                   </div>
                   <button
                     type="button"
-                    style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #bfdbfe', background: '#eff6ff', color: '#1d4ed8', fontWeight: 700, fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    style={{ padding: '6px 14px', borderRadius: "var(--radius-sm)", border: '1px solid var(--accent-border)', background: 'var(--accent-soft)', color: 'var(--primary-dark)', fontWeight: 700, fontSize: "var(--text-base)", cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: "var(--space-1)" }}
                     onClick={handleOpenAddTableButton}
                   >
                     <span>➕ Add Table Button</span>
@@ -1155,7 +1155,7 @@ export const FormBuilderCanvas = ({
                   const buttons = normalizeTableButtons(currentSection.tableButtons);
                   if (buttons.length === 0) {
                     return (
-                      <div style={{ padding: '12px 14px', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '8px', color: '#64748b', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ padding: '12px 14px', background: 'var(--bg)', border: '1px dashed var(--border-strong)', borderRadius: "var(--radius-sm)", color: 'var(--muted)', fontSize: "var(--text-base)", display: 'flex', alignItems: 'center', gap: "var(--space-3)" }}>
                         <span>ℹ️</span>
                         <span>No dynamic buttons configured for this section. All tables are permanently visible by default. Click <strong>+ Add Table Button</strong> to create one.</span>
                       </div>
@@ -1163,7 +1163,7 @@ export const FormBuilderCanvas = ({
                   }
 
                   return (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '12px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: "var(--space-5)" }}>
                       {buttons.map((btn) => {
                         const assignedTables = (currentSection.tables || []).filter((tbl) => isTableAssignedToButton(tbl, btn));
                         const optionsList = Array.isArray(btn.dropdownOptions)
@@ -1176,27 +1176,27 @@ export const FormBuilderCanvas = ({
                           <div
                             key={btn.id}
                             style={{
-                              border: '1.5px solid #bfdbfe',
-                              borderRadius: '10px',
+                              border: '1.5px solid var(--accent-border)',
+                              borderRadius: "var(--radius-md)",
                               background: '#f8faff',
-                              padding: '14px',
+                              padding: "var(--space-6)",
                               display: 'flex',
                               flexDirection: 'column',
                               justifyContent: 'space-between',
-                              gap: '10px',
+                              gap: "var(--space-4)",
                             }}
                           >
                             <div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '6px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  <span style={{ fontSize: '15px' }}>⚡</span>
-                                  <strong style={{ fontSize: '13.5px', color: '#1e3a8a' }}>{btn.label}</strong>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: "var(--space-3)", marginBottom: "var(--space-2)" }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-2)" }}>
+                                  <span style={{ fontSize: "var(--text-md)" }}>⚡</span>
+                                  <strong style={{ fontSize: "var(--text-base)", color: '#1e3a8a' }}>{btn.label}</strong>
                                 </div>
-                                <div style={{ display: 'flex', gap: '4px' }}>
+                                <div style={{ display: 'flex', gap: "var(--space-1)" }}>
                                   <button
                                     type="button"
                                     onClick={() => handleOpenEditTableButton(btn)}
-                                    style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px', fontSize: '13px' }}
+                                    style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px', fontSize: "var(--text-base)" }}
                                     title="Edit Button"
                                   >
                                     ✏️
@@ -1204,7 +1204,7 @@ export const FormBuilderCanvas = ({
                                   <button
                                     type="button"
                                     onClick={() => handleDeleteTableButton(btn.id)}
-                                    style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px', color: '#ef4444', fontSize: '13px' }}
+                                    style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px', color: 'var(--red-500)', fontSize: "var(--text-base)" }}
                                     title="Delete Button"
                                   >
                                     🗑️
@@ -1212,21 +1212,21 @@ export const FormBuilderCanvas = ({
                                 </div>
                               </div>
 
-                              <div style={{ fontSize: '12px', color: '#475569', marginBottom: '6px' }}>
+                              <div style={{ fontSize: "var(--text-base)", color: '#475569', marginBottom: "var(--space-2)" }}>
                                 Dropdown: <strong>{btn.dropdownLabel || 'Select'}</strong>
                               </div>
 
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: "var(--space-1)", marginBottom: "var(--space-3)" }}>
                                 {optionsList.map((opt, i) => (
                                   <span
                                     key={i}
                                     style={{
-                                      fontSize: '10.5px',
+                                      fontSize: "var(--text-2xs)",
                                       fontWeight: 700,
                                       padding: '2px 6px',
                                       background: '#dbeafe',
                                       color: '#1e40af',
-                                      borderRadius: '4px',
+                                      borderRadius: "var(--radius-2xs)",
                                     }}
                                   >
                                     {opt}
@@ -1235,10 +1235,10 @@ export const FormBuilderCanvas = ({
                               </div>
                             </div>
 
-                            <div style={{ borderTop: '1px solid #dbeafe', paddingTop: '8px', fontSize: '11.5px', color: '#64748b' }}>
+                            <div style={{ borderTop: '1px solid #dbeafe', paddingTop: "var(--space-3)", fontSize: "var(--text-sm)", color: 'var(--muted)' }}>
                               <span>Assigned: <strong>{assignedTables.length} table(s)</strong></span>
                               {assignedTables.length > 0 && (
-                                <span style={{ marginLeft: '4px', color: '#1d4ed8' }}>
+                                <span style={{ marginLeft: "var(--space-1)", color: 'var(--primary-dark)' }}>
                                   ({assignedTables.map((t) => t.title || t.tableKey).slice(0, 2).join(', ')}
                                   {assignedTables.length > 2 ? ` +${assignedTables.length - 2} more` : ''})
                                 </span>
@@ -1253,24 +1253,24 @@ export const FormBuilderCanvas = ({
               </div>
 
               {/* Tables in Section */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-                <h4 style={{ margin: 0, fontWeight: 800, color: '#0f172a', fontSize: '16px' }}>📊 Tables in Section</h4>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: "var(--space-7)", flexWrap: 'wrap', gap: "var(--space-4)" }}>
+                <h4 style={{ margin: 0, fontWeight: 800, color: 'var(--ink)', fontSize: "var(--text-lg)" }}>📊 Tables in Section</h4>
+                <div style={{ display: 'flex', gap: "var(--space-3)", flexWrap: 'wrap' }}>
                   {/* Excel Import button */}
                   <button
                     type="button"
                     style={{
                       padding: '6px 14px',
-                      borderRadius: '7px',
-                      border: '1px solid #86efac',
-                      background: '#f0fdf4',
-                      color: '#15803d',
+                      borderRadius: "var(--radius-sm)",
+                      border: '1px solid var(--green-300)',
+                      background: 'var(--green-50)',
+                      color: 'var(--green-600)',
                       fontWeight: 700,
-                      fontSize: '13px',
+                      fontSize: "var(--text-base)",
                       cursor: 'pointer',
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '6px',
+                      gap: "var(--space-2)",
                     }}
                     onClick={() => setExcelImportModal({ show: true, section: currentSection })}
                     title="Upload an Excel sheet to automatically create tables with column headers"
@@ -1283,7 +1283,7 @@ export const FormBuilderCanvas = ({
                   {!isAdministrative && (
                     <button
                       type="button"
-                      style={{ padding: '6px 14px', borderRadius: '7px', border: '1px solid #93c5fd', background: '#eff6ff', color: '#1d4ed8', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
+                      style={{ padding: '6px 14px', borderRadius: "var(--radius-sm)", border: '1px solid #93c5fd', background: 'var(--accent-soft)', color: 'var(--primary-dark)', fontWeight: 700, fontSize: "var(--text-base)", cursor: 'pointer' }}
                       onClick={() => handleOpenCopyTable(currentSection.id)}
                     >
                       📋 Copy Table from Another Form
@@ -1291,7 +1291,7 @@ export const FormBuilderCanvas = ({
                   )}
                   <button
                     type="button"
-                    style={{ padding: '6px 14px', borderRadius: '7px', border: 'none', background: '#2563eb', color: '#fff', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
+                    style={{ padding: '6px 14px', borderRadius: "var(--radius-sm)", border: 'none', background: 'var(--primary)', color: 'var(--card)', fontWeight: 700, fontSize: "var(--text-base)", cursor: 'pointer' }}
                     onClick={() => handleOpenAddTable(currentSection.id)}
                   >
                     + Add New Table
@@ -1301,49 +1301,49 @@ export const FormBuilderCanvas = ({
 
               {currentSection.tables && currentSection.tables.length > 0 ? (
                 currentSection.tables.map((tbl, tIdx) => (
-                  <div key={tbl.id} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px', marginBottom: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+                  <div key={tbl.id} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: "var(--radius-lg)", padding: "var(--space-8)", marginBottom: "var(--space-8)", boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: "var(--space-6)", flexWrap: 'wrap', gap: "var(--space-4)" }}>
                       <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '3px' }}>
-                          <h4 style={{ margin: 0, fontWeight: 700, color: '#0f172a', fontSize: '15px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-3)", flexWrap: 'wrap', marginBottom: "var(--space-1)" }}>
+                          <h4 style={{ margin: 0, fontWeight: 700, color: 'var(--ink)', fontSize: "var(--text-md)" }}>
                             {tbl.title || `Table ${tIdx + 1}`}
                           </h4>
                           {(() => {
                             const assignedBtn = (normalizeTableButtons(currentSection.tableButtons) || []).find((btn) => isTableAssignedToButton(tbl, btn));
                             if (assignedBtn) {
                               return (
-                                <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '5px', background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>
+                                <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, padding: '2px 8px', borderRadius: "var(--radius-2xs)", background: 'var(--amber-100)', color: 'var(--amber-700)', border: '1px solid var(--amber-200)' }}>
                                   ⚡ Assigned to: {assignedBtn.label}
                                 </span>
                               );
                             }
                             return (
-                              <span style={{ fontSize: '11px', fontWeight: 650, padding: '2px 8px', borderRadius: '5px', background: '#f1f5f9', color: '#475569' }}>
+                              <span style={{ fontSize: "var(--text-xs)", fontWeight: 650, padding: '2px 8px', borderRadius: "var(--radius-2xs)", background: 'var(--bg-alt)', color: '#475569' }}>
                                 📌 Permanent (Always Visible)
                               </span>
                             );
                           })()}
                         </div>
-                        <small style={{ color: '#64748b', fontSize: '12px' }}>
+                        <small style={{ color: 'var(--muted)', fontSize: "var(--text-base)" }}>
                           Key: <code>{tbl.tableKey}</code> | {tbl.isRepeatable ? 'Dynamic Rows' : 'Fixed Form'}
                         </small>
                       </div>
-                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', gap: "var(--space-2)", alignItems: 'center', flexWrap: 'wrap' }}>
                         {/* Table Sequence Reordering */}
                         {currentSection.tables.length > 1 && (
-                          <div style={{ display: 'inline-flex', border: '1px solid #cbd5e1', borderRadius: '6px', overflow: 'hidden', background: '#fff' }}>
+                          <div style={{ display: 'inline-flex', border: '1px solid var(--border-strong)', borderRadius: "var(--radius-sm)", overflow: 'hidden', background: 'var(--card)' }}>
                             <button
                               type="button"
                               disabled={tIdx === 0}
                               style={{
                                 border: 'none',
-                                background: tIdx === 0 ? '#f8fafc' : '#fff',
-                                color: tIdx === 0 ? '#cbd5e1' : '#334155',
+                                background: tIdx === 0 ? 'var(--bg)' : 'var(--card)',
+                                color: tIdx === 0 ? 'var(--border-strong)' : '#334155',
                                 cursor: tIdx === 0 ? 'not-allowed' : 'pointer',
                                 padding: '4px 8px',
-                                fontSize: '11px',
+                                fontSize: "var(--text-xs)",
                                 fontWeight: 700,
-                                borderRight: '1px solid #e2e8f0',
+                                borderRight: '1px solid var(--border)',
                               }}
                               onClick={() => handleMoveTable(tbl, tIdx, 'up')}
                               title="Move Table Up"
@@ -1355,11 +1355,11 @@ export const FormBuilderCanvas = ({
                               disabled={tIdx === currentSection.tables.length - 1}
                               style={{
                                 border: 'none',
-                                background: tIdx === currentSection.tables.length - 1 ? '#f8fafc' : '#fff',
-                                color: tIdx === currentSection.tables.length - 1 ? '#cbd5e1' : '#334155',
+                                background: tIdx === currentSection.tables.length - 1 ? 'var(--bg)' : 'var(--card)',
+                                color: tIdx === currentSection.tables.length - 1 ? 'var(--border-strong)' : '#334155',
                                 cursor: tIdx === currentSection.tables.length - 1 ? 'not-allowed' : 'pointer',
                                 padding: '4px 8px',
-                                fontSize: '11px',
+                                fontSize: "var(--text-xs)",
                                 fontWeight: 700,
                               }}
                               onClick={() => handleMoveTable(tbl, tIdx, 'down')}
@@ -1372,21 +1372,21 @@ export const FormBuilderCanvas = ({
 
                         <button
                           type="button"
-                          style={{ padding: '5px 11px', borderRadius: '6px', border: '1px solid #93c5fd', background: '#eff6ff', color: '#1d4ed8', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}
+                          style={{ padding: '5px 11px', borderRadius: "var(--radius-sm)", border: '1px solid #93c5fd', background: 'var(--accent-soft)', color: 'var(--primary-dark)', fontWeight: 600, fontSize: "var(--text-base)", cursor: 'pointer' }}
                           onClick={() => handleOpenAddField(currentSection.id, tbl.id)}
                         >
                           + Add Column
                         </button>
                         <button
                           type="button"
-                          style={{ padding: '5px 11px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#fff', color: '#334155', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}
+                          style={{ padding: '5px 11px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', background: 'var(--card)', color: '#334155', fontWeight: 600, fontSize: "var(--text-base)", cursor: 'pointer' }}
                           onClick={() => handleOpenEditTable(tbl, currentSection.id)}
                         >
                           ✏️ Edit
                         </button>
                         <button
                           type="button"
-                          style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid #fecaca', background: '#fff', color: '#b91c1c', cursor: 'pointer' }}
+                          style={{ padding: '5px 8px', borderRadius: "var(--radius-sm)", border: '1px solid var(--red-200)', background: 'var(--card)', color: 'var(--red-700)', cursor: 'pointer' }}
                           onClick={() => handleDeleteTable(tbl.id)}
                         >
                           🗑️
@@ -1395,24 +1395,24 @@ export const FormBuilderCanvas = ({
                     </div>
 
                     {/* Columns List */}
-                    <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px', background: '#f8fafc' }}>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-                        <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', marginRight: '4px' }}>Columns:</span>
+                    <div style={{ border: '1px solid var(--border)', borderRadius: "var(--radius-sm)", padding: "var(--space-5)", background: 'var(--bg)' }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: "var(--space-3)", alignItems: 'center' }}>
+                        <span style={{ fontSize: "var(--text-base)", fontWeight: 700, color: 'var(--muted)', marginRight: "var(--space-1)" }}>Columns:</span>
                         {tbl.fields && tbl.fields.length > 0 ? (
                           tbl.fields.map((col, cIdx) => (
                             <span
                               key={col.id}
                               style={{
-                                background: '#fff',
-                                border: '1px solid #cbd5e1',
-                                borderRadius: '6px',
+                                background: 'var(--card)',
+                                border: '1px solid var(--border-strong)',
+                                borderRadius: "var(--radius-sm)",
                                 padding: '4px 8px',
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                gap: '5px',
-                                fontSize: '12px',
+                                gap: "var(--space-2)",
+                                fontSize: "var(--text-base)",
                                 fontWeight: 600,
-                                color: '#0f172a',
+                                color: 'var(--ink)',
                               }}
                             >
                               {/* Column Sequence Left/Right */}
@@ -1424,9 +1424,9 @@ export const FormBuilderCanvas = ({
                                     style={{
                                       border: 'none',
                                       background: 'transparent',
-                                      color: cIdx === 0 ? '#cbd5e1' : '#64748b',
+                                      color: cIdx === 0 ? 'var(--border-strong)' : 'var(--muted)',
                                       cursor: cIdx === 0 ? 'not-allowed' : 'pointer',
-                                      fontSize: '9px',
+                                      fontSize: "var(--text-3xs)",
                                       padding: '0 2px',
                                       lineHeight: '1',
                                     }}
@@ -1441,9 +1441,9 @@ export const FormBuilderCanvas = ({
                                     style={{
                                       border: 'none',
                                       background: 'transparent',
-                                      color: cIdx === tbl.fields.length - 1 ? '#cbd5e1' : '#64748b',
+                                      color: cIdx === tbl.fields.length - 1 ? 'var(--border-strong)' : 'var(--muted)',
                                       cursor: cIdx === tbl.fields.length - 1 ? 'not-allowed' : 'pointer',
-                                      fontSize: '9px',
+                                      fontSize: "var(--text-3xs)",
                                       padding: '0 2px',
                                       lineHeight: '1',
                                     }}
@@ -1455,7 +1455,7 @@ export const FormBuilderCanvas = ({
                                 </span>
                               )}
                               <span>{col.label || col.fieldKey}</span>
-                              <span style={{ fontSize: '9.5px', fontWeight: 700, padding: '2px 5px', background: '#dbeafe', color: '#1e40af', borderRadius: '4px' }}>
+                              <span style={{ fontSize: "var(--text-3xs)", fontWeight: 700, padding: '2px 5px', background: '#dbeafe', color: '#1e40af', borderRadius: "var(--radius-2xs)" }}>
                                 {col.fieldType}
                               </span>
                               <button
@@ -1468,7 +1468,7 @@ export const FormBuilderCanvas = ({
                               </button>
                               <button
                                 type="button"
-                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '0 2px', color: '#ef4444' }}
+                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '0 2px', color: 'var(--red-500)' }}
                                 onClick={() => handleDeleteField(col.id)}
                                 title="Delete Column"
                               >
@@ -1477,18 +1477,18 @@ export const FormBuilderCanvas = ({
                             </span>
                           ))
                         ) : (
-                          <span style={{ color: '#ef4444', fontSize: '12.5px' }}>⚠️ No columns defined. Add columns to allow data entry.</span>
+                          <span style={{ color: 'var(--red-500)', fontSize: "var(--text-base)" }}>⚠️ No columns defined. Add columns to allow data entry.</span>
                         )}
                       </div>
                     </div>
                   </div>
                 ))
               ) : (
-                <div style={{ background: '#fff', border: '1px dashed #cbd5e1', borderRadius: '12px', padding: '32px', textAlign: 'center' }}>
-                  <p style={{ color: '#64748b', margin: '0 0 10px' }}>No tables created in this section yet.</p>
+                <div style={{ background: 'var(--card)', border: '1px dashed var(--border-strong)', borderRadius: "var(--radius-lg)", padding: "var(--space-10)", textAlign: 'center' }}>
+                  <p style={{ color: 'var(--muted)', margin: '0 0 10px' }}>No tables created in this section yet.</p>
                   <button
                     type="button"
-                    style={{ padding: '6px 14px', borderRadius: '7px', border: 'none', background: '#2563eb', color: '#fff', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
+                    style={{ padding: '6px 14px', borderRadius: "var(--radius-sm)", border: 'none', background: 'var(--primary)', color: 'var(--card)', fontWeight: 700, fontSize: "var(--text-base)", cursor: 'pointer' }}
                     onClick={() => handleOpenAddTable(currentSection.id)}
                   >
                     + Create First Table
@@ -1508,11 +1508,11 @@ export const FormBuilderCanvas = ({
                 return (
                   <div
                     style={{
-                      marginTop: '24px',
-                      background: '#fff',
-                      border: '1px solid #bbf7d0',
-                      borderRadius: '12px',
-                      padding: '18px',
+                      marginTop: "var(--space-9)",
+                      background: 'var(--card)',
+                      border: '1px solid var(--green-200)',
+                      borderRadius: "var(--radius-lg)",
+                      padding: "var(--space-7)",
                       boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                     }}
                   >
@@ -1521,25 +1521,25 @@ export const FormBuilderCanvas = ({
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
-                        marginBottom: '14px',
+                        marginBottom: "var(--space-6)",
                         flexWrap: 'wrap',
-                        gap: '8px',
+                        gap: "var(--space-3)",
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                        <h4 style={{ margin: 0, fontWeight: 700, color: '#0f172a', fontSize: '14px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-3)", flexWrap: 'wrap' }}>
+                        <h4 style={{ margin: 0, fontWeight: 700, color: 'var(--ink)', fontSize: "var(--text-md)" }}>
                           📝 Review Remarks (Auditor Inputs)
                         </h4>
                         {isLastAuditorSec ? (
                           <span
                             style={{
-                              fontSize: '11px',
+                              fontSize: "var(--text-xs)",
                               fontWeight: 700,
                               padding: '3px 8px',
-                              background: '#dcfce7',
-                              color: '#15803d',
-                              borderRadius: '6px',
-                              border: '1px solid #86efac',
+                              background: 'var(--green-100)',
+                              color: 'var(--green-600)',
+                              borderRadius: "var(--radius-sm)",
+                              border: '1px solid var(--green-300)',
                             }}
                           >
                             Final Auditor Section (Mandatory Review)
@@ -1547,12 +1547,12 @@ export const FormBuilderCanvas = ({
                         ) : auditorSections.length > 1 ? (
                           <span
                             style={{
-                              fontSize: '11px',
+                              fontSize: "var(--text-xs)",
                               fontWeight: 600,
                               padding: '3px 8px',
-                              background: '#fef3c7',
-                              color: '#92400e',
-                              borderRadius: '6px',
+                              background: 'var(--amber-100)',
+                              color: 'var(--amber-700)',
+                              borderRadius: "var(--radius-sm)",
                               border: '1px solid #fcd34d',
                             }}
                           >
@@ -1564,12 +1564,12 @@ export const FormBuilderCanvas = ({
                         type="button"
                         style={{
                           padding: '5px 12px',
-                          borderRadius: '6px',
-                          border: '1px solid #86efac',
-                          background: '#f0fdf4',
-                          color: '#15803d',
+                          borderRadius: "var(--radius-sm)",
+                          border: '1px solid var(--green-300)',
+                          background: 'var(--green-50)',
+                          color: 'var(--green-600)',
                           fontWeight: 600,
-                          fontSize: '12px',
+                          fontSize: "var(--text-base)",
                           cursor: 'pointer',
                         }}
                         onClick={() => handleOpenAddReviewField(currentSection.id)}
@@ -1583,7 +1583,7 @@ export const FormBuilderCanvas = ({
                         style={{
                           display: 'grid',
                           gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                          gap: '10px',
+                          gap: "var(--space-4)",
                         }}
                       >
                         {reviewFields.map((f) => (
@@ -1591,44 +1591,44 @@ export const FormBuilderCanvas = ({
                             key={f.id}
                             style={{
                               padding: '10px 12px',
-                              border: '1px solid #bbf7d0',
-                              borderRadius: '8px',
-                              background: '#f0fdf4',
+                              border: '1px solid var(--green-200)',
+                              borderRadius: "var(--radius-sm)",
+                              background: 'var(--green-50)',
                               display: 'flex',
                               justifyContent: 'space-between',
                               alignItems: 'center',
                             }}
                           >
                             <div>
-                              <span style={{ fontWeight: 700, fontSize: '13px', color: '#0f172a' }}>{f.label}</span>
+                              <span style={{ fontWeight: 700, fontSize: "var(--text-base)", color: 'var(--ink)' }}>{f.label}</span>
                               <span
                                 style={{
-                                  fontSize: '10.5px',
+                                  fontSize: "var(--text-2xs)",
                                   fontWeight: 700,
                                   padding: '2px 6px',
-                                  background: '#dcfce7',
-                                  color: '#166534',
-                                  borderRadius: '4px',
-                                  marginLeft: '6px',
+                                  background: 'var(--green-100)',
+                                  color: 'var(--green-700)',
+                                  borderRadius: "var(--radius-2xs)",
+                                  marginLeft: "var(--space-2)",
                                 }}
                               >
                                 {f.fieldType || 'TEXTAREA'}
                               </span>
                               <span
                                 style={{
-                                  fontSize: '10.5px',
+                                  fontSize: "var(--text-2xs)",
                                   fontWeight: 700,
                                   padding: '2px 6px',
-                                  background: '#fee2e2',
-                                  color: '#991b1b',
-                                  borderRadius: '4px',
-                                  marginLeft: '4px',
+                                  background: 'var(--red-100)',
+                                  color: 'var(--red-800)',
+                                  borderRadius: "var(--radius-2xs)",
+                                  marginLeft: "var(--space-1)",
                                 }}
                               >
                                 Mandatory*
                               </span>
                             </div>
-                            <div style={{ display: 'flex', gap: '4px' }}>
+                            <div style={{ display: 'flex', gap: "var(--space-1)" }}>
                               <button
                                 type="button"
                                 style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px' }}
@@ -1639,7 +1639,7 @@ export const FormBuilderCanvas = ({
                               </button>
                               <button
                                 type="button"
-                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px', color: '#ef4444' }}
+                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px', color: 'var(--red-500)' }}
                                 onClick={() => handleDeleteField(f.id)}
                                 title="Delete Review Field"
                               >
@@ -1650,7 +1650,7 @@ export const FormBuilderCanvas = ({
                         ))}
                       </div>
                     ) : (
-                      <p style={{ color: '#64748b', fontSize: '12.5px', margin: 0 }}>
+                      <p style={{ color: 'var(--muted)', fontSize: "var(--text-base)", margin: 0 }}>
                         No review remarks field added yet. Click <strong>+ Add Review Field</strong> to add a mandatory review textarea for this auditor section below the tables.
                       </p>
                     )}
@@ -1659,7 +1659,7 @@ export const FormBuilderCanvas = ({
               })()}
             </div>
           ) : (
-            <div style={{ textAlign: 'center', padding: '60px 20px', color: '#64748b' }}>
+            <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)' }}>
               Select or add a section from the left panel to start editing.
             </div>
           )}
@@ -1668,27 +1668,27 @@ export const FormBuilderCanvas = ({
 
       {/* Section Modal */}
       {sectionModal.show && typeof document !== 'undefined' && createPortal(
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10000, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div style={{ width: '100%', maxWidth: '520px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: '#fff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
-            <div style={{ padding: '16px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h4 style={{ margin: 0, fontWeight: 800, color: '#0f172a', fontSize: '16px' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10000, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: "var(--space-8)" }}>
+          <div style={{ width: '100%', maxWidth: '520px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: 'var(--card)', borderRadius: "var(--radius-lg)", overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <div style={{ padding: '16px 20px', background: 'var(--bg)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h4 style={{ margin: 0, fontWeight: 800, color: 'var(--ink)', fontSize: "var(--text-lg)" }}>
                 {sectionModal.isEdit ? '✏️ Edit Section' : '➕ Add New Section'}
               </h4>
               <button
                 type="button"
-                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '18px', color: '#64748b' }}
+                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: "var(--text-xl)", color: 'var(--muted)' }}
                 onClick={() => setSectionModal({ ...sectionModal, show: false })}
               >
                 ✕
               </button>
             </div>
             <form onSubmit={handleSaveSection} style={{ overflowY: 'auto', flex: 1 }}>
-              <div style={{ padding: '20px', display: 'grid', gap: '14px' }}>
+              <div style={{ padding: "var(--space-8)", display: 'grid', gap: "var(--space-6)" }}>
                 <div>
-                  <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>Section Title*</label>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>Section Title*</label>
                   <input
                     type="text"
-                    style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                    style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
                     placeholder={isAdministrative ? 'e.g. Part A - General Governance & Records' : 'e.g. Part A - Academic & Teaching Activities'}
                     required
                     value={sectionModal.data.title}
@@ -1700,12 +1700,12 @@ export const FormBuilderCanvas = ({
                     }
                   />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: "var(--space-4)" }}>
                   <div>
-                    <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>Section Number/Code</label>
+                    <label style={{ display: 'block', fontWeight: 600, fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>Section Number/Code</label>
                     <input
                       type="text"
-                      style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                      style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
                       placeholder="e.g. A, B, 1, 2"
                       value={sectionModal.data.sectionNumber}
                       onChange={(e) =>
@@ -1717,16 +1717,16 @@ export const FormBuilderCanvas = ({
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>
+                    <label style={{ display: 'block', fontWeight: 600, fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>
                       {isAdministrative ? 'Assigned Post / Office*' : 'Owner Role'}
                     </label>
                     {sectionModal.data.ownerRole === 'auditor' ? (
-                      <div style={{ padding: '8px 12px', background: '#fef3c7', border: '1px solid #fcd34d', borderRadius: '7px', fontSize: '12px', fontWeight: 700, color: '#92400e' }}>
+                      <div style={{ padding: '8px 12px', background: 'var(--amber-100)', border: '1px solid #fcd34d', borderRadius: "var(--radius-sm)", fontSize: "var(--text-base)", fontWeight: 700, color: 'var(--amber-700)' }}>
                         🔒 Auditor Section (Exclusive)
                       </div>
                     ) : isAdministrative ? (
                       <select
-                        style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                        style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
                         value={sectionModal.data.ownerRole}
                         onChange={(e) =>
                           setSectionModal({
@@ -1747,7 +1747,7 @@ export const FormBuilderCanvas = ({
                       </select>
                     ) : (
                       <select
-                        style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                        style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
                         value={sectionModal.data.ownerRole}
                         onChange={(e) =>
                           setSectionModal({
@@ -1768,14 +1768,14 @@ export const FormBuilderCanvas = ({
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '8px',
-                      fontSize: '13px',
+                      gap: "var(--space-3)",
+                      fontSize: "var(--text-base)",
                       fontWeight: 650,
-                      color: sectionModal.data.ownerRole === 'auditor' ? '#92400e' : '#334155',
-                      background: sectionModal.data.ownerRole === 'auditor' ? '#fef3c7' : '#f8fafc',
-                      border: sectionModal.data.ownerRole === 'auditor' ? '1px solid #fcd34d' : '1px solid #e2e8f0',
+                      color: sectionModal.data.ownerRole === 'auditor' ? 'var(--amber-700)' : '#334155',
+                      background: sectionModal.data.ownerRole === 'auditor' ? 'var(--amber-100)' : 'var(--bg)',
+                      border: sectionModal.data.ownerRole === 'auditor' ? '1px solid #fcd34d' : '1px solid var(--border)',
                       padding: '10px 12px',
-                      borderRadius: '7px',
+                      borderRadius: "var(--radius-sm)",
                       cursor: 'pointer',
                     }}
                   >
@@ -1799,15 +1799,15 @@ export const FormBuilderCanvas = ({
                     <span>To be filled by Auditor (Editable ONLY by Auditor)</span>
                   </label>
                   {sectionModal.data.ownerRole === 'auditor' && (
-                    <small style={{ color: '#b45309', fontSize: '11.5px', marginTop: '4px', display: 'block' }}>
+                    <small style={{ color: 'var(--amber-650)', fontSize: "var(--text-sm)", marginTop: "var(--space-1)", display: 'block' }}>
                       ℹ️ When checked, submitters (Directors, Faculty, Administrative post users) cannot edit this section. It will be editable exclusively by the Auditor during the review stage.
                     </small>
                   )}
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>Description</label>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>Description</label>
                   <textarea
-                    style={{ width: '100%', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '8px 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                    style={{ width: '100%', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '8px 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
                     rows={2}
                     placeholder="Optional section description..."
                     value={sectionModal.data.description}
@@ -1820,17 +1820,17 @@ export const FormBuilderCanvas = ({
                   />
                 </div>
               </div>
-              <div style={{ padding: '14px 20px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <div style={{ padding: '14px 20px', background: 'var(--bg)', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: "var(--space-4)" }}>
                 <button
                   type="button"
-                  style={{ padding: '8px 16px', borderRadius: '7px', border: '1px solid #cbd5e1', background: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
+                  style={{ padding: '8px 16px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', background: 'var(--card)', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
                   onClick={() => setSectionModal({ ...sectionModal, show: false })}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  style={{ padding: '8px 18px', borderRadius: '7px', border: 'none', background: '#2563eb', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
+                  style={{ padding: '8px 18px', borderRadius: "var(--radius-sm)", border: 'none', background: 'var(--primary)', color: 'var(--card)', fontWeight: 700, cursor: 'pointer' }}
                 >
                   Save Section
                 </button>
@@ -1843,27 +1843,27 @@ export const FormBuilderCanvas = ({
 
       {/* Table Modal */}
       {tableModal.show && typeof document !== 'undefined' && createPortal(
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10000, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div style={{ width: '100%', maxWidth: '520px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: '#fff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
-            <div style={{ padding: '16px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h4 style={{ margin: 0, fontWeight: 800, color: '#0f172a', fontSize: '16px' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10000, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: "var(--space-8)" }}>
+          <div style={{ width: '100%', maxWidth: '520px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: 'var(--card)', borderRadius: "var(--radius-lg)", overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <div style={{ padding: '16px 20px', background: 'var(--bg)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h4 style={{ margin: 0, fontWeight: 800, color: 'var(--ink)', fontSize: "var(--text-lg)" }}>
                 {tableModal.isEdit ? '✏️ Edit Table' : '➕ Add New Table'}
               </h4>
               <button
                 type="button"
-                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '18px', color: '#64748b' }}
+                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: "var(--text-xl)", color: 'var(--muted)' }}
                 onClick={() => setTableModal({ ...tableModal, show: false })}
               >
                 ✕
               </button>
             </div>
             <form onSubmit={handleSaveTable} style={{ overflowY: 'auto', flex: 1 }}>
-              <div style={{ padding: '20px', display: 'grid', gap: '14px' }}>
+              <div style={{ padding: "var(--space-8)", display: 'grid', gap: "var(--space-6)" }}>
                 <div>
-                  <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>Table Title*</label>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>Table Title*</label>
                   <input
                     type="text"
-                    style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                    style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
                     placeholder="e.g. Student Enrollment Statistics"
                     required
                     value={tableModal.data.title}
@@ -1876,10 +1876,10 @@ export const FormBuilderCanvas = ({
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>Table Key (Unique Identifier)</label>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>Table Key (Unique Identifier)</label>
                   <input
                     type="text"
-                    style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                    style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
                     placeholder="e.g. student_enrollment (leave blank to auto-generate)"
                     value={tableModal.data.tableKey}
                     onChange={(e) =>
@@ -1890,8 +1890,8 @@ export const FormBuilderCanvas = ({
                     }
                   />
                 </div>
-                <div style={{ display: 'flex', gap: '20px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                <div style={{ display: 'flex', gap: "var(--space-8)" }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: "var(--space-3)", fontSize: "var(--text-base)", cursor: 'pointer' }}>
                     <input
                       type="checkbox"
                       checked={tableModal.data.isRepeatable}
@@ -1906,17 +1906,17 @@ export const FormBuilderCanvas = ({
                   </label>
                 </div>
               </div>
-              <div style={{ padding: '14px 20px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <div style={{ padding: '14px 20px', background: 'var(--bg)', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: "var(--space-4)" }}>
                 <button
                   type="button"
-                  style={{ padding: '8px 16px', borderRadius: '7px', border: '1px solid #cbd5e1', background: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
+                  style={{ padding: '8px 16px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', background: 'var(--card)', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
                   onClick={() => setTableModal({ ...tableModal, show: false })}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  style={{ padding: '8px 18px', borderRadius: '7px', border: 'none', background: '#2563eb', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
+                  style={{ padding: '8px 18px', borderRadius: "var(--radius-sm)", border: 'none', background: 'var(--primary)', color: 'var(--card)', fontWeight: 700, cursor: 'pointer' }}
                 >
                   Save Table
                 </button>
@@ -1929,32 +1929,32 @@ export const FormBuilderCanvas = ({
 
       {/* Copy Table Modal (Academic Flow Only) */}
       {copyTableModal.show && typeof document !== 'undefined' && createPortal(
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10000, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div style={{ width: '100%', maxWidth: '520px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: '#fff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
-            <div style={{ padding: '16px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h4 style={{ margin: 0, fontWeight: 800, color: '#0f172a', fontSize: '16px' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10000, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: "var(--space-8)" }}>
+          <div style={{ width: '100%', maxWidth: '520px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: 'var(--card)', borderRadius: "var(--radius-lg)", overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <div style={{ padding: '16px 20px', background: 'var(--bg)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h4 style={{ margin: 0, fontWeight: 800, color: 'var(--ink)', fontSize: "var(--text-lg)" }}>
                 📋 Copy Table from Another Form (Avoid Rework)
               </h4>
               <button
                 type="button"
-                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '18px', color: '#64748b' }}
+                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: "var(--text-xl)", color: 'var(--muted)' }}
                 onClick={() => setCopyTableModal({ ...copyTableModal, show: false })}
               >
                 ✕
               </button>
             </div>
             <form onSubmit={handleExecuteCopyTable} style={{ overflowY: 'auto', flex: 1 }}>
-              <div style={{ padding: '20px', display: 'grid', gap: '14px' }}>
+              <div style={{ padding: "var(--space-8)", display: 'grid', gap: "var(--space-6)" }}>
                 {loadingTables ? (
-                  <p style={{ color: '#64748b', fontSize: '13px' }}>Loading available tables...</p>
+                  <p style={{ color: 'var(--muted)', fontSize: "var(--text-base)" }}>Loading available tables...</p>
                 ) : availableTables.length === 0 ? (
-                  <p style={{ color: '#dc2626', fontSize: '13px' }}>No existing tables available to copy from in this university.</p>
+                  <p style={{ color: 'var(--red-600)', fontSize: "var(--text-base)" }}>No existing tables available to copy from in this university.</p>
                 ) : (
                   <>
                     <div>
-                      <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>Source Table to Copy*</label>
+                      <label style={{ display: 'block', fontWeight: 600, fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>Source Table to Copy*</label>
                       <select
-                        style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                        style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
                         value={copyTableModal.sourceTableId}
                         onChange={(e) => {
                           const srcId = e.target.value;
@@ -1972,16 +1972,16 @@ export const FormBuilderCanvas = ({
                           </option>
                         ))}
                       </select>
-                      <small style={{ color: '#64748b', fontSize: '11.5px', marginTop: '4px', display: 'block' }}>
+                      <small style={{ color: 'var(--muted)', fontSize: "var(--text-sm)", marginTop: "var(--space-1)", display: 'block' }}>
                         All columns from this source table will be duplicated into your section. You can rename, add, or remove columns afterwards.
                       </small>
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>New Table Title</label>
+                      <label style={{ display: 'block', fontWeight: 600, fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>New Table Title</label>
                       <input
                         type="text"
-                        style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                        style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
                         value={copyTableModal.newTitle}
                         onChange={(e) => setCopyTableModal({ ...copyTableModal, newTitle: e.target.value })}
                         required
@@ -1990,10 +1990,10 @@ export const FormBuilderCanvas = ({
                   </>
                 )}
               </div>
-              <div style={{ padding: '14px 20px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <div style={{ padding: '14px 20px', background: 'var(--bg)', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: "var(--space-4)" }}>
                 <button
                   type="button"
-                  style={{ padding: '8px 16px', borderRadius: '7px', border: '1px solid #cbd5e1', background: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
+                  style={{ padding: '8px 16px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', background: 'var(--card)', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
                   onClick={() => setCopyTableModal({ ...copyTableModal, show: false })}
                 >
                   Cancel
@@ -2001,7 +2001,7 @@ export const FormBuilderCanvas = ({
                 <button
                   type="submit"
                   disabled={availableTables.length === 0}
-                  style={{ padding: '8px 18px', borderRadius: '7px', border: 'none', background: '#2563eb', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
+                  style={{ padding: '8px 18px', borderRadius: "var(--radius-sm)", border: 'none', background: 'var(--primary)', color: 'var(--card)', fontWeight: 700, cursor: 'pointer' }}
                 >
                   📋 Copy Table Structure
                 </button>
@@ -2014,10 +2014,10 @@ export const FormBuilderCanvas = ({
 
       {/* Field / Column Modal */}
       {fieldModal.show && typeof document !== 'undefined' && createPortal(
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10000, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div style={{ width: '100%', maxWidth: '520px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: '#fff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
-            <div style={{ padding: '16px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h4 style={{ margin: 0, fontWeight: 800, color: '#0f172a', fontSize: '16px' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10000, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: "var(--space-8)" }}>
+          <div style={{ width: '100%', maxWidth: '520px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: 'var(--card)', borderRadius: "var(--radius-lg)", overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <div style={{ padding: '16px 20px', background: 'var(--bg)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h4 style={{ margin: 0, fontWeight: 800, color: 'var(--ink)', fontSize: "var(--text-lg)" }}>
                 {fieldModal.isEdit
                   ? (fieldModal.isReviewField ? '✏️ Edit Review Remark Field' : '✏️ Edit Column / Field')
                   : fieldModal.isReviewField
@@ -2028,26 +2028,26 @@ export const FormBuilderCanvas = ({
               </h4>
               <button
                 type="button"
-                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '18px', color: '#64748b' }}
+                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: "var(--text-xl)", color: 'var(--muted)' }}
                 onClick={() => setFieldModal({ ...fieldModal, show: false })}
               >
                 ✕
               </button>
             </div>
             <form onSubmit={handleSaveField} style={{ overflowY: 'auto', flex: 1 }}>
-              <div style={{ padding: '20px', display: 'grid', gap: '14px' }}>
+              <div style={{ padding: "var(--space-8)", display: 'grid', gap: "var(--space-6)" }}>
                 {fieldModal.isReviewField && (
-                  <div style={{ padding: '8px 12px', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '7px', fontSize: '12px', color: '#065f46', lineHeight: 1.4 }}>
+                  <div style={{ padding: '8px 12px', background: 'var(--teal-soft)', border: '1px solid var(--green-250)', borderRadius: "var(--radius-sm)", fontSize: "var(--text-base)", color: 'var(--green-800)', lineHeight: 1.4 }}>
                     🔒 <strong>Auditor Review Field:</strong> This field appears below the tables. The assigned auditor is required to complete this observation / review remarks field before submitting their review.
                   </div>
                 )}
                 <div>
-                  <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>
                     {fieldModal.tableId ? 'Column Header / Label*' : 'Field Label*'}
                   </label>
                   <input
                     type="text"
-                    style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                    style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
                     placeholder="e.g. Total Number of Students"
                     required
                     value={fieldModal.data.label}
@@ -2060,11 +2060,11 @@ export const FormBuilderCanvas = ({
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: "var(--space-4)" }}>
                   <div>
-                    <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>Data Type</label>
+                    <label style={{ display: 'block', fontWeight: 600, fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>Data Type</label>
                     <select
-                      style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                      style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
                       value={fieldModal.data.fieldType}
                       onChange={(e) =>
                         setFieldModal({
@@ -2085,10 +2085,10 @@ export const FormBuilderCanvas = ({
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>Field Key</label>
+                    <label style={{ display: 'block', fontWeight: 600, fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>Field Key</label>
                     <input
                       type="text"
-                      style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                      style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
                       placeholder="e.g. total_students (auto)"
                       value={fieldModal.data.fieldKey}
                       onChange={(e) =>
@@ -2103,10 +2103,10 @@ export const FormBuilderCanvas = ({
 
                 {(fieldModal.data.fieldType === 'DROPDOWN' || fieldModal.data.fieldType === 'RADIO') && (
                   <div>
-                    <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>Options (Comma-separated)</label>
+                    <label style={{ display: 'block', fontWeight: 600, fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>Options (Comma-separated)</label>
                     <input
                       type="text"
-                      style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                      style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
                       placeholder="e.g. Yes, No, In Progress, N/A"
                       value={fieldModal.data.optionsString}
                       onChange={(e) =>
@@ -2120,7 +2120,7 @@ export const FormBuilderCanvas = ({
                 )}
 
                 <div>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: "var(--space-3)", fontSize: "var(--text-base)", cursor: 'pointer' }}>
                     <input
                       type="checkbox"
                       checked={fieldModal.data.isRequired}
@@ -2135,17 +2135,17 @@ export const FormBuilderCanvas = ({
                   </label>
                 </div>
               </div>
-              <div style={{ padding: '14px 20px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <div style={{ padding: '14px 20px', background: 'var(--bg)', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: "var(--space-4)" }}>
                 <button
                   type="button"
-                  style={{ padding: '8px 16px', borderRadius: '7px', border: '1px solid #cbd5e1', background: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
+                  style={{ padding: '8px 16px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', background: 'var(--card)', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
                   onClick={() => setFieldModal({ ...fieldModal, show: false })}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  style={{ padding: '8px 18px', borderRadius: '7px', border: 'none', background: '#2563eb', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
+                  style={{ padding: '8px 18px', borderRadius: "var(--radius-sm)", border: 'none', background: 'var(--primary)', color: 'var(--card)', fontWeight: 700, cursor: 'pointer' }}
                 >
                   Save Column / Field
                 </button>
@@ -2158,15 +2158,15 @@ export const FormBuilderCanvas = ({
 
       {/* Table Button Modal (Repeater Groups) */}
       {tableButtonModal.show && typeof document !== 'undefined' && createPortal(
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10000, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div style={{ width: '100%', maxWidth: '580px', background: '#fff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '16px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h4 style={{ margin: 0, fontWeight: 800, color: '#0f172a', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10000, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: "var(--space-8)" }}>
+          <div style={{ width: '100%', maxWidth: '580px', background: 'var(--card)', borderRadius: "var(--radius-lg)", overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '16px 20px', background: 'var(--bg)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h4 style={{ margin: 0, fontWeight: 800, color: 'var(--ink)', fontSize: "var(--text-lg)", display: 'flex', alignItems: 'center', gap: "var(--space-2)" }}>
                 <span>{tableButtonModal.isEdit ? '✏️ Edit Dynamic Table Button' : '⚡ Add Dynamic Table Button'}</span>
               </h4>
               <button
                 type="button"
-                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '18px', color: '#64748b' }}
+                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: "var(--text-xl)", color: 'var(--muted)' }}
                 onClick={() => setTableButtonModal({ ...tableButtonModal, show: false })}
               >
                 ✕
@@ -2174,14 +2174,14 @@ export const FormBuilderCanvas = ({
             </div>
 
             <form onSubmit={handleSaveTableButton} style={{ overflowY: 'auto', flex: 1 }}>
-              <div style={{ padding: '20px', display: 'grid', gap: '16px' }}>
+              <div style={{ padding: "var(--space-8)", display: 'grid', gap: "var(--space-7)" }}>
                 <div>
-                  <label style={{ display: 'block', fontWeight: 650, fontSize: '13px', marginBottom: '4px', color: '#1e293b' }}>
+                  <label style={{ display: 'block', fontWeight: 650, fontSize: "var(--text-base)", marginBottom: "var(--space-1)", color: '#1e293b' }}>
                     Button Label*
                   </label>
                   <input
                     type="text"
-                    style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                    style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
                     placeholder="e.g. Add School Data, Add Department, Add Laboratory"
                     required
                     value={tableButtonModal.data.label}
@@ -2192,18 +2192,18 @@ export const FormBuilderCanvas = ({
                       })
                     }
                   />
-                  <small style={{ color: '#64748b', fontSize: '11.5px', marginTop: '2px', display: 'block' }}>
+                  <small style={{ color: 'var(--muted)', fontSize: "var(--text-sm)", marginTop: '2px', display: 'block' }}>
                     The label shown on the trigger button in the form (e.g. "+ Add School Data").
                   </small>
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontWeight: 650, fontSize: '13px', marginBottom: '4px', color: '#1e293b' }}>
+                  <label style={{ display: 'block', fontWeight: 650, fontSize: "var(--text-base)", marginBottom: "var(--space-1)", color: '#1e293b' }}>
                     Dropdown Label*
                   </label>
                   <input
                     type="text"
-                    style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                    style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
                     placeholder="e.g. Select School, Department, Category"
                     required
                     value={tableButtonModal.data.dropdownLabel}
@@ -2214,14 +2214,14 @@ export const FormBuilderCanvas = ({
                       })
                     }
                   />
-                  <small style={{ color: '#64748b', fontSize: '11.5px', marginTop: '2px', display: 'block' }}>
+                  <small style={{ color: 'var(--muted)', fontSize: "var(--text-sm)", marginTop: '2px', display: 'block' }}>
                     Title shown above the instance switcher dropdown in the form (e.g. "Select School").
                   </small>
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                    <label style={{ fontWeight: 650, fontSize: '13px', color: '#1e293b' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: "var(--space-1)" }}>
+                    <label style={{ fontWeight: 650, fontSize: "var(--text-base)", color: '#1e293b' }}>
                       Dropdown Options* ({tableButtonModal.data.dropdownOptions?.length || 0} added)
                     </label>
                     {tableButtonModal.data.dropdownOptions?.length > 0 && (
@@ -2233,17 +2233,17 @@ export const FormBuilderCanvas = ({
                             data: { ...prev.data, dropdownOptions: [] },
                           }))
                         }
-                        style={{ border: 'none', background: 'transparent', color: '#dc2626', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                        style={{ border: 'none', background: 'transparent', color: 'var(--red-600)', fontSize: "var(--text-sm)", fontWeight: 600, cursor: 'pointer', padding: 0 }}
                       >
                         Clear all options
                       </button>
                     )}
                   </div>
 
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
+                  <div style={{ display: 'flex', gap: "var(--space-3)", marginBottom: "var(--space-2)" }}>
                     <input
                       type="text"
-                      style={{ flex: 1, height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                      style={{ flex: 1, height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
                       placeholder="Type option name (e.g. SOD, SOEMR) and click Add Option..."
                       value={tableButtonModal.newOptionText || ''}
                       onChange={(e) =>
@@ -2265,16 +2265,16 @@ export const FormBuilderCanvas = ({
                       style={{
                         padding: '0 16px',
                         height: '38px',
-                        borderRadius: '7px',
+                        borderRadius: "var(--radius-sm)",
                         border: '1px solid #93c5fd',
-                        background: '#eff6ff',
-                        color: '#1d4ed8',
+                        background: 'var(--accent-soft)',
+                        color: 'var(--primary-dark)',
                         fontWeight: 700,
-                        fontSize: '12.5px',
+                        fontSize: "var(--text-base)",
                         cursor: 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '5px',
+                        gap: "var(--space-2)",
                         whiteSpace: 'nowrap',
                       }}
                     >
@@ -2287,17 +2287,17 @@ export const FormBuilderCanvas = ({
                     style={{
                       display: 'flex',
                       flexWrap: 'wrap',
-                      gap: '6px',
+                      gap: "var(--space-2)",
                       padding: '8px 10px',
-                      background: '#f8fafc',
-                      borderRadius: '8px',
-                      border: '1px solid #e2e8f0',
+                      background: 'var(--bg)',
+                      borderRadius: "var(--radius-sm)",
+                      border: '1px solid var(--border)',
                       minHeight: '44px',
                       alignItems: 'center',
                     }}
                   >
                     {(!tableButtonModal.data.dropdownOptions || tableButtonModal.data.dropdownOptions.length === 0) ? (
-                      <span style={{ color: '#94a3b8', fontSize: '12px' }}>
+                      <span style={{ color: 'var(--muted)', fontSize: "var(--text-base)" }}>
                         No options added yet. Type an option above and click "+ Add Option".
                       </span>
                     ) : (
@@ -2307,13 +2307,13 @@ export const FormBuilderCanvas = ({
                           style={{
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '6px',
+                            gap: "var(--space-2)",
                             padding: '4px 10px',
-                            background: '#eff6ff',
-                            border: '1px solid #bfdbfe',
+                            background: 'var(--accent-soft)',
+                            border: '1px solid var(--accent-border)',
                             color: '#1e40af',
-                            borderRadius: '999px',
-                            fontSize: '12px',
+                            borderRadius: "var(--radius-pill)",
+                            fontSize: "var(--text-base)",
                             fontWeight: 700,
                           }}
                         >
@@ -2324,16 +2324,16 @@ export const FormBuilderCanvas = ({
                             style={{
                               border: 'none',
                               background: 'transparent',
-                              color: '#64748b',
+                              color: 'var(--muted)',
                               cursor: 'pointer',
-                              fontSize: '13px',
+                              fontSize: "var(--text-base)",
                               padding: 0,
                               display: 'flex',
                               alignItems: 'center',
                               lineHeight: 1,
                             }}
-                            onMouseEnter={(e) => { e.currentTarget.style.color = '#ef4444'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.color = '#64748b'; }}
+                            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--red-500)'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--muted)'; }}
                             title={`Remove ${opt}`}
                           >
                             ✕
@@ -2342,29 +2342,29 @@ export const FormBuilderCanvas = ({
                       ))
                     )}
                   </div>
-                  <small style={{ color: '#64748b', fontSize: '11.5px', marginTop: '4px', display: 'block' }}>
+                  <small style={{ color: 'var(--muted)', fontSize: "var(--text-sm)", marginTop: "var(--space-1)", display: 'block' }}>
                     Allowed values users can add and switch between in the form.
                   </small>
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                    <label style={{ fontWeight: 650, fontSize: '13px', color: '#1e293b' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: "var(--space-2)" }}>
+                    <label style={{ fontWeight: 650, fontSize: "var(--text-base)", color: '#1e293b' }}>
                       Assign Tables in this Section* ({tableButtonModal.data.assignedTableKeys.length} selected)
                     </label>
                     {currentSection?.tables?.length > 0 && (
-                      <div style={{ display: 'flex', gap: '6px' }}>
+                      <div style={{ display: 'flex', gap: "var(--space-2)" }}>
                         <button
                           type="button"
                           onClick={() => handleSelectAllTablesForButton(currentSection.tables.map((t) => t.tableKey || t.idString || String(t.id)))}
-                          style={{ border: 'none', background: '#eff6ff', color: '#1d4ed8', fontSize: '11.5px', fontWeight: 650, padding: '2px 6px', borderRadius: '4px', cursor: 'pointer' }}
+                          style={{ border: 'none', background: 'var(--accent-soft)', color: 'var(--primary-dark)', fontSize: "var(--text-sm)", fontWeight: 650, padding: '2px 6px', borderRadius: "var(--radius-2xs)", cursor: 'pointer' }}
                         >
                           Select All
                         </button>
                         <button
                           type="button"
                           onClick={handleClearAllTablesForButton}
-                          style={{ border: 'none', background: '#f1f5f9', color: '#475569', fontSize: '11.5px', fontWeight: 650, padding: '2px 6px', borderRadius: '4px', cursor: 'pointer' }}
+                          style={{ border: 'none', background: 'var(--bg-alt)', color: '#475569', fontSize: "var(--text-sm)", fontWeight: 650, padding: '2px 6px', borderRadius: "var(--radius-2xs)", cursor: 'pointer' }}
                         >
                           Clear
                         </button>
@@ -2372,13 +2372,13 @@ export const FormBuilderCanvas = ({
                     )}
                   </div>
 
-                  <p style={{ margin: '0 0 8px', color: '#64748b', fontSize: '12px' }}>
+                  <p style={{ margin: '0 0 8px', color: 'var(--muted)', fontSize: "var(--text-base)" }}>
                     Check the tables that should appear when this button is clicked. Unchecked tables remain permanently visible.
                   </p>
 
-                  <div style={{ border: '1px solid #cbd5e1', borderRadius: '8px', maxHeight: '200px', overflowY: 'auto', padding: '8px', display: 'flex', flexDirection: 'column', gap: '6px', background: '#f8fafc' }}>
+                  <div style={{ border: '1px solid var(--border-strong)', borderRadius: "var(--radius-sm)", maxHeight: '200px', overflowY: 'auto', padding: "var(--space-3)", display: 'flex', flexDirection: 'column', gap: "var(--space-2)", background: 'var(--bg)' }}>
                     {(!currentSection?.tables || currentSection.tables.length === 0) ? (
-                      <div style={{ padding: '12px', textAlign: 'center', color: '#94a3b8', fontSize: '12.5px' }}>
+                      <div style={{ padding: "var(--space-5)", textAlign: 'center', color: 'var(--muted)', fontSize: "var(--text-base)" }}>
                         No tables in this section yet. Add tables first, then assign them to buttons.
                       </div>
                     ) : (
@@ -2392,13 +2392,13 @@ export const FormBuilderCanvas = ({
                             style={{
                               display: 'flex',
                               alignItems: 'center',
-                              gap: '8px',
+                              gap: "var(--space-3)",
                               padding: '6px 10px',
-                              borderRadius: '6px',
-                              background: isChecked ? '#eff6ff' : '#fff',
-                              border: isChecked ? '1px solid #93c5fd' : '1px solid #e2e8f0',
+                              borderRadius: "var(--radius-sm)",
+                              background: isChecked ? 'var(--accent-soft)' : 'var(--card)',
+                              border: isChecked ? '1px solid #93c5fd' : '1px solid var(--border)',
                               cursor: 'pointer',
-                              fontSize: '12.5px',
+                              fontSize: "var(--text-base)",
                             }}
                           >
                             <input
@@ -2407,10 +2407,10 @@ export const FormBuilderCanvas = ({
                               onChange={() => handleToggleAssignTable(tKey)}
                               style={{ cursor: 'pointer' }}
                             />
-                            <span style={{ fontWeight: 650, color: isChecked ? '#1d4ed8' : '#1e293b', flex: 1 }}>
+                            <span style={{ fontWeight: 650, color: isChecked ? 'var(--primary-dark)' : '#1e293b', flex: 1 }}>
                               {idx + 1}. {t.title || tKey}
                             </span>
-                            <code style={{ fontSize: '11px', color: '#64748b' }}>{tKey}</code>
+                            <code style={{ fontSize: "var(--text-xs)", color: 'var(--muted)' }}>{tKey}</code>
                           </label>
                         );
                       })
@@ -2419,17 +2419,17 @@ export const FormBuilderCanvas = ({
                 </div>
               </div>
 
-              <div style={{ padding: '14px 20px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <div style={{ padding: '14px 20px', background: 'var(--bg)', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: "var(--space-4)" }}>
                 <button
                   type="button"
-                  style={{ padding: '8px 16px', borderRadius: '7px', border: '1px solid #cbd5e1', background: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
+                  style={{ padding: '8px 16px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', background: 'var(--card)', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
                   onClick={() => setTableButtonModal({ ...tableButtonModal, show: false })}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  style={{ padding: '8px 18px', borderRadius: '7px', border: 'none', background: '#2563eb', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
+                  style={{ padding: '8px 18px', borderRadius: "var(--radius-sm)", border: 'none', background: 'var(--primary)', color: 'var(--card)', fontWeight: 700, cursor: 'pointer' }}
                 >
                   Save Table Button
                 </button>

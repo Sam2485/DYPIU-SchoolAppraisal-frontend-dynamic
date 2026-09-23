@@ -52,39 +52,39 @@ export default function AppraisalFormStudio({ currentUser }) {
   }
 
   return (
-    <div className="appraisal-form-studio-root" style={{ minHeight: '100%', background: '#f8fafc' }}>
+    <div className="appraisal-form-studio-root" style={{ minHeight: '100%', background: 'var(--bg)' }}>
       {/* Top Banner & Main Form Type Selector (Academic vs Administrative) */}
       {viewMode === 'list' && (
-        <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', boxShadow: 'none', marginBottom: '20px' }}>
+        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: "var(--radius-sm)", boxShadow: 'none', marginBottom: "var(--space-8)" }}>
           {/* Header & University Info */}
-          <div style={{ padding: '18px 22px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ padding: '18px 22px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: "var(--space-5)" }}>
             <div>
-              <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#2563eb' }}>
+              <div style={{ fontSize: "var(--text-xs)", fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--primary)' }}>
                 IQAC Appraisal Form Studio
               </div>
-              <h2 style={{ margin: '2px 0 0', fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
+              <h2 style={{ margin: '2px 0 0', fontSize: "var(--text-2xl)", fontWeight: 800, color: 'var(--ink)' }}>
                 Institutional Form & Schema Studio
               </h2>
             </div>
 
             {/* Form Type Selector (A: Academic vs B: Administrative) */}
-            <div style={{ display: 'inline-flex', background: '#f1f5f9', padding: '4px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'inline-flex', background: 'var(--bg-alt)', padding: "var(--space-1)", borderRadius: "var(--radius-md)", border: '1px solid var(--border)' }}>
               <button
                 type="button"
                 style={{
                   padding: '8px 18px',
-                  borderRadius: '8px',
+                  borderRadius: "var(--radius-sm)",
                   border: 'none',
-                  background: formType === 'academic' ? '#2563eb' : 'transparent',
-                  color: formType === 'academic' ? '#fff' : '#475569',
+                  background: formType === 'academic' ? 'var(--primary)' : 'transparent',
+                  color: formType === 'academic' ? 'var(--card)' : '#475569',
                   fontWeight: 700,
-                  fontSize: '13.5px',
+                  fontSize: "var(--text-base)",
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',
                   boxShadow: formType === 'academic' ? '0 2px 6px rgba(37,99,235,0.25)' : 'none',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px',
+                  gap: "var(--space-2)",
                 }}
                 onClick={() => setFormType('academic')}
               >
@@ -96,18 +96,18 @@ export default function AppraisalFormStudio({ currentUser }) {
                 type="button"
                 style={{
                   padding: '8px 18px',
-                  borderRadius: '8px',
+                  borderRadius: "var(--radius-sm)",
                   border: 'none',
-                  background: formType === 'administrative' ? '#2563eb' : 'transparent',
-                  color: formType === 'administrative' ? '#fff' : '#475569',
+                  background: formType === 'administrative' ? 'var(--primary)' : 'transparent',
+                  color: formType === 'administrative' ? 'var(--card)' : '#475569',
                   fontWeight: 700,
-                  fontSize: '13.5px',
+                  fontSize: "var(--text-base)",
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',
                   boxShadow: formType === 'administrative' ? '0 2px 6px rgba(37,99,235,0.25)' : 'none',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px',
+                  gap: "var(--space-2)",
                 }}
                 onClick={() => setFormType('administrative')}
               >
@@ -118,7 +118,7 @@ export default function AppraisalFormStudio({ currentUser }) {
           </div>
 
           {/* Sub-Navigation Tabs based on Form Type */}
-          <div style={{ padding: '0 24px', display: 'flex', gap: '8px', borderTop: '1px solid #f1f5f9' }}>
+          <div style={{ padding: '0 24px', display: 'flex', gap: "var(--space-3)", borderTop: '1px solid var(--bg-alt)' }}>
             {formType === 'academic' ? (
               <>
                 <button
@@ -126,11 +126,11 @@ export default function AppraisalFormStudio({ currentUser }) {
                   style={{
                     padding: '10px 16px',
                     border: 'none',
-                    borderBottom: academicNav === 'schemas' ? '3px solid #2563eb' : '3px solid transparent',
+                    borderBottom: academicNav === 'schemas' ? '3px solid var(--primary)' : '3px solid transparent',
                     background: 'transparent',
-                    color: academicNav === 'schemas' ? '#2563eb' : '#64748b',
+                    color: academicNav === 'schemas' ? 'var(--primary)' : 'var(--muted)',
                     fontWeight: academicNav === 'schemas' ? 800 : 600,
-                    fontSize: '13.5px',
+                    fontSize: "var(--text-base)",
                     cursor: 'pointer',
                     borderRadius: 0,
                   }}
@@ -143,11 +143,11 @@ export default function AppraisalFormStudio({ currentUser }) {
                   style={{
                     padding: '10px 16px',
                     border: 'none',
-                    borderBottom: academicNav === 'schools' ? '3px solid #2563eb' : '3px solid transparent',
+                    borderBottom: academicNav === 'schools' ? '3px solid var(--primary)' : '3px solid transparent',
                     background: 'transparent',
-                    color: academicNav === 'schools' ? '#2563eb' : '#64748b',
+                    color: academicNav === 'schools' ? 'var(--primary)' : 'var(--muted)',
                     fontWeight: academicNav === 'schools' ? 800 : 600,
-                    fontSize: '13.5px',
+                    fontSize: "var(--text-base)",
                     cursor: 'pointer',
                     borderRadius: 0,
                   }}
@@ -163,11 +163,11 @@ export default function AppraisalFormStudio({ currentUser }) {
                   style={{
                     padding: '10px 16px',
                     border: 'none',
-                    borderBottom: adminNav === 'single-form' ? '3px solid #2563eb' : '3px solid transparent',
+                    borderBottom: adminNav === 'single-form' ? '3px solid var(--primary)' : '3px solid transparent',
                     background: 'transparent',
-                    color: adminNav === 'single-form' ? '#2563eb' : '#64748b',
+                    color: adminNav === 'single-form' ? 'var(--primary)' : 'var(--muted)',
                     fontWeight: adminNav === 'single-form' ? 800 : 600,
-                    fontSize: '13.5px',
+                    fontSize: "var(--text-base)",
                     cursor: 'pointer',
                     borderRadius: 0,
                   }}
@@ -180,11 +180,11 @@ export default function AppraisalFormStudio({ currentUser }) {
                   style={{
                     padding: '10px 16px',
                     border: 'none',
-                    borderBottom: adminNav === 'posts' ? '3px solid #2563eb' : '3px solid transparent',
+                    borderBottom: adminNav === 'posts' ? '3px solid var(--primary)' : '3px solid transparent',
                     background: 'transparent',
-                    color: adminNav === 'posts' ? '#2563eb' : '#64748b',
+                    color: adminNav === 'posts' ? 'var(--primary)' : 'var(--muted)',
                     fontWeight: adminNav === 'posts' ? 800 : 600,
-                    fontSize: '13.5px',
+                    fontSize: "var(--text-base)",
                     cursor: 'pointer',
                     borderRadius: 0,
                   }}

@@ -46,7 +46,7 @@ export default function SubmitConfirmModal({
       <div style={styles.card} onClick={(e) => e.stopPropagation()}>
         <div style={styles.header}>
           <div style={styles.iconCircle}>
-            <FileCheck size={24} color="#2563eb" strokeWidth={2.2} />
+            <FileCheck size={24} color="var(--primary)" strokeWidth={2.2} />
           </div>
           <div>
             <h3 id="submit-confirm-modal-title" style={styles.title}>
@@ -60,7 +60,7 @@ export default function SubmitConfirmModal({
           <p style={styles.messageText}>{message}</p>
           {warningNote && (
             <div style={styles.warningBox}>
-              <CircleAlert size={16} color="#1d4ed8" strokeWidth={2} style={{ flexShrink: 0, marginTop: 2 }} />
+              <CircleAlert size={16} color="var(--primary-dark)" strokeWidth={2} style={{ flexShrink: 0, marginTop: 2 }} />
               <span>{warningNote}</span>
             </div>
           )}
@@ -124,11 +124,11 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     zIndex: 99999,
-    padding: "16px",
+    padding: "var(--space-7)",
   },
   card: {
-    backgroundColor: "#ffffff",
-    borderRadius: "14px",
+    backgroundColor: "var(--card)",
+    borderRadius: "var(--radius-xl)",
     boxShadow:
       "0 20px 25px -5px rgba(15, 23, 42, 0.2), 0 8px 10px -6px rgba(15, 23, 42, 0.1)",
     border: "1px solid #dbeafe",
@@ -137,21 +137,21 @@ const styles = {
     padding: "24px 28px",
     display: "flex",
     flexDirection: "column",
-    gap: "18px",
+    gap: "var(--space-7)",
     fontFamily:
       "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
   },
   header: {
     display: "flex",
     alignItems: "center",
-    gap: "14px",
+    gap: "var(--space-6)",
   },
   iconCircle: {
     width: "46px",
     height: "46px",
     borderRadius: "50%",
-    backgroundColor: "#eff6ff",
-    border: "1px solid #bfdbfe",
+    backgroundColor: "var(--accent-soft)",
+    border: "1px solid var(--accent-border)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -159,37 +159,37 @@ const styles = {
   },
   title: {
     margin: 0,
-    fontSize: "17px",
+    fontSize: "var(--text-lg)",
     fontWeight: "700",
-    color: "#0f172a",
+    color: "var(--ink)",
     lineHeight: 1.3,
   },
   subtitle: {
     margin: "3px 0 0 0",
-    fontSize: "12px",
+    fontSize: "var(--text-base)",
     fontWeight: "500",
-    color: "#64748b",
+    color: "var(--muted)",
   },
   body: {
     display: "flex",
     flexDirection: "column",
-    gap: "12px",
+    gap: "var(--space-5)",
   },
   messageText: {
     margin: 0,
-    fontSize: "14px",
+    fontSize: "var(--text-md)",
     lineHeight: "1.55",
     color: "#334155",
   },
   warningBox: {
     display: "flex",
     alignItems: "flex-start",
-    gap: "10px",
+    gap: "var(--space-4)",
     padding: "10px 12px",
     backgroundColor: "#f0f7ff",
     border: "1px solid #bae6fd",
-    borderRadius: "8px",
-    fontSize: "13px",
+    borderRadius: "var(--radius-sm)",
+    fontSize: "var(--text-base)",
     lineHeight: "1.45",
     color: "#0369a1",
   },
@@ -197,16 +197,16 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "flex-end",
-    gap: "10px",
-    marginTop: "4px",
+    gap: "var(--space-4)",
+    marginTop: "var(--space-1)",
   },
   cancelBtn: {
     padding: "9px 18px",
-    borderRadius: "8px",
-    border: "1px solid #cbd5e1",
-    backgroundColor: "#ffffff",
+    borderRadius: "var(--radius-sm)",
+    border: "1px solid var(--border-strong)",
+    backgroundColor: "var(--card)",
     color: "#334155",
-    fontSize: "13.5px",
+    fontSize: "var(--text-base)",
     fontWeight: "600",
     cursor: "pointer",
     transition: "all 0.15s ease",
@@ -214,13 +214,13 @@ const styles = {
   confirmBtn: {
     display: "inline-flex",
     alignItems: "center",
-    gap: "8px",
+    gap: "var(--space-3)",
     padding: "9px 20px",
-    borderRadius: "8px",
-    border: "1px solid #1d4ed8",
-    backgroundColor: "#2563eb",
-    color: "#ffffff",
-    fontSize: "13.5px",
+    borderRadius: "var(--radius-sm)",
+    border: "1px solid var(--primary-dark)",
+    backgroundColor: "var(--primary)",
+    color: "var(--card)",
+    fontSize: "var(--text-base)",
     fontWeight: "600",
     cursor: "pointer",
     boxShadow: "0 1px 3px rgba(37, 99, 235, 0.3)",

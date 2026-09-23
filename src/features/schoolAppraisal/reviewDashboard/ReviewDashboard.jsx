@@ -1,6 +1,6 @@
 import { UserRound, Shield, CircleCheck, Clock, FileText, Calendar } from "lucide-react";
 import { toast, confirmAction } from "../../../components/feedback/feedbackBus";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { clearAuthState, getApiErrorMessage } from "../../../api/client";
 import {
@@ -168,12 +168,12 @@ const statusLabels = {
 };
 
 const statusStyles = {
-  submitted: { color: "#1d4ed8", background: "#dbeafe", border: "#bfdbfe" },
-  "under-review": { color: "#92400e", background: "#fef3c7", border: "#fde68a" },
-  "auditor-completed": { color: "#0f766e", background: "#ccfbf1", border: "#99f6e4" },
-  "external_auditor_completed": { color: "#0f766e", background: "#ccfbf1", border: "#99f6e4" },
-  "external-auditor-completed": { color: "#0f766e", background: "#ccfbf1", border: "#99f6e4" },
-  approved: { color: "#166534", background: "#dcfce7", border: "#bbf7d0" },
+  submitted: { color: "var(--primary-dark)", background: "#dbeafe", border: "var(--accent-border)" },
+  "under-review": { color: "var(--amber-700)", background: "var(--amber-100)", border: "var(--amber-200)" },
+  "auditor-completed": { color: "var(--teal-dark)", background: "#ccfbf1", border: "#99f6e4" },
+  "external_auditor_completed": { color: "var(--teal-dark)", background: "#ccfbf1", border: "#99f6e4" },
+  "external-auditor-completed": { color: "var(--teal-dark)", background: "#ccfbf1", border: "#99f6e4" },
+  approved: { color: "var(--green-700)", background: "var(--green-100)", border: "var(--green-200)" },
 };
 
 const auditLabels = {
@@ -3803,7 +3803,7 @@ function OverviewPanel({ metrics, submissions, loading, onOpen }) {
             <span style={styles.overviewHeroPill}>{schoolProgress.length} Schools</span>
           </div>
         </div>
-        <div style={{ ...styles.approvalRing, background: `conic-gradient(#0d9488 ${approvalRate}%, #e2e8f0 0)` }}>
+        <div style={{ ...styles.approvalRing, background: `conic-gradient(var(--teal) ${approvalRate}%, var(--border) 0)` }}>
           <div style={styles.approvalRingInner}>
             <strong>{approvalRate}%</strong>
             <span>approved</span>
@@ -4770,17 +4770,17 @@ function combinedStatusRows(coverage) {
 }
 
 const CARD_TONE_EYEBROW_COLOR = {
-  forward: "#2563eb",
-  approve: "#16a34a",
-  academic: "#2563eb",
-  administrative: "#2563eb",
-  auditors: "#2563eb",
+  forward: "var(--primary)",
+  approve: "var(--green-550)",
+  academic: "var(--primary)",
+  administrative: "var(--primary)",
+  auditors: "var(--primary)",
 };
 
 const TILE_TONE_COLORS = {
-  blue: { bg: "#dbeafe", fg: "#2563eb" },
-  green: { bg: "#dcfce7", fg: "#16a34a" },
-  orange: { bg: "#ffedd5", fg: "#ea580c" },
+  blue: { bg: "#dbeafe", fg: "var(--primary)" },
+  green: { bg: "var(--green-100)", fg: "var(--green-550)" },
+  orange: { bg: "#ffedd5", fg: "var(--orange-600)" },
 };
 
 function StatTileIcon({ name }) {
@@ -4802,7 +4802,7 @@ function StatTileIcon({ name }) {
 }
 
 function SubmissionStatCard({ eyebrow, title, tone = "forward", pills }) {
-  const eyebrowColor = CARD_TONE_EYEBROW_COLOR[tone] || "#2563eb";
+  const eyebrowColor = CARD_TONE_EYEBROW_COLOR[tone] || "var(--primary)";
   const defaultTileTone = tone === "approve" ? "green" : "blue";
   return (
     <div className="app-surface-card submission-stat-card" style={styles.submissionStatCard}>
@@ -5620,6 +5620,79 @@ function PreviousReportAuditSection({
   );
 }
 
+function KebabMenu({ items = [] }) {
+  const [open, setOpen] = useState(false);
+  const [hoveredLabel, setHoveredLabel] = useState(null);
+  const rootRef = useRef(null);
+  const visibleItems = items.filter(Boolean);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const handleOutsideClick = (event) => {
+      if (rootRef.current && !rootRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
+  if (!visibleItems.length) return null;
+
+  return (
+    <div ref={rootRef} style={styles.kebabMenuRoot}>
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="More actions"
+        style={styles.kebabMenuButton}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="5" r="1.4" />
+          <circle cx="12" cy="12" r="1.4" />
+          <circle cx="12" cy="19" r="1.4" />
+        </svg>
+      </button>
+      {open && (
+        <div role="menu" style={styles.kebabMenuDropdown}>
+          {visibleItems.map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              role="menuitem"
+              disabled={item.disabled}
+              aria-busy={item.disabled}
+              onClick={() => {
+                setOpen(false);
+                item.onClick();
+              }}
+              onMouseEnter={() => setHoveredLabel(item.label)}
+              onMouseLeave={() => setHoveredLabel((current) => (current === item.label ? null : current))}
+              onFocus={() => setHoveredLabel(item.label)}
+              onBlur={() => setHoveredLabel((current) => (current === item.label ? null : current))}
+              style={{
+                ...styles.kebabMenuItem,
+                background: hoveredLabel === item.label ? "var(--bg-alt)" : "transparent",
+              }}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SubmissionCard({
   submission,
   onOpen,
@@ -5630,7 +5703,6 @@ function SubmissionCard({
   downloadingAttachments,
   onGenerateReport,
   submitterAvatarUrl,
-  directoryUsers = [],
 }) {
   const submitterInitials = submission.submittedBy && submission.submittedBy !== "-"
     ? initialsFor(submission.submittedBy)
@@ -5662,9 +5734,23 @@ function SubmissionCard({
     submission.auditType,
   ]);
 
+  // When a Generate Report action exists (the Previous Reports card), Download Attachments and
+  // View Form move into a "⋮" menu so the row keeps a single primary action visible, matching
+  // the compact one-row layout. Other contexts (no Generate Report) keep them as visible buttons.
+  const kebabItems = onGenerateReport
+    ? [
+        onDownload && {
+          label: downloadingAttachments ? "Preparing ZIP..." : "Download Attachments",
+          onClick: onDownload,
+          disabled: downloadingAttachments,
+        },
+        onOpen && { label: "View Form", onClick: onOpen },
+      ]
+    : [];
+
   return (
-    <article className="app-surface-card review-submission-card" style={styles.submissionCard}>
-      <div style={styles.submissionTop}>
+    <article className="app-surface-card review-submission-card" style={styles.submissionRow}>
+      <div style={styles.submissionRowIdentity}>
         <div style={styles.schoolAvatar}>
           {submitterAvatarUrl ? <img src={submitterAvatarUrl} alt="" style={styles.schoolAvatarImg} /> : submitterInitials}
         </div>
@@ -5683,9 +5769,6 @@ function SubmissionCard({
             <small style={styles.schoolGroup}>{SCHOOL_GROUPS[submission.group] || titleCase(submission.group || "")}</small>
           )}
         </div>
-        <div style={styles.submissionTopStatus}>
-          <AuditorProgressPanel submission={submission} compact directoryUsers={directoryUsers} />
-        </div>
       </div>
 
       <div style={styles.submissionInfoGrid}>
@@ -5702,7 +5785,6 @@ function SubmissionCard({
         />
         <InfoPill label="Attachments" value={submission.attachments.length} />
         {isApprovedReport(submission) && <InfoPill label="Audit type" value={auditLabels[submission.auditType]} />}
-        {isApprovedReport(submission) && <InfoPill label="Audit category" value={`${titleCase(submission.reportCategory || "unclassified")} Audit`} />}
         {isApprovedReport(submission) && <InfoPill label="Cycle / Version" value={`${submission.auditCycle} / V${submission.version}`} />}
       </div>
 
@@ -5729,19 +5811,25 @@ function SubmissionCard({
             Generate Report
           </button>
         )}
-        {onDownload && (
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={onDownload}
-            disabled={downloadingAttachments}
-            aria-busy={downloadingAttachments}
-          >
-            {downloadingAttachments && <InlineSpinner label="Preparing attachment archive" />}
-            {downloadingAttachments ? "Preparing ZIP..." : "Download Attachments"}
-          </button>
+        {onGenerateReport ? (
+          <KebabMenu items={kebabItems} />
+        ) : (
+          <>
+            {onDownload && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={onDownload}
+                disabled={downloadingAttachments}
+                aria-busy={downloadingAttachments}
+              >
+                {downloadingAttachments && <InlineSpinner label="Preparing attachment archive" />}
+                {downloadingAttachments ? "Preparing ZIP..." : "Download Attachments"}
+              </button>
+            )}
+            {onOpen && <button type="button" className="btn btn-secondary" onClick={onOpen}>View Form</button>}
+          </>
         )}
-        {onOpen && <button type="button" className="btn btn-secondary" onClick={onOpen}>View Form</button>}
       </div>
     </article>
   );
@@ -6709,12 +6797,12 @@ function FullFormReview({
                   <div
                     style={{
                       padding: "14px 16px",
-                      background: "#f8fafc",
-                      border: "1px solid #cbd5e1",
+                      background: "var(--bg)",
+                      border: "1px solid var(--border-strong)",
                       borderRadius: 8,
                       fontSize: 14,
                       lineHeight: 1.6,
-                      color: "#0f172a",
+                      color: "var(--ink)",
                       fontWeight: 500,
                       whiteSpace: "pre-wrap",
                       wordBreak: "break-word",
@@ -6730,12 +6818,12 @@ function FullFormReview({
                   <div
                     style={{
                       padding: "14px 16px",
-                      background: "#f8fafc",
-                      border: "1px solid #cbd5e1",
+                      background: "var(--bg)",
+                      border: "1px solid var(--border-strong)",
                       borderRadius: 8,
                       fontSize: 14,
                       lineHeight: 1.6,
-                      color: "#0f172a",
+                      color: "var(--ink)",
                       fontWeight: 500,
                       whiteSpace: "pre-wrap",
                       wordBreak: "break-word",
@@ -6754,12 +6842,12 @@ function FullFormReview({
                   <div
                     style={{
                       padding: "14px 16px",
-                      background: "#f8fafc",
-                      border: "1px solid #cbd5e1",
+                      background: "var(--bg)",
+                      border: "1px solid var(--border-strong)",
                       borderRadius: 8,
                       fontSize: 14,
                       lineHeight: 1.6,
-                      color: "#0f172a",
+                      color: "var(--ink)",
                       fontWeight: 500,
                       whiteSpace: "pre-wrap",
                       wordBreak: "break-word",
@@ -7428,7 +7516,7 @@ function SubmittedFormViewer({
                       {block.isReviewBlock && (
                         <div style={{ marginTop: 20, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
                           <span style={{ fontSize: 16 }}>📝</span>
-                          <h4 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#0f172a" }}>
+                          <h4 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "var(--ink)" }}>
                             Review Remarks & Observations
                           </h4>
                         </div>
@@ -7673,7 +7761,7 @@ function EditableFieldGrid({ fields, values, onFieldChange, onFileUpload, onFile
           return (
             <div key={field.id} style={styles.readOnlyWideField}>
               <span style={styles.readOnlyLabel}>
-                {field.label} {field.isRequired && <span style={{ color: "#ef4444" }}>*</span>}
+                {field.label} {field.isRequired && <span style={{ color: "var(--red-500)" }}>*</span>}
               </span>
               <div style={styles.documentationUploader}>
                 <label style={styles.documentationUploadButton}>
@@ -7735,7 +7823,7 @@ function EditableFieldGrid({ fields, values, onFieldChange, onFileUpload, onFile
           return (
             <label key={field.id} style={styles.readOnlyField}>
               <span style={styles.readOnlyLabel}>
-                {field.label} {field.isRequired && <span style={{ color: "#ef4444" }}>*</span>}
+                {field.label} {field.isRequired && <span style={{ color: "var(--red-500)" }}>*</span>}
               </span>
               <select
                 className="audit-control"
@@ -7757,7 +7845,7 @@ function EditableFieldGrid({ fields, values, onFieldChange, onFileUpload, onFile
         return (
           <label key={field.id} style={isTextarea ? styles.readOnlyWideField : styles.readOnlyField}>
             <span style={styles.readOnlyLabel}>
-              {field.label} {field.isRequired && <span style={{ color: "#ef4444" }}>*</span>}
+              {field.label} {field.isRequired && <span style={{ color: "var(--red-500)" }}>*</span>}
             </span>
             {isTextarea ? (
               <textarea
@@ -8155,10 +8243,10 @@ function renderValue(rawValue) {
 
 function MetricCard({ label, value, hint, tone }) {
   const tones = {
-    blue: { color: "#1d4ed8", background: "#dbeafe" },
-    amber: { color: "#b45309", background: "#fef3c7" },
-    teal: { color: "#0f766e", background: "#ccfbf1" },
-    green: { color: "#15803d", background: "#dcfce7" },
+    blue: { color: "var(--primary-dark)", background: "#dbeafe" },
+    amber: { color: "var(--amber-650)", background: "var(--amber-100)" },
+    teal: { color: "var(--teal-dark)", background: "#ccfbf1" },
+    green: { color: "var(--green-600)", background: "var(--green-100)" },
   };
   const activeTone = tones[tone] || tones.blue;
   return (
@@ -8432,9 +8520,9 @@ function NextAcademicYearModal({ currentAcademicYear, nextAcademicYear, loading,
         <div style={styles.nextYearHeader}>
           <span style={{
             ...styles.forwardHeaderIcon,
-            background: hasIncomplete ? "#fef2f2" : "#eff6ff",
-            color: hasIncomplete ? "#dc2626" : "#2563eb",
-            borderColor: hasIncomplete ? "#fecaca" : "#bfdbfe",
+            background: hasIncomplete ? "var(--red-50)" : "var(--accent-soft)",
+            color: hasIncomplete ? "var(--red-600)" : "var(--primary)",
+            borderColor: hasIncomplete ? "var(--red-200)" : "var(--accent-border)",
           }}>
             {hasIncomplete ? "⚠️" : "AY"}
           </span>
@@ -8458,10 +8546,10 @@ function NextAcademicYearModal({ currentAcademicYear, nextAcademicYear, loading,
           <>
             <div style={{
               margin: "0 24px",
-              border: "1px solid #fecaca",
+              border: "1px solid var(--red-200)",
               borderRadius: 8,
-              color: "#991b1b",
-              background: "#fef2f2",
+              color: "var(--red-800)",
+              background: "var(--red-50)",
               padding: "12px 16px",
               fontSize: 13,
               lineHeight: 1.5,
@@ -8480,13 +8568,13 @@ function NextAcademicYearModal({ currentAcademicYear, nextAcademicYear, loading,
               margin: "0 24px",
               maxHeight: 280,
               overflowY: "auto",
-              border: "1px solid #e2e8f0",
+              border: "1px solid var(--border)",
               borderRadius: 8,
-              background: "#fff",
+              background: "var(--card)",
             }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, textAlign: "left" }}>
                 <thead>
-                  <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0", color: "#475569", fontWeight: 700 }}>
+                  <tr style={{ background: "var(--bg)", borderBottom: "1px solid var(--border)", color: "#475569", fontWeight: 700 }}>
                     <th style={{ padding: "9px 12px" }}>School / Section</th>
                     <th style={{ padding: "9px 12px" }}>Cycle</th>
                     <th style={{ padding: "9px 12px" }}>Pending With (Person & Post)</th>
@@ -8495,10 +8583,10 @@ function NextAcademicYearModal({ currentAcademicYear, nextAcademicYear, loading,
                 </thead>
                 <tbody>
                   {incompleteWorkflows.map((item, idx) => (
-                    <tr key={item.id || idx} style={{ borderBottom: "1px solid #f1f5f9", background: idx % 2 === 0 ? "#fff" : "#fafafa" }}>
+                    <tr key={item.id || idx} style={{ borderBottom: "1px solid var(--bg-alt)", background: idx % 2 === 0 ? "var(--card)" : "#fafafa" }}>
                       <td style={{ padding: "9px 12px", verticalAlign: "top" }}>
-                        <div style={{ fontWeight: 650, color: "#0f172a" }}>{item.target}</div>
-                        <span style={{ fontSize: 11, color: "#64748b" }}>{item.category}</span>
+                        <div style={{ fontWeight: 650, color: "var(--ink)" }}>{item.target}</div>
+                        <span style={{ fontSize: 11, color: "var(--muted)" }}>{item.category}</span>
                       </td>
                       <td style={{ padding: "9px 12px", verticalAlign: "top" }}>
                         <span style={{
@@ -8517,10 +8605,10 @@ function NextAcademicYearModal({ currentAcademicYear, nextAcademicYear, loading,
                       </td>
                       <td style={{ padding: "9px 12px", verticalAlign: "top" }}>
                         <div style={{ fontWeight: 600, color: "#1e293b" }}>{item.stuckWithName}</div>
-                        <div style={{ fontSize: 11, color: "#64748b" }}>{item.post}</div>
+                        <div style={{ fontSize: 11, color: "var(--muted)" }}>{item.post}</div>
                       </td>
                       <td style={{ padding: "9px 12px", verticalAlign: "top" }}>
-                        <div style={{ fontWeight: 600, color: "#b45309" }}>{item.stage}</div>
+                        <div style={{ fontWeight: 600, color: "var(--amber-650)" }}>{item.stage}</div>
                         <div style={{ fontSize: 11, color: "#475569", marginTop: 2 }}>{item.reason}</div>
                       </td>
                     </tr>
@@ -8529,7 +8617,7 @@ function NextAcademicYearModal({ currentAcademicYear, nextAcademicYear, loading,
               </table>
             </div>
 
-            <div style={{ margin: "0 24px", color: "#64748b", fontSize: 12, lineHeight: 1.5 }}>
+            <div style={{ margin: "0 24px", color: "var(--muted)", fontSize: 12, lineHeight: 1.5 }}>
               Active forms will restart from the beginning for Directors and Administrative authorities. Approved reports and version history will remain preserved.
             </div>
 
@@ -8543,7 +8631,7 @@ function NextAcademicYearModal({ currentAcademicYear, nextAcademicYear, loading,
                 onClick={onConfirm}
                 disabled={loading}
                 aria-busy={loading}
-                style={{ background: "#dc2626", borderColor: "#b91c1c" }}
+                style={{ background: "var(--red-600)", borderColor: "var(--red-700)" }}
               >
                 {loading && <InlineSpinner label="Starting next academic year" />}
                 {loading ? "Starting..." : `Proceed & Start ${nextAcademicYear} Anyway`}
@@ -9060,7 +9148,7 @@ function PrintStyles() {
         }
         .review-dashboard-shell {
           display: block !important;
-          background: #fff !important;
+          background: var(--card) !important;
         }
         .review-dashboard-main {
           padding: 0 !important;
@@ -9068,7 +9156,7 @@ function PrintStyles() {
           margin-left: 0 !important;
         }
         body {
-          background: #fff !important;
+          background: var(--card) !important;
         }
       }
       .review-dashboard-main .btn:disabled {
@@ -9090,7 +9178,7 @@ const styles = {
     minHeight: "100vh",
     display: "flex",
     background: "#f5f7fb",
-    color: "#0f172a",
+    color: "var(--ink)",
     fontFamily: "Inter, 'Segoe UI', sans-serif",
   },
   page: {
@@ -9105,9 +9193,9 @@ const styles = {
     justifyContent: "space-between",
     gap: 18,
     padding: "24px 26px",
-    border: "1px solid #e2e8f0",
+    border: "1px solid var(--border)",
     borderRadius: 16,
-    background: "#fff",
+    background: "var(--card)",
     boxShadow: "0 10px 35px rgba(15, 23, 42, 0.055)",
     marginBottom: 22,
   },
@@ -9137,7 +9225,7 @@ const styles = {
   },
   kicker: {
     margin: "0 0 6px",
-    color: "#2563eb",
+    color: "var(--primary)",
     fontSize: 11,
     fontWeight: 750,
     textTransform: "uppercase",
@@ -9145,14 +9233,14 @@ const styles = {
   },
   title: {
     margin: "0 0 8px",
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 22,
     fontWeight: 700,
     lineHeight: 1.25,
   },
   meta: {
     margin: 0,
-    color: "#64748b",
+    color: "var(--muted)",
     fontSize: 12.5,
     lineHeight: 1.45,
   },
@@ -9171,19 +9259,19 @@ const styles = {
     minHeight: 190,
     padding: "28px 32px",
     borderRadius: 8,
-    color: "#0f172a",
-    background: "#ffffff",
-    border: "1px solid #e2e8f0",
+    color: "var(--ink)",
+    background: "var(--card)",
+    border: "1px solid var(--border)",
     boxShadow: "none",
   },
   overviewHeroCopy: { position: "relative", zIndex: 1, maxWidth: 720 },
-  overviewEyebrow: { display: "block", marginBottom: 8, color: "#2563eb", fontSize: 10, fontWeight: 800, letterSpacing: ".12em", textTransform: "uppercase" },
-  overviewTitle: { margin: "0 0 9px", color: "#0f172a", fontSize: 24, fontWeight: 750, letterSpacing: "-.025em" },
-  overviewDescription: { maxWidth: 640, margin: 0, color: "#64748b", fontSize: 12.5, lineHeight: 1.6 },
+  overviewEyebrow: { display: "block", marginBottom: 8, color: "var(--primary)", fontSize: 10, fontWeight: 800, letterSpacing: ".12em", textTransform: "uppercase" },
+  overviewTitle: { margin: "0 0 9px", color: "var(--ink)", fontSize: 24, fontWeight: 750, letterSpacing: "-.025em" },
+  overviewDescription: { maxWidth: 640, margin: 0, color: "var(--muted)", fontSize: 12.5, lineHeight: 1.6 },
   overviewHeroPills: { display: "flex", flexWrap: "wrap", gap: 8, marginTop: 18 },
-  overviewHeroPill: { padding: "6px 9px", border: "1px solid #bfdbfe", borderRadius: 999, color: "#1d4ed8", background: "#eff6ff", fontSize: 10, fontWeight: 700 },
+  overviewHeroPill: { padding: "6px 9px", border: "1px solid var(--accent-border)", borderRadius: 999, color: "var(--primary-dark)", background: "var(--accent-soft)", fontSize: 10, fontWeight: 700 },
   approvalRing: { position: "relative", zIndex: 1, width: 118, height: 118, flex: "0 0 118px", display: "grid", placeItems: "center", borderRadius: "50%", boxShadow: "0 4px 14px rgba(15,23,42,.08)" },
-  approvalRingInner: { width: 88, height: 88, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", borderRadius: "50%", color: "#0f172a", background: "#ffffff", border: "1px solid #e2e8f0" },
+  approvalRingInner: { width: 88, height: 88, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", borderRadius: "50%", color: "var(--ink)", background: "var(--card)", border: "1px solid var(--border)" },
   iqacOverviewHeader: {
     display: "flex",
     alignItems: "flex-start",
@@ -9193,14 +9281,14 @@ const styles = {
   },
   iqacOverviewTitle: {
     margin: "0 0 6px",
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 26,
     fontWeight: 800,
     letterSpacing: "-.02em",
   },
   iqacOverviewSubtitle: {
     margin: 0,
-    color: "#64748b",
+    color: "var(--muted)",
     fontSize: 13,
   },
   iqacDateCard: {
@@ -9208,8 +9296,8 @@ const styles = {
     alignItems: "center",
     gap: 10,
     padding: "10px 16px",
-    background: "#fff",
-    border: "1px solid #e2e8f0",
+    background: "var(--card)",
+    border: "1px solid var(--border)",
     borderRadius: 12,
     boxShadow: "0 6px 18px rgba(15, 23, 42, .05)",
   },
@@ -9220,28 +9308,28 @@ const styles = {
     display: "grid",
     placeItems: "center",
     flexShrink: 0,
-    background: "#eff6ff",
-    color: "#1d4ed8",
+    background: "var(--accent-soft)",
+    color: "var(--primary-dark)",
   },
   iqacDateStrong: {
     display: "block",
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 13.5,
     fontWeight: 750,
   },
   iqacDateWeekday: {
     display: "block",
-    color: "#94a3b8",
+    color: "var(--muted)",
     fontSize: 11,
   },
   iqacSectionHeading: {
     position: "relative",
     margin: 0,
     paddingBottom: 10,
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 16,
     fontWeight: 750,
-    borderBottom: "2px solid #e2e8f0",
+    borderBottom: "2px solid var(--border)",
   },
   iqacSectionHeadingAccent: {
     position: "absolute",
@@ -9250,7 +9338,7 @@ const styles = {
     width: 56,
     height: 2,
     borderRadius: 2,
-    background: "#2563eb",
+    background: "var(--primary)",
   },
   submissionsOverviewGrid: {
     display: "grid",
@@ -9260,8 +9348,8 @@ const styles = {
   submissionStatCard: {
     borderRadius: 16,
     padding: "20px 22px",
-    background: "#fff",
-    border: "1px solid #e2e8f0",
+    background: "var(--card)",
+    border: "1px solid var(--border)",
     boxShadow: "0 10px 24px rgba(15, 23, 42, .05)",
   },
   submissionStatEyebrow: {
@@ -9274,7 +9362,7 @@ const styles = {
   },
   submissionStatTitle: {
     display: "block",
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 15,
     fontWeight: 750,
     marginBottom: 16,
@@ -9304,12 +9392,12 @@ const styles = {
     gap: 10,
     padding: "10px 12px",
     borderRadius: 12,
-    background: "#f8fafc",
+    background: "var(--bg)",
     border: "1px solid #eef2f7",
     textAlign: "left",
   },
   submissionStatValue: {
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 18,
     fontWeight: 800,
     lineHeight: 1.15,
@@ -9318,7 +9406,7 @@ const styles = {
     fontSize: 10.5,
     fontWeight: 600,
     letterSpacing: ".01em",
-    color: "#64748b",
+    color: "var(--muted)",
     lineHeight: 1.35,
   },
   submissionStatPillButton: {
@@ -9328,7 +9416,7 @@ const styles = {
     padding: "10px 12px",
     borderRadius: 12,
     border: "1px solid #eef2f7",
-    background: "#f8fafc",
+    background: "var(--bg)",
     textAlign: "left",
     cursor: "pointer",
     fontFamily: "inherit",
@@ -9337,14 +9425,14 @@ const styles = {
   submissionsTableCard: {
     borderRadius: 16,
     padding: "18px 20px 8px",
-    background: "#fff",
-    border: "1px solid #e2e8f0",
+    background: "var(--card)",
+    border: "1px solid var(--border)",
     boxShadow: "0 10px 24px rgba(15, 23, 42, .05)",
   },
   submissionsTableTabs: {
     display: "flex",
     gap: 22,
-    borderBottom: "1px solid #e2e8f0",
+    borderBottom: "1px solid var(--border)",
     marginBottom: 14,
   },
   submissionsTableTab: {
@@ -9353,7 +9441,7 @@ const styles = {
     border: "none",
     outline: "none",
     borderBottom: "2px solid transparent",
-    color: "#64748b",
+    color: "var(--muted)",
     fontSize: 13.5,
     fontWeight: 700,
     cursor: "pointer",
@@ -9361,8 +9449,8 @@ const styles = {
     marginBottom: -1,
   },
   submissionsTableTabActive: {
-    color: "#2563eb",
-    borderBottomColor: "#2563eb",
+    color: "var(--primary)",
+    borderBottomColor: "var(--primary)",
   },
   submissionsTableSubTabs: {
     display: "flex",
@@ -9374,19 +9462,19 @@ const styles = {
     borderRadius: 999,
     borderWidth: 1,
     borderStyle: "solid",
-    borderColor: "#e2e8f0",
+    borderColor: "var(--border)",
     outline: "none",
-    background: "#f8fafc",
-    color: "#64748b",
+    background: "var(--bg)",
+    color: "var(--muted)",
     fontSize: 12,
     fontWeight: 700,
     cursor: "pointer",
     fontFamily: "inherit",
   },
   submissionsTableSubTabActive: {
-    color: "#2563eb",
-    background: "#eff6ff",
-    borderColor: "#bfdbfe",
+    color: "var(--primary)",
+    background: "var(--accent-soft)",
+    borderColor: "var(--accent-border)",
   },
   submissionsTableWrap: {
     overflow: "auto",
@@ -9404,8 +9492,8 @@ const styles = {
     top: 0,
     textAlign: "left",
     padding: "10px 14px",
-    background: "#f8fafc",
-    color: "#64748b",
+    background: "var(--bg)",
+    color: "var(--muted)",
     fontSize: 10.5,
     fontWeight: 700,
     textTransform: "uppercase",
@@ -9416,17 +9504,17 @@ const styles = {
   submissionsTableTd: {
     padding: "11px 14px",
     color: "#334155",
-    borderBottom: "1px solid #f1f5f9",
+    borderBottom: "1px solid var(--bg-alt)",
     wordBreak: "break-word",
   },
   submissionsTableTdStrong: {
-    color: "#0f172a",
+    color: "var(--ink)",
     fontWeight: 700,
   },
   submissionsTableEmpty: {
     padding: "22px 14px",
     textAlign: "center",
-    color: "#94a3b8",
+    color: "var(--muted)",
   },
   submissionStatusBadge: {
     display: "inline-flex",
@@ -9437,10 +9525,10 @@ const styles = {
     whiteSpace: "nowrap",
   },
   submissionStatusBadgeSubmitted: {
-    color: "#16a34a",
+    color: "var(--green-550)",
   },
   submissionStatusBadgeNotSubmitted: {
-    color: "#ea580c",
+    color: "var(--orange-600)",
   },
   blueHeading: {
     padding: "0 0 15px",
@@ -9465,8 +9553,8 @@ const styles = {
     alignItems: "flex-start",
     justifyContent: "space-between",
     flexWrap: "wrap",
-    gap: "18px 24px",
-    paddingBottom: 24,
+    gap: "14px 24px",
+    paddingBottom: 16,
     borderBottom: "1px solid #edf1f6",
   },
   previousReportsHeading: {
@@ -9477,7 +9565,7 @@ const styles = {
   },
   previousReportsIntro: {
     margin: 0,
-    color: "#64748b",
+    color: "var(--muted)",
     fontSize: 12.5,
     lineHeight: 1.45,
   },
@@ -9492,18 +9580,18 @@ const styles = {
   yearSelect: {
     minWidth: 132,
     height: 36,
-    border: "1px solid #cbd5e1",
+    border: "1px solid var(--border-strong)",
     borderRadius: 7,
     padding: "6px 30px 6px 10px",
-    color: "#0f172a",
-    background: "#fff",
+    color: "var(--ink)",
+    background: "var(--card)",
     fontFamily: "inherit",
     fontSize: 12,
     fontWeight: 700,
   },
   sectionTitle: {
     margin: 0,
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 17,
     fontWeight: 700,
     lineHeight: 1.3,
@@ -9511,8 +9599,8 @@ const styles = {
   schoolCount: {
     flexShrink: 0,
     color: "#475569",
-    background: "#fff",
-    border: "1px solid #e2e8f0",
+    background: "var(--card)",
+    border: "1px solid var(--border)",
     borderRadius: 999,
     padding: "8px 12px",
     fontSize: 12,
@@ -9526,42 +9614,42 @@ const styles = {
   metricCard: {
     position: "relative",
     overflow: "hidden",
-    border: "1px solid #e2e8f0",
+    border: "1px solid var(--border)",
     borderRadius: 8,
-    background: "#fff",
+    background: "var(--card)",
     padding: "17px 18px",
     display: "flex",
     flexDirection: "column",
     gap: 8,
-    color: "#64748b",
+    color: "var(--muted)",
     boxShadow: "none",
   },
   metricTopRow: { display: "flex", alignItems: "center", gap: 8 },
   metricIndicator: { width: 24, height: 24, display: "grid", placeItems: "center", borderRadius: 7 },
   metricLabel: { color: "#475569", fontSize: 10.5, fontWeight: 750, letterSpacing: ".04em", textTransform: "uppercase" },
-  metricValue: { color: "#0f172a", fontSize: 25, lineHeight: 1, letterSpacing: "-.03em" },
-  metricHint: { color: "#94a3b8", fontSize: 10.5, fontWeight: 600 },
+  metricValue: { color: "var(--ink)", fontSize: 25, lineHeight: 1, letterSpacing: "-.03em" },
+  metricHint: { color: "var(--muted)", fontSize: 10.5, fontWeight: 600 },
   splitGrid: {
     display: "grid",
     gridTemplateColumns: "minmax(280px, .8fr) minmax(320px, 1.2fr)",
     gap: 18,
   },
   card: {
-    border: "1px solid #e2e8f0",
+    border: "1px solid var(--border)",
     borderRadius: 14,
-    background: "#fff",
+    background: "var(--card)",
     padding: 18,
     boxShadow: "0 10px 30px rgba(15, 23, 42, 0.04)",
   },
   cardTitle: {
     margin: "2px 0 14px",
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 18,
     fontWeight: 800,
   },
-  cardEyebrow: { color: "#2563eb", fontSize: 9.5, fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase" },
+  cardEyebrow: { color: "var(--primary)", fontSize: 9.5, fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase" },
   queueHeader: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },
-  queueCount: { minWidth: 30, height: 30, display: "grid", placeItems: "center", borderRadius: 9, color: "#92400e", background: "#fef3c7", fontSize: 11, fontWeight: 800 },
+  queueCount: { minWidth: 30, height: 30, display: "grid", placeItems: "center", borderRadius: 9, color: "var(--amber-700)", background: "var(--amber-100)", fontSize: 11, fontWeight: 800 },
   progressHeader: {
     display: "flex",
     alignItems: "flex-start",
@@ -9571,7 +9659,7 @@ const styles = {
   },
   progressIntro: {
     margin: "-7px 0 0",
-    color: "#64748b",
+    color: "var(--muted)",
     fontSize: 12,
   },
   schoolProgressList: {
@@ -9585,7 +9673,7 @@ const styles = {
     alignItems: "center",
     gap: 12,
     padding: "10px 12px",
-    border: "1px solid #e2e8f0",
+    border: "1px solid var(--border)",
     borderRadius: 10,
     background: "#fbfdff",
   },
@@ -9602,8 +9690,8 @@ const styles = {
     display: "grid",
     placeItems: "center",
     borderRadius: 8,
-    color: "#fff",
-    background: "linear-gradient(135deg, #2563eb, #3b82f6)",
+    color: "var(--card)",
+    background: "linear-gradient(135deg, var(--primary), #3b82f6)",
     fontSize: 9,
     fontWeight: 800,
   },
@@ -9619,17 +9707,17 @@ const styles = {
     height: 7,
     overflow: "hidden",
     borderRadius: 999,
-    background: "#e2e8f0",
+    background: "var(--border)",
   },
   schoolProgressBar: {
     display: "block",
     height: "100%",
     borderRadius: 999,
-    background: "linear-gradient(90deg, #2563eb, #22c55e)",
+    background: "linear-gradient(90deg, var(--primary), var(--green-500))",
   },
   schoolProgressPercent: { color: "#1e293b", fontSize: 12, textAlign: "right" },
-  schoolProgressMeta: { color: "#166534", fontSize: 10.5, fontWeight: 700, whiteSpace: "nowrap" },
-  schoolProgressPending: { color: "#92400e", fontSize: 10.5, fontWeight: 700, whiteSpace: "nowrap" },
+  schoolProgressMeta: { color: "var(--green-700)", fontSize: 10.5, fontWeight: 700, whiteSpace: "nowrap" },
+  schoolProgressPending: { color: "var(--amber-700)", fontSize: 10.5, fontWeight: 700, whiteSpace: "nowrap" },
   auditSummaryRows: {
     display: "flex",
     flexDirection: "column",
@@ -9655,9 +9743,9 @@ const styles = {
     alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
-    border: "1px solid #e2e8f0",
+    border: "1px solid var(--border)",
     borderRadius: 10,
-    background: "#f8fafc",
+    background: "var(--bg)",
     padding: "12px 14px",
     cursor: "pointer",
     textAlign: "left",
@@ -9673,7 +9761,7 @@ const styles = {
     borderStyle: "solid",
     borderColor: "#dbe3ef",
     borderRadius: 999,
-    background: "#fff",
+    background: "var(--card)",
     color: "#334155",
     padding: "8px 11px",
     display: "inline-flex",
@@ -9685,9 +9773,9 @@ const styles = {
     fontFamily: "inherit",
   },
   activeTab: {
-    color: "#fff",
-    background: "#2563eb",
-    borderColor: "#2563eb",
+    color: "var(--card)",
+    background: "var(--primary)",
+    borderColor: "var(--primary)",
   },
   tabCount: {
     minWidth: 24,
@@ -9714,12 +9802,12 @@ const styles = {
   previousReportGroups: {
     display: "flex",
     flexDirection: "column",
-    gap: 24,
+    gap: 14,
   },
   previousReportGroup: {
     display: "flex",
     flexDirection: "column",
-    gap: 18,
+    gap: 12,
     padding: "2px 0 6px",
   },
   previousReportSectionTitleRow: {
@@ -9727,45 +9815,50 @@ const styles = {
     alignItems: "center",
     justifyContent: "space-between",
     gap: 14,
-    paddingBottom: 14,
+    paddingBottom: 10,
     borderBottom: "1px solid #edf1f6",
   },
   previousReportSectionTitle: {
     margin: 0,
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 18,
     fontWeight: 800,
     lineHeight: 1.3,
   },
   previousReportEmpty: {
-    border: "1px dashed #cbd5e1",
+    border: "1px dashed var(--border-strong)",
     borderRadius: 8,
-    color: "#64748b",
-    background: "#f8fafc",
+    color: "var(--muted)",
+    background: "var(--bg)",
     padding: "18px 14px",
     fontSize: 12,
     textAlign: "center",
   },
-  submissionCard: {
-    border: "1px solid #e2e8f0",
+  // Single compact row per report (avatar/name | stat chips | progress | actions), wrapping onto
+  // extra lines only when the viewport is too narrow to fit everything on one line.
+  submissionRow: {
+    border: "1px solid var(--border)",
     borderRadius: 14,
-    background: "#fff",
-    padding: 18,
+    background: "var(--card)",
+    padding: "14px 18px",
     display: "flex",
-    flexDirection: "column",
-    gap: 16,
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 18,
     boxShadow: "0 10px 30px rgba(15, 23, 42, 0.04)",
   },
-  submissionTop: {
+  submissionRowIdentity: {
     display: "flex",
-    alignItems: "flex-start",
+    alignItems: "center",
     gap: 12,
+    flex: "1 1 260px",
+    minWidth: 220,
   },
   submissionTopStatus: {
     display: "flex",
     flexDirection: "column",
     alignItems: "flex-end",
-    gap: 8,
+    gap: 6,
     flexShrink: 0,
   },
   schoolAvatar: {
@@ -9776,8 +9869,8 @@ const styles = {
     display: "grid",
     placeItems: "center",
     overflow: "hidden",
-    color: "#fff",
-    background: "linear-gradient(135deg, #2563eb, #3b82f6)",
+    color: "var(--card)",
+    background: "linear-gradient(135deg, var(--primary), #3b82f6)",
     fontSize: 12,
     fontWeight: 900,
   },
@@ -9798,7 +9891,7 @@ const styles = {
   },
   schoolName: {
     margin: 0,
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 15,
     fontWeight: 700,
     lineHeight: 1.35,
@@ -9812,7 +9905,7 @@ const styles = {
   schoolGroup: {
     display: "block",
     marginTop: 3,
-    color: "#64748b",
+    color: "var(--muted)",
     fontSize: 10.5,
   },
   statusBadge: {
@@ -9827,41 +9920,45 @@ const styles = {
   },
   submissionInfoGrid: {
     display: "flex",
-    flexWrap: "wrap",
-    gap: 10,
+    flexWrap: "nowrap",
+    alignItems: "flex-start",
+    gap: 14,
+    flex: "1 1 auto",
+    minWidth: 0,
+    overflow: "hidden",
   },
   infoPill: {
-    border: "1px solid #e2e8f0",
-    borderRadius: 10,
-    background: "#f8fafc",
-    padding: "9px 12px",
+    border: "1px solid var(--border)",
+    borderRadius: 8,
+    background: "var(--bg)",
+    padding: "6px 10px",
     display: "flex",
     flexDirection: "column",
-    gap: 3,
-    color: "#64748b",
-    fontSize: 11,
-    minWidth: 128,
-    flex: "1 1 128px",
+    gap: 2,
+    color: "var(--muted)",
+    fontSize: 10,
+    minWidth: 0,
   },
   infoPillLabel: {
     display: "flex",
     alignItems: "center",
-    gap: 6,
-    fontSize: 11,
-    color: "#64748b",
+    gap: 4,
+    fontSize: 9.5,
+    color: "var(--muted)",
     fontWeight: 500,
+    whiteSpace: "nowrap",
   },
   infoPillIcon: {
-    color: "#94a3b8",
+    color: "var(--muted)",
     flexShrink: 0,
-    width: 12,
-    height: 12,
+    width: 10,
+    height: 10,
   },
   infoPillValue: {
-    fontSize: 13.5,
+    fontSize: 11,
     fontWeight: 650,
-    color: "#0f172a",
-    marginTop: 1,
+    color: "var(--ink)",
+    whiteSpace: "nowrap",
   },
   forwardedNotice: {
     display: "grid",
@@ -9877,23 +9974,23 @@ const styles = {
     marginTop: 4,
     paddingTop: 6,
     borderTop: "1px dashed #bae6fd",
-    color: "#b45309",
+    color: "var(--amber-650)",
     fontWeight: 700,
   },
   auditorProgressPanel: {
     display: "grid",
     gap: 10,
-    border: "1px solid #bfdbfe",
+    border: "1px solid var(--accent-border)",
     borderRadius: 8,
-    background: "#eff6ff",
+    background: "var(--accent-soft)",
     padding: "12px 14px",
   },
   auditorProgressCompact: {
     display: "grid",
     gap: 8,
-    border: "1px solid #bfdbfe",
+    border: "1px solid var(--accent-border)",
     borderRadius: 8,
-    background: "#eff6ff",
+    background: "var(--accent-soft)",
     padding: "10px 12px",
   },
   auditorProgressHeader: {
@@ -9911,26 +10008,26 @@ const styles = {
   auditorProgressSubtext: {
     display: "block",
     marginTop: 2,
-    color: "#2563eb",
+    color: "var(--primary)",
     fontSize: 11,
     fontWeight: 700,
   },
   auditorProgressPending: {
     flexShrink: 0,
-    border: "1px solid #fbbf24",
+    border: "1px solid var(--amber-400)",
     borderRadius: 999,
-    background: "#fffbeb",
-    color: "#92400e",
+    background: "var(--amber-50)",
+    color: "var(--amber-700)",
     padding: "5px 8px",
     fontSize: 10.5,
     fontWeight: 850,
   },
   auditorProgressDone: {
     flexShrink: 0,
-    border: "1px solid #86efac",
+    border: "1px solid var(--green-300)",
     borderRadius: 999,
-    background: "#f0fdf4",
-    color: "#166534",
+    background: "var(--green-50)",
+    color: "var(--green-700)",
     padding: "5px 8px",
     fontSize: 10.5,
     fontWeight: 850,
@@ -9940,14 +10037,14 @@ const styles = {
     height: 10,
     overflow: "hidden",
     borderRadius: 999,
-    background: "#bfdbfe",
+    background: "var(--accent-border)",
     boxShadow: "inset 0 1px 2px rgba(0,0,0,0.05)",
   },
   auditorProgressBar: {
     display: "block",
     height: "100%",
     borderRadius: 999,
-    background: "linear-gradient(90deg, #60a5fa, #2563eb)",
+    background: "linear-gradient(90deg, #60a5fa, var(--primary))",
   },
   auditorProgressMini: {
     display: "flex",
@@ -9959,7 +10056,7 @@ const styles = {
   auditorProgressMiniCaption: {
     fontSize: 11,
     fontWeight: 600,
-    color: "#64748b",
+    color: "var(--muted)",
   },
   auditorPostGrid: {
     display: "grid",
@@ -10008,7 +10105,7 @@ const styles = {
     flexWrap: "wrap",
     justifyContent: "flex-end",
     gap: 7,
-    color: "#64748b",
+    color: "var(--muted)",
     fontSize: 11,
     fontWeight: 700,
   },
@@ -10025,14 +10122,14 @@ const styles = {
     width: "100%",
     border: "1px solid #dbe3ef",
     borderRadius: 8,
-    background: "#fff",
+    background: "var(--card)",
     padding: 16,
     boxShadow: "0 8px 20px rgba(15, 23, 42, .045)",
     marginBottom: 16,
   },
   pendingIqacCard: {
     padding: "20px 24px",
-    border: "1px solid #fed7aa",
+    border: "1px solid var(--amber-250)",
     borderRadius: 12,
     background: "#fff7ed",
     display: "flex",
@@ -10070,10 +10167,10 @@ const styles = {
   },
   auditorReviewNumber: {
     flexShrink: 0,
-    border: "1px solid #bfdbfe",
+    border: "1px solid var(--accent-border)",
     borderRadius: 8,
-    background: "#eff6ff",
-    color: "#1d4ed8",
+    background: "var(--accent-soft)",
+    color: "var(--primary-dark)",
     padding: "7px 9px",
     fontSize: 11,
     fontWeight: 900,
@@ -10089,9 +10186,9 @@ const styles = {
     gap: 6,
   },
   auditorReviewChip: {
-    border: "1px solid #e2e8f0",
+    border: "1px solid var(--border)",
     borderRadius: 999,
-    background: "#f8fafc",
+    background: "var(--bg)",
     color: "#334155",
     padding: "5px 8px",
     fontSize: 10.5,
@@ -10099,14 +10196,14 @@ const styles = {
   },
   auditorReviewTitle: {
     margin: 0,
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 14,
     fontWeight: 850,
     lineHeight: 1.25,
   },
   auditorReviewEmail: {
     margin: "2px 0 0",
-    color: "#64748b",
+    color: "var(--muted)",
     fontSize: 11.5,
     fontWeight: 700,
     overflow: "hidden",
@@ -10142,7 +10239,7 @@ const styles = {
     border: "1px solid #d7dee9",
     borderRadius: 8,
     padding: "9px 10px",
-    color: "#0f172a",
+    color: "var(--ink)",
     background: "#fbfcfe",
     fontSize: 12.5,
     whiteSpace: "pre-wrap",
@@ -10155,7 +10252,7 @@ const styles = {
     border: "1px solid #d7dee9",
     borderRadius: 8,
     padding: 8,
-    color: "#0f172a",
+    color: "var(--ink)",
     background: "#fbfcfe",
     fontSize: 12.5,
   },
@@ -10173,7 +10270,7 @@ const styles = {
     border: "1px solid #d7dee9",
     borderRadius: 8,
     padding: "9px 11px",
-    color: "#0f172a",
+    color: "var(--ink)",
     background: "#fbfcfe",
     outline: "none",
     resize: "vertical",
@@ -10183,8 +10280,51 @@ const styles = {
   cardActions: {
     display: "flex",
     justifyContent: "flex-end",
+    alignItems: "center",
     gap: 10,
     flexWrap: "wrap",
+  },
+  kebabMenuRoot: {
+    position: "relative",
+    display: "inline-flex",
+  },
+  kebabMenuButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    border: "1px solid var(--border-strong)",
+    background: "var(--card)",
+    color: "var(--muted)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+  },
+  kebabMenuDropdown: {
+    position: "absolute",
+    top: "calc(100% + 6px)",
+    right: 0,
+    zIndex: 20,
+    minWidth: 190,
+    background: "var(--card)",
+    border: "1px solid var(--border)",
+    borderRadius: 10,
+    boxShadow: "0 10px 30px rgba(15, 23, 42, 0.12)",
+    padding: 6,
+    display: "flex",
+    flexDirection: "column",
+    gap: 2,
+  },
+  kebabMenuItem: {
+    textAlign: "left",
+    background: "transparent",
+    border: "none",
+    borderRadius: 7,
+    padding: "9px 10px",
+    fontSize: 13,
+    fontWeight: 600,
+    color: "var(--ink)",
+    cursor: "pointer",
   },
   fullReviewPage: {
     display: "flex",
@@ -10200,9 +10340,9 @@ const styles = {
     alignItems: "center",
     gap: 16,
     padding: 20,
-    border: "1px solid #e2e8f0",
+    border: "1px solid var(--border)",
     borderRadius: 16,
-    background: "#fff",
+    background: "var(--card)",
     boxShadow: "0 12px 30px rgba(15, 23, 42, 0.08)",
   },
   fullReviewTitleBlock: {
@@ -10222,7 +10362,7 @@ const styles = {
     overflow: "hidden",
     display: "grid",
     placeItems: "center",
-    background: "#eff6ff",
+    background: "var(--accent-soft)",
   },
   fullReviewAvatarImg: {
     width: "100%",
@@ -10231,7 +10371,7 @@ const styles = {
   },
   fullReviewTitle: {
     margin: "0 0 5px",
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 17,
     fontWeight: 700,
     lineHeight: 1.3,
@@ -10253,7 +10393,7 @@ const styles = {
     minWidth: 72,
     border: "1px solid #dbe3ef",
     borderRadius: 999,
-    background: "#f8fafc",
+    background: "var(--bg)",
     color: "#334155",
     padding: "8px 11px",
     fontSize: 12,
@@ -10262,9 +10402,9 @@ const styles = {
     fontFamily: "inherit",
   },
   activeSectionNavButton: {
-    border: "1px solid #2563eb",
-    background: "#2563eb",
-    color: "#fff",
+    border: "1px solid var(--primary)",
+    background: "var(--primary)",
+    color: "var(--card)",
     boxShadow: "0 8px 18px rgba(37, 99, 235, 0.18)",
   },
   readOnlyReviewNotice: {
@@ -10281,10 +10421,10 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     gap: 4,
-    border: "1px solid #fbbf24",
+    border: "1px solid var(--amber-400)",
     borderRadius: 8,
-    background: "#fffbeb",
-    color: "#92400e",
+    background: "var(--amber-50)",
+    color: "var(--amber-700)",
     padding: "11px 14px",
     fontSize: 13,
     fontWeight: 700,
@@ -10296,24 +10436,24 @@ const styles = {
     justifyContent: "center",
     gap: 8,
     minHeight: 42,
-    border: "1px solid #f59e0b",
+    border: "1px solid var(--amber-500)",
     borderRadius: 999,
     padding: "10px 15px",
-    color: "#92400e",
-    background: "#fffbeb",
+    color: "var(--amber-700)",
+    background: "var(--amber-50)",
     cursor: "pointer",
     fontFamily: "inherit",
     fontSize: 13,
     fontWeight: 850,
   },
   activeReturnToggleButton: {
-    color: "#fff",
-    background: "#f59e0b",
+    color: "var(--card)",
+    background: "var(--amber-500)",
   },
   historyReference: {
-    border: "1px solid #bfdbfe",
+    border: "1px solid var(--accent-border)",
     borderRadius: 8,
-    background: "#eff6ff",
+    background: "var(--accent-soft)",
     overflow: "hidden",
   },
   historyReferenceSummary: {
@@ -10337,7 +10477,7 @@ const styles = {
     flexDirection: "column",
     gap: 12,
     padding: 14,
-    borderTop: "1px solid #bfdbfe",
+    borderTop: "1px solid var(--accent-border)",
     background: "#f8faff",
   },
   fullReviewActions: {
@@ -10347,7 +10487,7 @@ const styles = {
     display: "flex",
     justifyContent: "flex-end",
     padding: 14,
-    border: "1px solid #e2e8f0",
+    border: "1px solid var(--border)",
     borderRadius: 14,
     background: "rgba(255, 255, 255, 0.96)",
     boxShadow: "0 -10px 28px rgba(15, 23, 42, 0.06)",
@@ -10372,7 +10512,7 @@ const styles = {
     flexWrap: "wrap",
   },
   reviewHint: {
-    color: "#64748b",
+    color: "var(--muted)",
     fontSize: 12,
     fontWeight: 650,
   },
@@ -10388,7 +10528,7 @@ const styles = {
   },
   modal: {
     width: "min(380px, 92vw)",
-    background: "#fff",
+    background: "var(--card)",
     borderRadius: 12,
     padding: "26px 28px",
     boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
@@ -10397,7 +10537,7 @@ const styles = {
     width: "min(860px, 94vw)",
     maxHeight: "90vh",
     overflowY: "auto",
-    background: "linear-gradient(180deg, #ffffff 0%, #f8fbff 100%)",
+    background: "linear-gradient(180deg, var(--card) 0%, #f8fbff 100%)",
     border: "1px solid rgba(226, 232, 240, .9)",
     borderRadius: 20,
     padding: 0,
@@ -10412,8 +10552,8 @@ const styles = {
     justifyContent: "space-between",
     gap: 18,
     padding: "24px 28px 20px",
-    borderBottom: "1px solid #e2e8f0",
-    background: "linear-gradient(135deg, #ffffff 0%, #eff6ff 100%)",
+    borderBottom: "1px solid var(--border)",
+    background: "linear-gradient(135deg, var(--card) 0%, var(--accent-soft) 100%)",
     borderRadius: "20px 20px 0 0",
   },
   forwardHeaderMain: {
@@ -10429,8 +10569,8 @@ const styles = {
     display: "grid",
     placeItems: "center",
     borderRadius: 15,
-    color: "#fff",
-    background: "linear-gradient(135deg, #2563eb, #3b82f6)",
+    color: "var(--card)",
+    background: "linear-gradient(135deg, var(--primary), #3b82f6)",
     fontSize: 12,
     fontWeight: 950,
     boxShadow: "0 14px 30px rgba(37, 99, 235, .28)",
@@ -10443,7 +10583,7 @@ const styles = {
   },
   forwardModalTitle: {
     margin: "0 0 7px",
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 22,
     lineHeight: 1.2,
     fontWeight: 900,
@@ -10456,7 +10596,7 @@ const styles = {
     border: "1px solid #dbe4f0",
     borderRadius: 10,
     color: "#475569",
-    background: "#fff",
+    background: "var(--card)",
     cursor: "pointer",
     fontSize: 22,
     lineHeight: 1,
@@ -10466,7 +10606,7 @@ const styles = {
     width: "min(1040px, 96vw)",
     maxHeight: "92vh",
     overflow: "auto",
-    background: "#fff",
+    background: "var(--card)",
     borderRadius: 16,
     padding: 22,
     display: "flex",
@@ -10482,7 +10622,7 @@ const styles = {
     overflow: "hidden",
     border: "1px solid #dbe4f0",
     borderRadius: 8,
-    background: "#fff",
+    background: "var(--card)",
     boxShadow: "0 24px 70px rgba(15, 23, 42, .3)",
   },
   nextYearHeader: {
@@ -10493,10 +10633,10 @@ const styles = {
   },
   nextYearWarning: {
     margin: "0 24px",
-    border: "1px solid #fde68a",
+    border: "1px solid var(--amber-200)",
     borderRadius: 8,
-    color: "#92400e",
-    background: "#fffbeb",
+    color: "var(--amber-700)",
+    background: "var(--amber-50)",
     padding: "12px 14px",
     fontSize: 13,
     fontWeight: 650,
@@ -10515,24 +10655,24 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: 16,
-    borderBottom: "1px solid #e2e8f0",
+    borderBottom: "1px solid var(--border)",
     paddingBottom: 16,
   },
   modalTitle: {
-    color: "#0f172a",
+    color: "var(--ink)",
     fontWeight: 900,
     fontSize: 18,
     marginBottom: 8,
   },
   modalText: {
-    color: "#64748b",
+    color: "var(--muted)",
     fontSize: 14,
     lineHeight: 1.6,
     marginBottom: 18,
   },
   modalMeta: {
     margin: 0,
-    color: "#64748b",
+    color: "var(--muted)",
     fontSize: 14,
   },
   modalGrid: {
@@ -10546,7 +10686,7 @@ const styles = {
     gap: 14,
     margin: "18px 28px 0",
     padding: 18,
-    border: "1px solid #e2e8f0",
+    border: "1px solid var(--border)",
     borderRadius: 16,
     background: "rgba(255, 255, 255, .86)",
     boxShadow: "0 10px 28px rgba(15, 23, 42, .045)",
@@ -10563,20 +10703,20 @@ const styles = {
     display: "grid",
     placeItems: "center",
     borderRadius: 9,
-    color: "#1d4ed8",
+    color: "var(--primary-dark)",
     background: "#dbeafe",
     fontSize: 12,
     fontWeight: 950,
   },
   forwardStepTitle: {
     margin: 0,
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 14,
     fontWeight: 850,
   },
   forwardStepHint: {
     margin: "3px 0 0",
-    color: "#64748b",
+    color: "var(--muted)",
     fontSize: 12,
     lineHeight: 1.4,
   },
@@ -10597,7 +10737,7 @@ const styles = {
     borderColor: "#d7dee9",
     borderRadius: 12,
     color: "#334155",
-    background: "#fff",
+    background: "var(--card)",
     cursor: "pointer",
     fontFamily: "inherit",
     fontSize: 12,
@@ -10606,9 +10746,9 @@ const styles = {
     transition: "border-color .15s ease, background .15s ease, box-shadow .15s ease, transform .15s ease",
   },
   activeForwardTypeButton: {
-    borderColor: "#2563eb",
-    color: "#1d4ed8",
-    background: "#eff6ff",
+    borderColor: "var(--primary)",
+    color: "var(--primary-dark)",
+    background: "var(--accent-soft)",
     boxShadow: "0 0 0 3px rgba(37,99,235,.11)",
   },
   forwardGroupSummary: {
@@ -10616,10 +10756,10 @@ const styles = {
     flexDirection: "column",
     gap: 4,
     padding: "12px 14px",
-    border: "1px solid #bfdbfe",
+    border: "1px solid var(--accent-border)",
     borderRadius: 12,
     color: "#1e3a8a",
-    background: "#eff6ff",
+    background: "var(--accent-soft)",
     fontSize: 12,
   },
   auditorSelectionTools: {
@@ -10630,10 +10770,10 @@ const styles = {
     marginTop: 7,
   },
   auditorSelectionButton: {
-    border: "1px solid #bfdbfe",
+    border: "1px solid var(--accent-border)",
     borderRadius: 6,
-    color: "#1d4ed8",
-    background: "#fff",
+    color: "var(--primary-dark)",
+    background: "var(--card)",
     padding: "5px 8px",
     cursor: "pointer",
     fontSize: 11,
@@ -10653,23 +10793,23 @@ const styles = {
     borderStyle: "solid",
     borderColor: "#dbe4f0",
     borderRadius: 14,
-    color: "#0f172a",
-    background: "#fff",
+    color: "var(--ink)",
+    background: "var(--card)",
     cursor: "pointer",
     fontFamily: "inherit",
     textAlign: "left",
     boxShadow: "0 6px 16px rgba(15, 23, 42, .035)",
   },
   selectedAuditorOption: {
-    borderColor: "#2563eb",
-    background: "#eff6ff",
+    borderColor: "var(--primary)",
+    background: "var(--accent-soft)",
     boxShadow: "0 0 0 2px rgba(37, 99, 235, .1)",
   },
   auditorCheckbox: {
     width: 17,
     height: 17,
     flex: "0 0 17px",
-    accentColor: "#2563eb",
+    accentColor: "var(--primary)",
     cursor: "pointer",
   },
   auditorAvatar: {
@@ -10679,8 +10819,8 @@ const styles = {
     display: "grid",
     placeItems: "center",
     borderRadius: 12,
-    color: "#fff",
-    background: "linear-gradient(135deg, #2563eb, #3b82f6)",
+    color: "var(--card)",
+    background: "linear-gradient(135deg, var(--primary), #3b82f6)",
     fontSize: 11,
     fontWeight: 900,
   },
@@ -10705,22 +10845,22 @@ const styles = {
     borderColor: "#dbe4f0",
     borderRadius: 999,
     color: "#475569",
-    background: "#f8fafc",
+    background: "var(--bg)",
     fontSize: 10.5,
     fontWeight: 800,
     lineHeight: 1.2,
     whiteSpace: "nowrap",
   },
   forwardMatchedSchoolBadge: {
-    color: "#1d4ed8",
+    color: "var(--primary-dark)",
     borderColor: "#93c5fd",
     background: "#dbeafe",
   },
   auditorAssignText: {
     padding: "5px 8px",
     borderRadius: 999,
-    color: "#166534",
-    background: "#dcfce7",
+    color: "var(--green-700)",
+    background: "var(--green-100)",
     fontSize: 12,
     fontWeight: 850,
   },
@@ -10735,10 +10875,10 @@ const styles = {
     placeItems: "center",
     gap: 5,
     padding: 20,
-    border: "1px dashed #cbd5e1",
+    border: "1px dashed var(--border-strong)",
     borderRadius: 14,
     color: "#475569",
-    background: "#f8fafc",
+    background: "var(--bg)",
     textAlign: "center",
     fontSize: 12.5,
   },
@@ -10748,7 +10888,7 @@ const styles = {
     display: "grid",
     placeItems: "center",
     borderRadius: 12,
-    color: "#1d4ed8",
+    color: "var(--primary-dark)",
     background: "#dbeafe",
     fontSize: 13,
     fontWeight: 950,
@@ -10758,9 +10898,9 @@ const styles = {
     alignItems: "flex-start",
     gap: 12,
     padding: 16,
-    border: "1px solid #fecaca",
+    border: "1px solid var(--red-200)",
     borderRadius: 14,
-    color: "#991b1b",
+    color: "var(--red-800)",
     background: "#fff1f2",
     fontSize: 13,
     lineHeight: 1.5,
@@ -10772,8 +10912,8 @@ const styles = {
     display: "grid",
     placeItems: "center",
     borderRadius: 10,
-    color: "#fff",
-    background: "#dc2626",
+    color: "var(--card)",
+    background: "var(--red-600)",
     fontSize: 14,
     fontWeight: 950,
   },
@@ -10789,7 +10929,7 @@ const styles = {
     gap: 14,
     marginTop: 18,
     padding: "16px 28px 24px",
-    color: "#64748b",
+    color: "var(--muted)",
     fontSize: 12,
     fontWeight: 650,
   },
@@ -10799,7 +10939,7 @@ const styles = {
     borderRadius: 12,
     padding: "11px 16px",
     color: "#334155",
-    background: "#f8fafc",
+    background: "var(--bg)",
     cursor: "pointer",
     fontFamily: "inherit",
     fontSize: 13,
@@ -10811,20 +10951,20 @@ const styles = {
     gap: 16,
   },
   emptyDraftNotice: {
-    border: "1px solid #fde68a",
+    border: "1px solid var(--amber-200)",
     borderRadius: 10,
-    background: "#fffbeb",
-    color: "#92400e",
+    background: "var(--amber-50)",
+    color: "var(--amber-700)",
     padding: "12px 14px",
     fontSize: 14,
     fontWeight: 800,
     lineHeight: 1.5,
   },
   errorNotice: {
-    border: "1px solid #fecaca",
+    border: "1px solid var(--red-200)",
     borderRadius: 10,
-    background: "#fef2f2",
-    color: "#991b1b",
+    background: "var(--red-50)",
+    color: "var(--red-800)",
     padding: "12px 14px",
     fontSize: 14,
     fontWeight: 800,
@@ -10834,9 +10974,9 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     gap: 15,
-    border: "1px solid #e2e8f0",
+    border: "1px solid var(--border)",
     borderRadius: 16,
-    background: "#fff",
+    background: "var(--card)",
     padding: 20,
     boxShadow: "0 12px 35px rgba(15, 23, 42, 0.045)",
   },
@@ -10844,7 +10984,7 @@ const styles = {
     margin: 0,
     padding: "0 0 15px",
     borderBottom: "1px solid #edf1f6",
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 17,
     fontWeight: 700,
     letterSpacing: "-.015em",
@@ -10858,7 +10998,7 @@ const styles = {
   },
   reviewText: {
     margin: "0 0 14px",
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 12,
     fontWeight: 650,
   },
@@ -10872,7 +11012,7 @@ const styles = {
     flexDirection: "column",
     gap: 12,
     padding: 14,
-    border: "1px solid #bfdbfe",
+    border: "1px solid var(--accent-border)",
     borderRadius: 10,
     background: "#f8fbff",
   },
@@ -10891,13 +11031,13 @@ const styles = {
   },
   partEReferenceTitle: {
     margin: 0,
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 14,
     fontWeight: 800,
     lineHeight: 1.35,
   },
   partEReferenceMeta: {
-    color: "#2563eb",
+    color: "var(--primary)",
     fontSize: 11,
     fontWeight: 800,
   },
@@ -10914,7 +11054,7 @@ const styles = {
   reviewSubheading: {
     gridColumn: "1 / -1",
     margin: "4px 0 0",
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 15,
     fontWeight: 700,
     lineHeight: 1.35,
@@ -10945,7 +11085,7 @@ const styles = {
     border: "1px solid #d7dee9",
     borderRadius: 8,
     padding: "9px 11px",
-    color: "#0f172a",
+    color: "var(--ink)",
     background: "#fbfcfe",
     fontSize: 12.5,
     whiteSpace: "pre-wrap",
@@ -10959,8 +11099,8 @@ const styles = {
     border: "1px solid #d7dee9",
     borderRadius: 8,
     padding: "9px 11px",
-    color: "#0f172a",
-    background: "#fff",
+    color: "var(--ink)",
+    background: "var(--card)",
     outline: "none",
     fontSize: 12.5,
     lineHeight: 1.45,
@@ -10971,8 +11111,8 @@ const styles = {
     border: "1px solid #d7dee9",
     borderRadius: 8,
     padding: "9px 11px",
-    color: "#0f172a",
-    background: "#fff",
+    color: "var(--ink)",
+    background: "var(--card)",
     outline: "none",
     resize: "vertical",
     fontSize: 12.5,
@@ -10984,20 +11124,20 @@ const styles = {
     gap: 10,
     flexWrap: "wrap",
     padding: 12,
-    border: "1px dashed #bfdbfe",
+    border: "1px dashed var(--accent-border)",
     borderRadius: 10,
-    background: "#eff6ff",
+    background: "var(--accent-soft)",
   },
   documentationUploadButton: {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
     minHeight: 38,
-    border: "1px solid #2563eb",
+    border: "1px solid var(--primary)",
     borderRadius: 9,
     padding: "9px 13px",
-    color: "#fff",
-    background: "#2563eb",
+    color: "var(--card)",
+    background: "var(--primary)",
     cursor: "pointer",
     fontSize: 12,
     fontWeight: 800,
@@ -11020,26 +11160,26 @@ const styles = {
     alignItems: "center",
     gap: 10,
     padding: 8,
-    border: "1px solid #e2e8f0",
+    border: "1px solid var(--border)",
     borderRadius: 10,
-    background: "#fff",
+    background: "var(--card)",
   },
   documentationItemBody: {
     minWidth: 0,
   },
   documentationDeleteButton: {
-    border: "1px solid #fecaca",
+    border: "1px solid var(--red-200)",
     borderRadius: 8,
     padding: "8px 10px",
-    color: "#b91c1c",
-    background: "#fef2f2",
+    color: "var(--red-700)",
+    background: "var(--red-50)",
     cursor: "pointer",
     fontFamily: "inherit",
     fontSize: 12,
     fontWeight: 800,
   },
   errorText: {
-    color: "#b91c1c",
+    color: "var(--red-700)",
     fontSize: 11,
     fontWeight: 700,
   },
@@ -11049,7 +11189,7 @@ const styles = {
   readOnlyTableTitle: {
     margin: "0 0 9px",
     padding: 0,
-    color: "#0f172a",
+    color: "var(--ink)",
     background: "transparent",
     fontSize: 15,
     fontWeight: 700,
@@ -11073,9 +11213,9 @@ const styles = {
   },
   readOnlyTh: {
     padding: "10px 11px",
-    borderBottom: "1px solid #e2e8f0",
-    borderRight: "1px solid #e2e8f0",
-    background: "#f8fafc",
+    borderBottom: "1px solid var(--border)",
+    borderRight: "1px solid var(--border)",
+    background: "var(--bg)",
     color: "#1e293b",
     fontSize: 11.5,
     fontWeight: 700,
@@ -11087,7 +11227,7 @@ const styles = {
     padding: "8px 9px",
     borderBottom: "1px solid #dfe5ec",
     borderRight: "1px solid #dfe5ec",
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 12.5,
     verticalAlign: "top",
     whiteSpace: "pre-wrap",
@@ -11100,15 +11240,15 @@ const styles = {
     gap: 9,
     border: "1px solid #dbe3ef",
     borderRadius: 8,
-    background: "#fff",
+    background: "var(--card)",
     padding: 9,
     boxShadow: "0 1px 3px rgba(15, 23, 42, 0.05)",
   },
   approvalArchiveNote: {
     margin: "0 18px",
-    border: "1px solid #bfdbfe",
+    border: "1px solid var(--accent-border)",
     borderRadius: 8,
-    background: "#eff6ff",
+    background: "var(--accent-soft)",
     color: "#1e40af",
     padding: "11px 12px",
     fontSize: 12,
@@ -11117,10 +11257,10 @@ const styles = {
   },
   returnModalNotice: {
     margin: "18px 28px 0",
-    border: "1px solid #fbbf24",
+    border: "1px solid var(--amber-400)",
     borderRadius: 8,
-    background: "#fffbeb",
-    color: "#92400e",
+    background: "var(--amber-50)",
+    color: "var(--amber-700)",
     padding: "11px 14px",
     fontSize: 13,
     fontWeight: 700,
@@ -11133,8 +11273,8 @@ const styles = {
     placeItems: "center",
     padding: 7,
     borderRadius: 7,
-    color: "#dc2626",
-    background: "#fee2e2",
+    color: "var(--red-600)",
+    background: "var(--red-100)",
   },
   attachmentDocumentDetails: {
     minWidth: 0,
@@ -11153,10 +11293,10 @@ const styles = {
   attachmentLink: {
     gridColumn: "1 / -1",
     justifySelf: "end",
-    color: "#2563eb",
-    border: "1px solid #bfdbfe",
+    color: "var(--primary)",
+    border: "1px solid var(--accent-border)",
     borderRadius: 6,
-    background: "#eff6ff",
+    background: "var(--accent-soft)",
     padding: "5px 8px",
     fontSize: 12,
     fontWeight: 700,
@@ -11165,7 +11305,7 @@ const styles = {
     textDecoration: "none",
   },
   mutedText: {
-    color: "#64748b",
+    color: "var(--muted)",
     fontSize: 12,
   },
   sectionList: {
@@ -11200,7 +11340,7 @@ const styles = {
     flex: 1,
     border: "none",
     borderRadius: 8,
-    background: "#f1f5f9",
+    background: "var(--bg-alt)",
     color: "#475569",
     padding: 10,
     fontWeight: 900,
@@ -11210,8 +11350,8 @@ const styles = {
     flex: 1,
     border: "none",
     borderRadius: 8,
-    background: "#dc2626",
-    color: "#fff",
+    background: "var(--red-600)",
+    color: "var(--card)",
     padding: 10,
     fontWeight: 900,
     cursor: "pointer",

@@ -602,12 +602,12 @@ function FieldGrid({ fields, values, onFieldChange, readOnly = false, onUploadAt
                     const name = typeof file === "object" ? (file.name || file.fileName || "File") : String(file);
                     const url = typeof file === "object" ? (file.url || file.publicUrl || file.downloadUrl) : (String(file).startsWith("http") ? String(file) : null);
                     return (
-                      <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 13 }}>
+                      <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 13 }}>
                         <span>📎 {url ? <a href={getAttachmentUrl(url)} target="_blank" rel="noreferrer">{name}</a> : name}</span>
                         {!readOnly && (
                           <button
                             type="button"
-                            style={{ border: "none", background: "transparent", color: "#ef4444", cursor: "pointer", fontWeight: 700 }}
+                            style={{ border: "none", background: "transparent", color: "var(--red-500)", cursor: "pointer", fontWeight: 700 }}
                             onClick={() => {
                               const updated = attachments.filter((_, i) => i !== idx);
                               onFieldChange(field.id, updated.length ? updated : "");
@@ -1126,10 +1126,10 @@ export default function AuditSection({ section, values, tables, onFieldChange, o
   return (
     <section className="audit-section-card" id={section.id} style={styles.section}>
       <div style={styles.headingRow}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "var(--space-3)" }}>
           <h2 style={styles.heading}>{section.title}</h2>
           {Boolean(section.ownerRole === "auditor" || section.isAuditorSection === true || section.auditorSection === true) && (
-            <span style={{ fontSize: "11px", fontWeight: 700, padding: "3px 8px", borderRadius: "5px", background: "#fef3c7", color: "#92400e", border: "1px solid #fcd34d" }}>
+            <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, padding: "3px 8px", borderRadius: "var(--radius-2xs)", background: "var(--amber-100)", color: "var(--amber-700)", border: "1px solid #fcd34d" }}>
               🔒 Auditor Section
             </span>
           )}
@@ -1173,9 +1173,9 @@ const styles = {
     flexDirection: "column",
     gap: 15,
     padding: 20,
-    border: "1px solid #e2e8f0",
+    border: "1px solid var(--border)",
     borderRadius: 16,
-    background: "#fff",
+    background: "var(--card)",
     boxShadow: "0 12px 35px rgba(15, 23, 42, 0.045)",
   },
   headingRow: {
@@ -1184,7 +1184,7 @@ const styles = {
   },
   heading: {
     margin: 0,
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 17,
     fontWeight: 700,
     letterSpacing: "-.015em",
@@ -1215,7 +1215,7 @@ const styles = {
     gridColumn: "1 / -1",
     margin: "8px 0 0",
     padding: 0,
-    color: "#0f172a",
+    color: "var(--ink)",
     background: "transparent",
     fontSize: 15,
     lineHeight: 1.35,
@@ -1226,7 +1226,7 @@ const styles = {
     border: "1px solid #d7dee9",
     borderRadius: 8,
     padding: "9px 11px",
-    color: "#0f172a",
+    color: "var(--ink)",
     background: "#fbfcfe",
     outline: "none",
   },
@@ -1237,7 +1237,7 @@ const styles = {
     border: "1px solid #d7dee9",
     borderRadius: 8,
     padding: "9px 11px",
-    color: "#0f172a",
+    color: "var(--ink)",
     background: "#fbfcfe",
     outline: "none",
   },
@@ -1248,7 +1248,7 @@ const styles = {
   },
   pendingIqacCard: {
     padding: "20px 24px",
-    border: "1px solid #fed7aa",
+    border: "1px solid var(--amber-250)",
     borderRadius: 12,
     background: "#fff7ed",
     display: "flex",
@@ -1284,7 +1284,7 @@ const styles = {
     width: "100%",
     border: "1px solid #dbe3ef",
     borderRadius: 8,
-    background: "#fff",
+    background: "var(--card)",
     padding: 16,
     boxShadow: "0 8px 20px rgba(15, 23, 42, .045)",
     marginBottom: 16,
@@ -1307,10 +1307,10 @@ const styles = {
   },
   auditorReviewNumber: {
     flexShrink: 0,
-    border: "1px solid #bfdbfe",
+    border: "1px solid var(--accent-border)",
     borderRadius: 8,
-    background: "#eff6ff",
-    color: "#1d4ed8",
+    background: "var(--accent-soft)",
+    color: "var(--primary-dark)",
     padding: "7px 9px",
     fontSize: 11,
     fontWeight: 900,
@@ -1326,33 +1326,33 @@ const styles = {
     gap: 6,
   },
   auditorReviewChip: {
-    border: "1px solid #e2e8f0",
+    border: "1px solid var(--border)",
     borderRadius: 999,
-    background: "#f8fafc",
+    background: "var(--bg)",
     color: "#334155",
     padding: "5px 8px",
     fontSize: 10.5,
     fontWeight: 800,
   },
   auditorProgressDone: {
-    border: "1px solid #bbf7d0",
+    border: "1px solid var(--green-200)",
     borderRadius: 999,
-    background: "#dcfce7",
-    color: "#15803d",
+    background: "var(--green-100)",
+    color: "var(--green-600)",
     padding: "5px 8px",
     fontSize: 10.5,
     fontWeight: 800,
   },
   auditorReviewTitle: {
     margin: 0,
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 14,
     fontWeight: 850,
     lineHeight: 1.25,
   },
   auditorReviewEmail: {
     margin: "2px 0 0",
-    color: "#64748b",
+    color: "var(--muted)",
     fontSize: 11.5,
     fontWeight: 700,
     overflow: "hidden",
@@ -1386,7 +1386,7 @@ const styles = {
     border: "1px solid #d7dee9",
     borderRadius: 8,
     padding: "9px 10px",
-    color: "#0f172a",
+    color: "var(--ink)",
     background: "#fbfcfe",
     fontSize: 12.5,
     whiteSpace: "pre-wrap",
@@ -1410,7 +1410,7 @@ const styles = {
     padding: 16,
     border: "1px solid #dbe3ef",
     borderRadius: 12,
-    background: "#f8fafc",
+    background: "var(--bg)",
   },
   partEReviewHeader: {
     display: "flex",
@@ -1419,11 +1419,11 @@ const styles = {
     gap: 12,
     marginBottom: 12,
     paddingBottom: 10,
-    borderBottom: "1px solid #e2e8f0",
+    borderBottom: "1px solid var(--border)",
   },
   partEReviewTitle: {
     margin: 0,
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 15,
     fontWeight: 800,
   },
@@ -1449,14 +1449,14 @@ const styles = {
   },
   readOnlyText: {
     margin: 0,
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 13,
     fontWeight: 650,
     lineHeight: 1.6,
     whiteSpace: "pre-wrap",
   },
   emptyText: {
-    color: "#94a3b8",
+    color: "var(--muted)",
     fontSize: 13,
     fontWeight: 700,
   },
@@ -1467,13 +1467,13 @@ const styles = {
     gap: 6,
   },
   attachmentLink: {
-    color: "#1d4ed8",
+    color: "var(--primary-dark)",
     fontSize: 13,
     fontWeight: 750,
     textDecoration: "none",
   },
   historyReference: {
-    border: "1px solid #bfdbfe",
+    border: "1px solid var(--accent-border)",
     borderRadius: 14,
     background: "#f8fbff",
     overflow: "hidden",
@@ -1481,7 +1481,7 @@ const styles = {
   },
   historyReferenceSummary: {
     padding: "14px 18px",
-    background: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)",
+    background: "linear-gradient(135deg, var(--accent-soft) 0%, #dbeafe 100%)",
     color: "#1e3a8a",
     fontSize: 14,
     fontWeight: 800,
@@ -1489,12 +1489,12 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    borderBottom: "1px solid #bfdbfe",
+    borderBottom: "1px solid var(--accent-border)",
   },
   historyReferenceMeta: {
     fontSize: 12,
     fontWeight: 700,
-    color: "#2563eb",
+    color: "var(--primary)",
   },
   historyReferenceBody: {
     padding: 16,
@@ -1508,7 +1508,7 @@ const styles = {
   readOnlyTableTitle: {
     margin: "0 0 9px",
     padding: 0,
-    color: "#0f172a",
+    color: "var(--ink)",
     background: "transparent",
     fontSize: 15,
     fontWeight: 700,
@@ -1532,9 +1532,9 @@ const styles = {
   },
   readOnlyTh: {
     padding: "10px 11px",
-    borderBottom: "1px solid #e2e8f0",
-    borderRight: "1px solid #e2e8f0",
-    background: "#f8fafc",
+    borderBottom: "1px solid var(--border)",
+    borderRight: "1px solid var(--border)",
+    background: "var(--bg)",
     color: "#1e293b",
     fontSize: 11.5,
     fontWeight: 700,
@@ -1546,7 +1546,7 @@ const styles = {
     padding: "8px 9px",
     borderBottom: "1px solid #dfe5ec",
     borderRight: "1px solid #dfe5ec",
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 12.5,
     verticalAlign: "top",
     whiteSpace: "pre-wrap",

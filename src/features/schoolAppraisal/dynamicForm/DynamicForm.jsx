@@ -67,7 +67,7 @@ export const DynamicForm = ({
             <img
               src={header.logoUrl}
               alt="University Logo"
-              style={{ maxHeight: '70px', marginBottom: '10px' }}
+              style={{ maxHeight: '70px', marginBottom: "var(--space-4)" }}
             />
           )}
           <h3 className="fw-bold text-primary mb-1">{header.university || 'University Appraisal'}</h3>
@@ -97,7 +97,7 @@ export const DynamicForm = ({
                     isActive ? 'active bg-primary text-white' : 'text-secondary'
                   }`}
                   onClick={() => handleSectionTabClick(sKey)}
-                  style={{ borderRadius: '6px', margin: '2px' }}
+                  style={{ borderRadius: "var(--radius-sm)", margin: '2px' }}
                   title={sec.title}
                 >
                   {sec.number ? `Sec ${sec.number}: ` : ''}

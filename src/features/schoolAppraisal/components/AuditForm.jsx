@@ -870,40 +870,40 @@ export default function AuditForm({
 
       {isHistoricalYear && (
         <div style={{
-          backgroundColor: "#eff6ff",
-          border: "1px solid #bfdbfe",
+          backgroundColor: "var(--accent-soft)",
+          border: "1px solid var(--accent-border)",
           color: "#1e40af",
           padding: "12px 16px",
-          borderRadius: "8px",
-          marginTop: "16px",
-          marginBottom: "16px",
-          fontSize: "14px",
+          borderRadius: "var(--radius-sm)",
+          marginTop: "var(--space-7)",
+          marginBottom: "var(--space-7)",
+          fontSize: "var(--text-md)",
           fontWeight: 600,
           display: "flex",
           alignItems: "center",
-          gap: "8px",
+          gap: "var(--space-3)",
         }}>
-          <span style={{ fontSize: "16px" }}>ℹ️</span>
+          <span style={{ fontSize: "var(--text-lg)" }}>ℹ️</span>
           <span>Viewing Historical Appraisal Record for Academic Year <strong>{academicYear}</strong>. Previous academic year records are read-only.</span>
         </div>
       )}
 
       {isSubmitted && !isHistoricalYear && (
         <div style={{
-          backgroundColor: "#f0fdf4",
-          border: "1px solid #bbf7d0",
-          color: "#166534",
+          backgroundColor: "var(--green-50)",
+          border: "1px solid var(--green-200)",
+          color: "var(--green-700)",
           padding: "12px 16px",
-          borderRadius: "8px",
-          marginTop: "16px",
-          marginBottom: "16px",
-          fontSize: "14px",
+          borderRadius: "var(--radius-sm)",
+          marginTop: "var(--space-7)",
+          marginBottom: "var(--space-7)",
+          fontSize: "var(--text-md)",
           fontWeight: 600,
           display: "flex",
           alignItems: "center",
-          gap: "8px",
+          gap: "var(--space-3)",
         }}>
-          <span style={{ fontSize: "16px" }}>✅</span>
+          <span style={{ fontSize: "var(--text-lg)" }}>✅</span>
           <span>This appraisal for Academic Year <strong>{academicYear}</strong> has already been submitted and is currently under review. The form is displayed in view-only mode.</span>
         </div>
       )}
@@ -1007,9 +1007,9 @@ const styles = {
     alignItems: "flex-start",
     gap: 18,
     padding: "24px 26px 28px",
-    border: "1px solid #e2e8f0",
+    border: "1px solid var(--border)",
     borderRadius: 8,
-    background: "#fff",
+    background: "var(--card)",
     boxShadow: "none",
     overflow: "hidden",
   },
@@ -1035,7 +1035,7 @@ const styles = {
   },
   kicker: {
     margin: "0 0 6px",
-    color: "#2563eb",
+    color: "var(--primary)",
     fontSize: 11,
     fontWeight: 750,
     textTransform: "uppercase",
@@ -1043,7 +1043,7 @@ const styles = {
   },
   title: {
     margin: "0 0 8px",
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 22,
     fontWeight: 700,
     letterSpacing: "-.025em",
@@ -1051,16 +1051,16 @@ const styles = {
   },
   meta: {
     margin: "3px 0",
-    color: "#64748b",
+    color: "var(--muted)",
     fontSize: 12.5,
     lineHeight: 1.45,
   },
   headerMetaRow: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 10 },
   year: { color: "#334155", fontSize: 11, fontWeight: 650 },
   draftPill: { padding: "4px 8px", borderRadius: 999, color: "#0369a1", background: "#e0f2fe", fontSize: 9.5, fontWeight: 700, letterSpacing: ".03em", textTransform: "uppercase" },
-  readOnlyPill: { padding: "4px 8px", borderRadius: 999, color: "#475569", background: "#e2e8f0", fontSize: 9.5, fontWeight: 700, letterSpacing: ".03em", textTransform: "uppercase" },
-  progressTrack: { position: "absolute", left: 0, right: 0, bottom: 0, height: 4, background: "#eff6ff" },
-  progressBar: { display: "block", height: "100%", borderRadius: "0 4px 4px 0", background: "linear-gradient(90deg, #2563eb, #60a5fa)", transition: "width .3s ease" },
+  readOnlyPill: { padding: "4px 8px", borderRadius: 999, color: "#475569", background: "var(--border)", fontSize: 9.5, fontWeight: 700, letterSpacing: ".03em", textTransform: "uppercase" },
+  progressTrack: { position: "absolute", left: 0, right: 0, bottom: 0, height: 4, background: "var(--accent-soft)" },
+  progressBar: { display: "block", height: "100%", borderRadius: "0 4px 4px 0", background: "linear-gradient(90deg, var(--primary), #60a5fa)", transition: "width .3s ease" },
   headerRight: {
     display: "flex",
     flexDirection: "column",
@@ -1081,20 +1081,20 @@ const styles = {
     justifyContent: "flex-end",
   },
   primaryButton: {
-    border: "1px solid #2563eb",
+    border: "1px solid var(--primary)",
     borderRadius: 5,
-    color: "#fff",
-    background: "#2563eb",
+    color: "var(--card)",
+    background: "var(--primary)",
     padding: "10px 13px",
     fontSize: 14,
     fontWeight: 800,
     cursor: "pointer",
   },
   secondaryButton: {
-    border: "1px solid #cbd5e1",
+    border: "1px solid var(--border-strong)",
     borderRadius: 5,
     color: "#334155",
-    background: "#fff",
+    background: "var(--card)",
     padding: "10px 13px",
     fontSize: 14,
     fontWeight: 700,
@@ -1102,10 +1102,10 @@ const styles = {
   },
   status: {
     padding: "10px 12px",
-    border: "1px solid #bbf7d0",
+    border: "1px solid var(--green-200)",
     borderRadius: 10,
-    color: "#166534",
-    background: "#f0fdf4",
+    color: "var(--green-700)",
+    background: "var(--green-50)",
     fontSize: 14,
     fontWeight: 700,
   },

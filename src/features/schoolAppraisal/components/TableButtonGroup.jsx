@@ -124,14 +124,14 @@ export const TableButtonGroup = ({
           style={{
             margin: '16px 0',
             padding: '14px 18px',
-            background: '#f8fafc',
-            border: '1px dashed #cbd5e1',
-            borderRadius: '10px',
-            color: '#64748b',
-            fontSize: '13px',
+            background: 'var(--bg)',
+            border: '1px dashed var(--border-strong)',
+            borderRadius: "var(--radius-md)",
+            color: 'var(--muted)',
+            fontSize: "var(--text-base)",
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
+            gap: "var(--space-3)",
           }}
         >
           <span>ℹ️</span>
@@ -147,21 +147,21 @@ export const TableButtonGroup = ({
         style={{
           margin: '20px 0',
           padding: '20px 24px',
-          background: '#f8fafc',
+          background: 'var(--bg)',
           border: '1.5px dashed #93c5fd',
-          borderRadius: '12px',
+          borderRadius: "var(--radius-lg)",
           textAlign: 'center',
         }}
       >
-        <div style={{ fontSize: '24px', marginBottom: '8px' }}>⚡</div>
-        <h5 style={{ margin: '0 0 6px', fontWeight: 800, color: '#1e3a8a', fontSize: '15px' }}>
+        <div style={{ fontSize: "var(--text-3xl)", marginBottom: "var(--space-3)" }}>⚡</div>
+        <h5 style={{ margin: '0 0 6px', fontWeight: 800, color: '#1e3a8a', fontSize: "var(--text-md)" }}>
           {button.label || 'Add Tables'}
         </h5>
-        <p style={{ margin: '0 0 14px', color: '#64748b', fontSize: '13px' }}>
+        <p style={{ margin: '0 0 14px', color: 'var(--muted)', fontSize: "var(--text-base)" }}>
           {tables.length} table(s) configured for this section. Click below to add your first {button.dropdownLabel || 'entry'}.
         </p>
 
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: "var(--space-3)", flexWrap: 'wrap', justifyContent: 'center' }}>
           {dropdownOptions.length > 0 && (
             <select
               value={optionToAdd}
@@ -169,12 +169,12 @@ export const TableButtonGroup = ({
               style={{
                 height: '38px',
                 padding: '0 12px',
-                borderRadius: '8px',
+                borderRadius: "var(--radius-sm)",
                 border: '1px solid #93c5fd',
-                background: '#fff',
-                fontSize: '13px',
+                background: 'var(--card)',
+                fontSize: "var(--text-base)",
                 fontWeight: 650,
-                color: optionToAdd ? '#1e3a8a' : '#64748b',
+                color: optionToAdd ? '#1e3a8a' : 'var(--muted)',
                 outline: 'none',
               }}
             >
@@ -196,16 +196,16 @@ export const TableButtonGroup = ({
             style={{
               height: '38px',
               padding: '0 18px',
-              borderRadius: '8px',
+              borderRadius: "var(--radius-sm)",
               border: 'none',
-              background: optionToAdd ? '#2563eb' : '#94a3b8',
-              color: '#fff',
+              background: optionToAdd ? 'var(--primary)' : 'var(--faint)',
+              color: 'var(--card)',
               fontWeight: 700,
-              fontSize: '13px',
+              fontSize: "var(--text-base)",
               cursor: optionToAdd ? 'pointer' : 'not-allowed',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px',
+              gap: "var(--space-2)",
               boxShadow: optionToAdd ? '0 2px 6px rgba(37,99,235,0.25)' : 'none',
             }}
           >
@@ -223,24 +223,24 @@ export const TableButtonGroup = ({
       {/* Repeater Group Switcher Toolbar */}
       <div
         style={{
-          background: 'linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%)',
-          border: '1.5px solid #bfdbfe',
-          borderRadius: '12px',
+          background: 'linear-gradient(135deg, var(--accent-soft) 0%, var(--bg) 100%)',
+          border: '1.5px solid var(--accent-border)',
+          borderRadius: "var(--radius-lg)",
           padding: '12px 18px',
-          marginBottom: '18px',
+          marginBottom: "var(--space-7)",
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
-          gap: '12px',
+          gap: "var(--space-5)",
           boxShadow: '0 2px 6px rgba(37,99,235,0.06)',
         }}
       >
         {/* Left: Dropdown Instance Switcher */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '16px' }}>📂</span>
-            <span style={{ fontSize: '13px', fontWeight: 800, color: '#1e3a8a' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-4)", flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-2)" }}>
+            <span style={{ fontSize: "var(--text-lg)" }}>📂</span>
+            <span style={{ fontSize: "var(--text-base)", fontWeight: 800, color: '#1e3a8a' }}>
               {button.dropdownLabel || 'Viewing'}:
             </span>
           </div>
@@ -251,12 +251,12 @@ export const TableButtonGroup = ({
             style={{
               height: '36px',
               padding: '0 14px',
-              borderRadius: '8px',
+              borderRadius: "var(--radius-sm)",
               border: '1.5px solid #3b82f6',
-              background: '#fff',
-              fontSize: '13.5px',
+              background: 'var(--card)',
+              fontSize: "var(--text-base)",
               fontWeight: 800,
-              color: '#1d4ed8',
+              color: 'var(--primary-dark)',
               outline: 'none',
               cursor: 'pointer',
               boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
@@ -271,10 +271,10 @@ export const TableButtonGroup = ({
 
           <span
             style={{
-              fontSize: '11px',
+              fontSize: "var(--text-xs)",
               fontWeight: 700,
               padding: '3px 8px',
-              borderRadius: '999px',
+              borderRadius: "var(--radius-pill)",
               background: '#dbeafe',
               color: '#1e40af',
             }}
@@ -285,21 +285,21 @@ export const TableButtonGroup = ({
 
         {/* Right: Actions (+ Add Another, Remove) */}
         {!readOnly && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-3)", flexWrap: 'wrap' }}>
             {remainingOptions.length > 0 && (
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: "var(--space-2)" }}>
                 <select
                   value={optionToAdd}
                   onChange={(e) => setOptionToAdd(e.target.value)}
                   style={{
                     height: '34px',
                     padding: '0 10px',
-                    borderRadius: '7px',
-                    border: '1px solid #cbd5e1',
-                    background: '#fff',
-                    fontSize: '12.5px',
+                    borderRadius: "var(--radius-sm)",
+                    border: '1px solid var(--border-strong)',
+                    background: 'var(--card)',
+                    fontSize: "var(--text-base)",
                     fontWeight: 650,
-                    color: optionToAdd ? '#334155' : '#94a3b8',
+                    color: optionToAdd ? '#334155' : 'var(--faint)',
                     outline: 'none',
                   }}
                 >
@@ -319,16 +319,16 @@ export const TableButtonGroup = ({
                   style={{
                     height: '34px',
                     padding: '0 12px',
-                    borderRadius: '7px',
-                    border: optionToAdd ? '1px solid #93c5fd' : '1px solid #e2e8f0',
-                    background: optionToAdd ? '#2563eb' : '#cbd5e1',
-                    color: '#fff',
+                    borderRadius: "var(--radius-sm)",
+                    border: optionToAdd ? '1px solid #93c5fd' : '1px solid var(--border)',
+                    background: optionToAdd ? 'var(--primary)' : 'var(--border-strong)',
+                    color: 'var(--card)',
                     fontWeight: 700,
-                    fontSize: '12.5px',
+                    fontSize: "var(--text-base)",
                     cursor: optionToAdd ? 'pointer' : 'not-allowed',
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '4px',
+                    gap: "var(--space-1)",
                   }}
                   title={optionToAdd ? `Add ${optionToAdd} to this section` : `Select an option to add`}
                 >
@@ -343,16 +343,16 @@ export const TableButtonGroup = ({
               style={{
                 height: '34px',
                 padding: '0 10px',
-                borderRadius: '7px',
-                border: '1px solid #fecaca',
-                background: '#fff',
-                color: '#dc2626',
+                borderRadius: "var(--radius-sm)",
+                border: '1px solid var(--red-200)',
+                background: 'var(--card)',
+                color: 'var(--red-600)',
                 fontWeight: 650,
-                fontSize: '12px',
+                fontSize: "var(--text-base)",
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '4px',
+                gap: "var(--space-1)",
               }}
               title={`Remove ${selectedInstance} from this section`}
             >
@@ -364,7 +364,7 @@ export const TableButtonGroup = ({
       </div>
 
       {/* Render Assigned Tables Scoped to Selected Instance */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: "var(--space-8)" }}>
         {tables.map((tbl, idx) => {
           const baseKey = tbl.tableKey || tbl.idString || (tbl.id != null ? String(tbl.id) : `table_${idx}`);
           const scopedKey = buildScopedTableKey(baseKey, selectedInstance, context);

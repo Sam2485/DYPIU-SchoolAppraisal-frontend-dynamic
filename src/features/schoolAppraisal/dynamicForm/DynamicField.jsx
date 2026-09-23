@@ -60,7 +60,7 @@ export const DynamicField = ({ field, value, onChange, readOnly = false, error =
                   e.target.value = '';
                 }}
               />
-              <div className="form-text text-muted" style={{ fontSize: '11px' }}>
+              <div className="form-text text-muted" style={{ fontSize: "var(--text-xs)" }}>
                 PDF, Excel, Word, images, ZIP, or any supporting file.
               </div>
             </div>
@@ -71,7 +71,7 @@ export const DynamicField = ({ field, value, onChange, readOnly = false, error =
                 const name = typeof item === 'object' ? (item.name || item.fileName || 'Attached file') : String(item);
                 const url = typeof item === 'object' ? (item.url || item.publicUrl || item.downloadUrl) : (String(item).startsWith('http') ? String(item) : null);
                 return (
-                  <div key={idx} className="d-flex align-items-center justify-content-between p-1 px-2 border rounded bg-light" style={{ fontSize: '12.5px' }}>
+                  <div key={idx} className="d-flex align-items-center justify-content-between p-1 px-2 border rounded bg-light" style={{ fontSize: "var(--text-base)" }}>
                     <span className="text-truncate" style={{ maxWidth: '80%' }}>
                       📎 {url ? (
                         <a href={getAttachmentUrl(url, name)} target="_blank" rel="noopener noreferrer" className="text-decoration-none">

@@ -8,13 +8,13 @@ const EMPTY_FORM = { universityName: "", address: "", act: "", logoUrl: "", iqac
 
 const field = { display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 };
 const label = { fontSize: 12.5, fontWeight: 650, color: "#1e293b" };
-const input = { border: "1px solid #cbd5e1", borderRadius: 6, padding: "9px 11px", fontSize: 13, background: "#fff" };
-const logoBox = { border: "1px solid #bfdbfe", borderRadius: 10, background: "linear-gradient(180deg, #eff6ff 0%, #f8fafc 100%)", padding: 16, boxShadow: "0 1px 3px rgba(15, 23, 42, .05)" };
-const logoBoxTitle = { display: "flex", alignItems: "center", gap: 10, marginBottom: 12, fontWeight: 700, fontSize: 14, color: "#0f172a" };
+const input = { border: "1px solid var(--border-strong)", borderRadius: 6, padding: "9px 11px", fontSize: 13, background: "var(--card)" };
+const logoBox = { border: "1px solid var(--accent-border)", borderRadius: 10, background: "linear-gradient(180deg, var(--accent-soft) 0%, var(--bg) 100%)", padding: 16, boxShadow: "0 1px 3px rgba(15, 23, 42, .05)" };
+const logoBoxTitle = { display: "flex", alignItems: "center", gap: 10, marginBottom: 12, fontWeight: 700, fontSize: 14, color: "var(--ink)" };
 const logoIconWrap = { width: 30, height: 30, flex: "0 0 30px", display: "grid", placeItems: "center", borderRadius: 8, background: "#dbeafe", border: "1px solid #93c5fd", fontSize: 15 };
 const readRow = { marginBottom: 16 };
-const readLabel = { display: "block", fontSize: 11, fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "#94a3b8", marginBottom: 4 };
-const readValue = { fontSize: 14, color: "#0f172a" };
+const readLabel = { display: "block", fontSize: 11, fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 4 };
+const readValue = { fontSize: 14, color: "var(--ink)" };
 
 function LogoPicker({ title, icon, value, onChange, uploadingKey, onUploadingChange }) {
   const inputRef = useRef(null);
@@ -51,7 +51,7 @@ function LogoPicker({ title, icon, value, onChange, uploadingKey, onUploadingCha
         <img
           src={getAttachmentUrl(value)}
           alt={`${title} preview`}
-          style={{ display: "block", height: 64, marginBottom: 12, objectFit: "contain", background: "#fff", border: "1px solid #e2e8f0", borderRadius: 6, padding: 6 }}
+          style={{ display: "block", height: 64, marginBottom: 12, objectFit: "contain", background: "var(--card)", border: "1px solid var(--border)", borderRadius: 6, padding: 6 }}
         />
       )}
 
@@ -60,11 +60,11 @@ function LogoPicker({ title, icon, value, onChange, uploadingKey, onUploadingCha
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={uploading}
-        style={{ width: "100%", border: "1px solid #2563eb", borderRadius: 6, background: uploading ? "#93c5fd" : "#2563eb", color: "#fff", fontWeight: 650, fontSize: 13, padding: "9px 11px", cursor: uploading ? "not-allowed" : "pointer", marginBottom: 8, boxShadow: "0 1px 2px rgba(37, 99, 235, .25)" }}
+        style={{ width: "100%", border: "1px solid var(--primary)", borderRadius: 6, background: uploading ? "#93c5fd" : "var(--primary)", color: "var(--card)", fontWeight: 650, fontSize: 13, padding: "9px 11px", cursor: uploading ? "not-allowed" : "pointer", marginBottom: 8, boxShadow: "0 1px 2px rgba(37, 99, 235, .25)" }}
       >
         {uploading ? "Uploading..." : `Upload ${title}`}
       </button>
-      {uploadError && <p style={{ margin: "0 0 8px", fontSize: 12, color: "#b91c1c" }}>{uploadError}</p>}
+      {uploadError && <p style={{ margin: "0 0 8px", fontSize: 12, color: "var(--red-700)" }}>{uploadError}</p>}
 
       <input
         style={{ ...input, fontSize: 12 }}
@@ -87,10 +87,10 @@ function LogoDisplay({ title, icon, value }) {
         <img
           src={getAttachmentUrl(value)}
           alt={`${title} preview`}
-          style={{ display: "block", height: 64, objectFit: "contain", background: "#fff", border: "1px solid #e2e8f0", borderRadius: 6, padding: 6 }}
+          style={{ display: "block", height: 64, objectFit: "contain", background: "var(--card)", border: "1px solid var(--border)", borderRadius: 6, padding: 6 }}
         />
       ) : (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 64, border: "1px dashed #93c5fd", borderRadius: 6, background: "#fff", fontSize: 12.5, color: "#94a3b8" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 64, border: "1px dashed #93c5fd", borderRadius: 6, background: "var(--card)", fontSize: 12.5, color: "var(--muted)" }}>
           No logo uploaded yet
         </div>
       )}
@@ -163,14 +163,14 @@ export default function UniversityControlsPanel({ onSaved }) {
     }
   };
 
-  if (loading) return <div style={{ padding: 24, color: "#64748b" }}>Loading institution details...</div>;
+  if (loading) return <div style={{ padding: 24, color: "var(--muted)" }}>Loading institution details...</div>;
 
   return (
-    <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, padding: 24 }}>
+    <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, padding: 24 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, marginBottom: 20 }}>
         <div>
-          <h2 style={{ margin: "0 0 4px", fontSize: 18, color: "#0f172a" }}>Institution Profile</h2>
-          <p style={{ margin: 0, fontSize: 13, color: "#64748b" }}>
+          <h2 style={{ margin: "0 0 4px", fontSize: 18, color: "var(--ink)" }}>Institution Profile</h2>
+          <p style={{ margin: 0, fontSize: 13, color: "var(--muted)" }}>
             {isEditing ? "Update your institution's name, campus address, establishment act, and header logos for official reports." : "Current institution details and report branding on record."}
           </p>
         </div>
@@ -181,8 +181,8 @@ export default function UniversityControlsPanel({ onSaved }) {
         )}
       </div>
 
-      {status && <div style={{ marginBottom: 16, padding: "9px 12px", borderRadius: 6, background: "#ecfdf5", color: "#0f766e", fontSize: 13 }}>{status}</div>}
-      {error && <div style={{ marginBottom: 16, padding: "9px 12px", borderRadius: 6, background: "#fef2f2", color: "#b91c1c", fontSize: 13 }}>{error}</div>}
+      {status && <div style={{ marginBottom: 16, padding: "9px 12px", borderRadius: 6, background: "var(--teal-soft)", color: "var(--teal-dark)", fontSize: 13 }}>{status}</div>}
+      {error && <div style={{ marginBottom: 16, padding: "9px 12px", borderRadius: 6, background: "var(--red-50)", color: "var(--red-700)", fontSize: 13 }}>{error}</div>}
 
       {isEditing ? (
         <form onSubmit={handleSave}>

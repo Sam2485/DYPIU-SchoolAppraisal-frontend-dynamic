@@ -287,18 +287,18 @@ export const SchemaManager = ({
   };
 
   return (
-    <div className="form-studio-container" style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '24px' }}>
+    <div className="form-studio-container" style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: "var(--radius-sm)", padding: "var(--space-9)" }}>
       {/* Header section with instructions & actions */}
-      <div className="d-flex justify-content-between align-items-flex-start mb-4 flex-wrap gap-3">
-        <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+      <div className="d-flex justify-content-between align-items-flex-start flex-wrap gap-3" style={{ marginBottom: '28px' }}>
+        <div style={{ display: 'flex', gap: "var(--space-6)", alignItems: 'flex-start' }}>
           <IconBadge tone={isAdministrative ? 'indigo' : 'emerald'} icon={isAdministrative ? <BuildingIcon /> : <GraduationCapIcon />} />
           <div>
-            <h2 className="fw-bold text-dark mb-1" style={{ fontSize: '20px' }}>
+            <h2 className="fw-bold text-dark mb-1" style={{ fontSize: "var(--text-2xl)" }}>
               {isAdministrative
                 ? 'Single University Administrative Form'
                 : 'Academic Appraisal Form Schemas'}
             </h2>
-            <p className="text-muted mb-0" style={{ fontSize: '13px' }}>
+            <p className="text-muted mb-0" style={{ fontSize: "var(--text-base)" }}>
               {isAdministrative
                 ? `Manage and version the single unified administrative appraisal form for `
                 : `Design, version, copy, and assign institutional appraisal forms across academic schools for `}
@@ -306,12 +306,12 @@ export const SchemaManager = ({
             </p>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: "var(--space-4)", flexWrap: 'wrap' }}>
           {(!isAdministrative || schemas.length === 0) && (
             <button
               type="button"
               className="btn btn-primary px-3 py-2 fw-semibold shadow-sm"
-              style={{ borderRadius: '8px', background: '#2563eb', color: '#fff', border: 'none', cursor: 'pointer', padding: '8px 16px', fontWeight: 600 }}
+              style={{ borderRadius: "var(--radius-sm)", background: 'var(--primary)', color: 'var(--card)', border: 'none', cursor: 'pointer', padding: '11px 22px', fontSize: "var(--text-md)", fontWeight: 600 }}
               onClick={() => handleOpenCreateModal()}
             >
               {isAdministrative ? '+ Create Single Administrative Form' : '+ Create New Form Schema'}
@@ -322,23 +322,23 @@ export const SchemaManager = ({
 
       {/* Info card describing the specific workflow rules */}
       {isAdministrative ? (
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '14px 16px', marginBottom: '20px', wordBreak: 'break-word' }}>
-          <span style={{ width: '26px', height: '26px', flexShrink: 0, borderRadius: '50%', background: '#2563eb', color: '#fff', display: 'grid', placeItems: 'center' }}><InfoBadgeIcon size={15} /></span>
-          <div style={{ fontSize: '12px', lineHeight: '1.55', color: '#334155' }}>
-            <strong style={{ display: 'block', color: '#1e3a8a', fontSize: '12.5px', marginBottom: '2px' }}>Single Form Paradigm (Administrative Flow)</strong>
+        <div style={{ display: 'flex', gap: "var(--space-5)", alignItems: 'flex-start', background: 'var(--accent-soft)', border: '1px solid var(--accent-border)', borderRadius: "var(--radius-md)", padding: '14px 16px', marginBottom: "var(--space-8)", wordBreak: 'break-word' }}>
+          <span style={{ width: '26px', height: '26px', flexShrink: 0, borderRadius: '50%', background: 'var(--primary)', color: 'var(--card)', display: 'grid', placeItems: 'center' }}><InfoBadgeIcon size={15} /></span>
+          <div style={{ fontSize: "var(--text-base)", lineHeight: '1.55', color: '#334155' }}>
+            <strong style={{ display: 'block', color: '#1e3a8a', fontSize: "var(--text-base)", marginBottom: '2px' }}>Single Form Paradigm (Administrative Flow)</strong>
             Administration has <strong>ONE single form overall</strong> for the university. The single form is divided into sections (e.g. Part A, Part B, Part C), and each section is assigned to a specific Administrative Post (e.g. Registrar, HR, Dean Student Welfare). Administrative users mapped to a post will fill only their assigned section(s). <em>(No "Copy Table" is needed since there is only one form.)</em>
           </div>
         </div>
       ) : (
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '14px 16px', marginBottom: '20px', wordBreak: 'break-word' }}>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-            <span style={{ width: '26px', height: '26px', flexShrink: 0, borderRadius: '50%', background: '#059669', color: '#fff', display: 'grid', placeItems: 'center' }}><TipBadgeIcon size={14} /></span>
-            <div style={{ fontSize: '12px', lineHeight: '1.55', color: '#166534' }}>
-              <strong style={{ display: 'block', color: '#166534', fontSize: '12.5px', marginBottom: '2px' }}>School-Level Form Flexibility (Academic Flow)</strong>
+        <div style={{ display: 'flex', gap: "var(--space-5)", alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', background: 'var(--green-50)', border: '1px solid var(--green-200)', borderRadius: "var(--radius-md)", padding: '14px 16px', marginBottom: "var(--space-8)", wordBreak: 'break-word' }}>
+          <div style={{ display: 'flex', gap: "var(--space-5)", alignItems: 'flex-start' }}>
+            <span style={{ width: '26px', height: '26px', flexShrink: 0, borderRadius: '50%', background: 'var(--green-650)', color: 'var(--card)', display: 'grid', placeItems: 'center' }}><TipBadgeIcon size={14} /></span>
+            <div style={{ fontSize: "var(--text-base)", lineHeight: '1.55', color: 'var(--green-700)' }}>
+              <strong style={{ display: 'block', color: 'var(--green-700)', fontSize: "var(--text-base)", marginBottom: '2px' }}>School-Level Form Flexibility (Academic Flow)</strong>
               Within this university, schools can either share the <em>same form</em> (Condition 2), or have <em>different custom forms</em> (Condition 1). Use <strong>"📋 Copy Form"</strong> to quickly duplicate any existing form and customize columns without rebuilding from scratch!
             </div>
           </div>
-          <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', background: '#dcfce7', color: '#15803d', borderRadius: '6px', flexShrink: 0 }}>
+          <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, padding: '3px 8px', background: 'var(--green-100)', color: 'var(--green-600)', borderRadius: "var(--radius-sm)", flexShrink: 0 }}>
             {universitySchools.length} Schools Configured
           </span>
         </div>
@@ -364,24 +364,24 @@ export const SchemaManager = ({
         /* Single Administrative Form View (Streamlined, no school clutter) */
         <div>
           {selectedSchema && (
-            <div className="card" style={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: 'none', background: '#fff', overflow: 'hidden' }}>
-              <div style={{ padding: '18px 24px', background: '#fff', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+            <div className="card" style={{ borderRadius: "var(--radius-sm)", border: '1px solid var(--border)', boxShadow: 'none', background: 'var(--card)', overflow: 'hidden' }}>
+              <div style={{ padding: '18px 24px', background: 'var(--card)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: "var(--space-5)" }}>
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <h3 style={{ margin: 0, fontWeight: 800, color: '#0f172a', fontSize: '18px' }}>{selectedSchema.name}</h3>
-                    <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#dbeafe', color: '#1e40af' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-4)" }}>
+                    <h3 style={{ margin: 0, fontWeight: 800, color: 'var(--ink)', fontSize: "var(--text-xl)" }}>{selectedSchema.name}</h3>
+                    <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, padding: '3px 8px', borderRadius: "var(--radius-sm)", background: '#dbeafe', color: '#1e40af' }}>
                       Single Form (University-Wide)
                     </span>
                   </div>
-                  <div style={{ marginTop: '4px', fontSize: '13px', color: '#64748b' }}>
+                  <div style={{ marginTop: "var(--space-1)", fontSize: "var(--text-base)", color: 'var(--muted)' }}>
                     Divided into sections mapped to administrative posts (Registrar, HR, Dean Student Welfare, Dean Placement, CFO, etc.)
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: "var(--space-4)", alignItems: 'center', flexWrap: 'wrap' }}>
                   <button
                     type="button"
-                    style={{ padding: '8px 18px', borderRadius: '8px', border: 'none', background: '#059669', color: '#fff', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
+                    style={{ padding: '8px 18px', borderRadius: "var(--radius-sm)", border: 'none', background: 'var(--green-650)', color: 'var(--card)', fontWeight: 700, fontSize: "var(--text-base)", cursor: 'pointer' }}
                     onClick={() => handleCreateDraft(selectedSchema.id)}
                   >
                     + Open / Create Draft Version
@@ -390,14 +390,14 @@ export const SchemaManager = ({
               </div>
 
               {/* Version History Table */}
-              <div style={{ padding: '16px 24px 8px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                <span style={{ fontWeight: 700, fontSize: '13.5px', color: '#0f172a' }}>Form Version History</span>
+              <div style={{ padding: '16px 24px 8px', background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
+                <span style={{ fontWeight: 700, fontSize: "var(--text-base)", color: 'var(--ink)' }}>Form Version History</span>
               </div>
 
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: "var(--text-base)", textAlign: 'left' }}>
                   <thead>
-                    <tr style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', color: '#475569' }}>
+                    <tr style={{ background: 'var(--card)', borderBottom: '1px solid var(--border)', color: '#475569' }}>
                       <th style={{ padding: '12px 18px', fontWeight: 700 }}>Version</th>
                       <th style={{ padding: '12px 18px', fontWeight: 700 }}>Status</th>
                       <th style={{ padding: '12px 18px', fontWeight: 700 }}>Academic Year</th>
@@ -411,20 +411,20 @@ export const SchemaManager = ({
                       const isDraft = String(v.status || '').toUpperCase() === 'DRAFT';
                       const isActive = v.id === selectedSchema.activeVersionId;
                       return (
-                        <tr key={v.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <tr key={v.id} style={{ borderBottom: '1px solid var(--bg-alt)' }}>
                           <td style={{ padding: '14px 18px', fontWeight: 700 }}>
                             V{v.versionNumber}{' '}
-                            {isActive && <span style={{ fontSize: '10px', padding: '2px 6px', background: '#2563eb', color: '#fff', borderRadius: '4px', marginLeft: '4px' }}>ACTIVE</span>}
+                            {isActive && <span style={{ fontSize: "var(--text-2xs)", padding: '2px 6px', background: 'var(--primary)', color: 'var(--card)', borderRadius: "var(--radius-2xs)", marginLeft: "var(--space-1)" }}>ACTIVE</span>}
                           </td>
                           <td style={{ padding: '14px 18px' }}>
                             <span
                               style={{
-                                fontSize: '11px',
+                                fontSize: "var(--text-xs)",
                                 fontWeight: 700,
                                 padding: '3px 8px',
-                                borderRadius: '5px',
-                                background: isDraft ? '#fef3c7' : isActive ? '#d1fae5' : '#f1f5f9',
-                                color: isDraft ? '#92400e' : isActive ? '#065f46' : '#475569',
+                                borderRadius: "var(--radius-2xs)",
+                                background: isDraft ? 'var(--amber-100)' : isActive ? 'var(--green-150)' : 'var(--bg-alt)',
+                                color: isDraft ? 'var(--amber-700)' : isActive ? 'var(--green-800)' : '#475569',
                               }}
                             >
                               {v.status}
@@ -436,19 +436,19 @@ export const SchemaManager = ({
                             {v.publishedAt ? new Date(v.publishedAt).toLocaleDateString() : '-'}
                           </td>
                           <td style={{ padding: '14px 18px', textAlign: 'right' }}>
-                            <div style={{ display: 'inline-flex', gap: '6px' }}>
+                            <div style={{ display: 'inline-flex', gap: "var(--space-2)" }}>
                               {isDraft ? (
                                 <>
                                   <button
                                     type="button"
-                                    style={{ padding: '6px 14px', borderRadius: '6px', border: 'none', background: '#2563eb', color: '#fff', fontWeight: 700, fontSize: '12px', cursor: 'pointer' }}
+                                    style={{ padding: '6px 14px', borderRadius: "var(--radius-sm)", border: 'none', background: 'var(--primary)', color: 'var(--card)', fontWeight: 700, fontSize: "var(--text-base)", cursor: 'pointer' }}
                                     onClick={() => onOpenBuilder(v.id)}
                                   >
                                     🛠️ Edit Form & Assign Sections
                                   </button>
                                   <button
                                     type="button"
-                                    style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #fecaca', background: '#fff', color: '#b91c1c', cursor: 'pointer' }}
+                                    style={{ padding: '6px 10px', borderRadius: "var(--radius-sm)", border: '1px solid var(--red-200)', background: 'var(--card)', color: 'var(--red-700)', cursor: 'pointer' }}
                                     onClick={() => handleDeleteVersion(v)}
                                     title="Delete this draft version"
                                   >
@@ -459,7 +459,7 @@ export const SchemaManager = ({
                                 <>
                                   <button
                                     type="button"
-                                    style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#fff', color: '#334155', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}
+                                    style={{ padding: '6px 12px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', background: 'var(--card)', color: '#334155', fontWeight: 600, fontSize: "var(--text-base)", cursor: 'pointer' }}
                                     onClick={() => onOpenPreview(v.id)}
                                   >
                                     👁️ View
@@ -467,7 +467,7 @@ export const SchemaManager = ({
                                   {!isActive && (
                                     <button
                                       type="button"
-                                      style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #fde68a', background: '#fffbeb', color: '#92400e', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}
+                                      style={{ padding: '6px 12px', borderRadius: "var(--radius-sm)", border: '1px solid var(--amber-200)', background: 'var(--amber-50)', color: 'var(--amber-700)', fontWeight: 600, fontSize: "var(--text-base)", cursor: 'pointer' }}
                                       onClick={() => handleRollback(v.id)}
                                     >
                                       Rollback
@@ -488,13 +488,13 @@ export const SchemaManager = ({
         </div>
       ) : (
         /* Academic Flow View (Multi-schema, school scope assignments, copy form) */
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1.2fr) 2fr', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1.2fr) 2fr', gap: "var(--space-8)" }}>
           {/* Left Column: Schema List */}
           <div>
-            <div className="card" style={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: 'none', background: '#fff', overflow: 'hidden' }}>
-              <div style={{ padding: '14px 18px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: 700, color: '#0f172a' }}>Academic Schemas ({schemas.length})</span>
-                <span style={{ fontSize: '11px', color: '#64748b' }}>Click to select</span>
+            <div className="card" style={{ borderRadius: "var(--radius-sm)", border: '1px solid var(--border)', boxShadow: 'none', background: 'var(--card)', overflow: 'hidden' }}>
+              <div style={{ padding: '14px 18px', background: 'var(--bg)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 700, color: 'var(--ink)' }}>Academic Schemas ({schemas.length})</span>
+                <span style={{ fontSize: "var(--text-xs)", color: 'var(--muted)' }}>Click to select</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 {schemas.map((s) => {
@@ -505,25 +505,25 @@ export const SchemaManager = ({
                       key={s.id}
                       style={{
                         padding: '14px 18px',
-                        borderBottom: '1px solid #f1f5f9',
+                        borderBottom: '1px solid var(--bg-alt)',
                         cursor: 'pointer',
-                        background: isSelected ? '#eff6ff' : '#fff',
-                        borderLeft: isSelected ? '4px solid #2563eb' : '4px solid transparent',
+                        background: isSelected ? 'var(--accent-soft)' : 'var(--card)',
+                        borderLeft: isSelected ? '4px solid var(--primary)' : '4px solid transparent',
                         transition: 'background 0.15s ease',
                       }}
                       onClick={() => handleSelectSchema(s)}
                     >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
-                        <div style={{ fontWeight: 700, color: isSelected ? '#1d4ed8' : '#0f172a', fontSize: '14px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: "var(--space-1)" }}>
+                        <div style={{ fontWeight: 700, color: isSelected ? 'var(--primary-dark)' : 'var(--ink)', fontSize: "var(--text-md)" }}>
                           {s.name}
                         </div>
                         <span
                           style={{
-                            fontSize: '11px',
+                            fontSize: "var(--text-xs)",
                             fontWeight: 700,
                             padding: '2px 7px',
-                            borderRadius: '5px',
-                            background: isSelected ? '#dbeafe' : '#f1f5f9',
+                            borderRadius: "var(--radius-2xs)",
+                            background: isSelected ? '#dbeafe' : 'var(--bg-alt)',
                             color: isSelected ? '#1e40af' : '#475569',
                           }}
                         >
@@ -532,17 +532,17 @@ export const SchemaManager = ({
                       </div>
 
                       {/* Assigned Schools Tag */}
-                      <div style={{ marginBottom: '8px' }}>
+                      <div style={{ marginBottom: "var(--space-3)" }}>
                         <span
                           style={{
                             display: 'inline-block',
-                            fontSize: '11px',
+                            fontSize: "var(--text-xs)",
                             fontWeight: 600,
                             padding: '3px 8px',
-                            borderRadius: '6px',
-                            background: schoolInfo.isAll ? '#f1f5f9' : '#dbeafe',
+                            borderRadius: "var(--radius-sm)",
+                            background: schoolInfo.isAll ? 'var(--bg-alt)' : '#dbeafe',
                             color: schoolInfo.isAll ? '#475569' : '#1e40af',
-                            border: `1px solid ${schoolInfo.isAll ? '#e2e8f0' : '#bfdbfe'}`,
+                            border: `1px solid ${schoolInfo.isAll ? 'var(--border)' : 'var(--accent-border)'}`,
                           }}
                         >
                           {schoolInfo.label}
@@ -550,10 +550,10 @@ export const SchemaManager = ({
                       </div>
 
                       {/* Action buttons inside card */}
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end', paddingTop: '4px' }} onClick={(e) => e.stopPropagation()}>
+                      <div style={{ display: 'flex', gap: "var(--space-3)", alignItems: 'center', justifyContent: 'flex-end', paddingTop: "var(--space-1)" }} onClick={(e) => e.stopPropagation()}>
                         <button
                           type="button"
-                          style={{ border: '1px solid #cbd5e1', background: '#fff', color: '#1e40af', padding: '3px 8px', borderRadius: '5px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer' }}
+                          style={{ border: '1px solid var(--border-strong)', background: 'var(--card)', color: '#1e40af', padding: '3px 8px', borderRadius: "var(--radius-2xs)", fontSize: "var(--text-sm)", fontWeight: 600, cursor: 'pointer' }}
                           title="Copy/Duplicate this Form for another School"
                           onClick={() => handleOpenCreateModal(s)}
                         >
@@ -561,7 +561,7 @@ export const SchemaManager = ({
                         </button>
                         <button
                           type="button"
-                          style={{ border: '1px solid #cbd5e1', background: '#fff', color: '#475569', padding: '3px 8px', borderRadius: '5px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer' }}
+                          style={{ border: '1px solid var(--border-strong)', background: 'var(--card)', color: '#475569', padding: '3px 8px', borderRadius: "var(--radius-2xs)", fontSize: "var(--text-sm)", fontWeight: 600, cursor: 'pointer' }}
                           title="Edit Assigned Schools"
                           onClick={() => handleOpenEditScope(s)}
                         >
@@ -569,7 +569,7 @@ export const SchemaManager = ({
                         </button>
                         <button
                           type="button"
-                          style={{ border: 'none', background: 'transparent', cursor: 'pointer', opacity: 0.6, fontSize: '14px' }}
+                          style={{ border: 'none', background: 'transparent', cursor: 'pointer', opacity: 0.6, fontSize: "var(--text-md)" }}
                           title={`Delete "${s.name}"`}
                           onClick={() => handleDeleteSchema(s)}
                         >
@@ -586,32 +586,32 @@ export const SchemaManager = ({
           {/* Right Column: Version History & Actions */}
           <div>
             {selectedSchema && (
-              <div className="card" style={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: 'none', background: '#fff', overflow: 'hidden' }}>
-                <div style={{ padding: '16px 20px', background: '#fff', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+              <div className="card" style={{ borderRadius: "var(--radius-sm)", border: '1px solid var(--border)', boxShadow: 'none', background: 'var(--card)', overflow: 'hidden' }}>
+                <div style={{ padding: '16px 20px', background: 'var(--card)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: "var(--space-4)" }}>
                   <div>
-                    <h4 style={{ margin: 0, fontWeight: 800, color: '#0f172a', fontSize: '16px' }}>{selectedSchema.name}</h4>
-                    <div style={{ marginTop: '3px', fontSize: '12.5px', color: '#64748b' }}>
+                    <h4 style={{ margin: 0, fontWeight: 800, color: 'var(--ink)', fontSize: "var(--text-lg)" }}>{selectedSchema.name}</h4>
+                    <div style={{ marginTop: "var(--space-1)", fontSize: "var(--text-base)", color: 'var(--muted)' }}>
                       Scope: <strong className="text-primary">{formatAssignedSchools(selectedSchema.assignedSchools).label}</strong>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: "var(--space-3)", alignItems: 'center', flexWrap: 'wrap' }}>
                     <button
                       type="button"
-                      style={{ padding: '6px 12px', borderRadius: '7px', border: '1px solid #cbd5e1', background: '#fff', color: '#334155', fontWeight: 600, fontSize: '12.5px', cursor: 'pointer' }}
+                      style={{ padding: '6px 12px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', background: 'var(--card)', color: '#334155', fontWeight: 600, fontSize: "var(--text-base)", cursor: 'pointer' }}
                       onClick={() => handleOpenEditScope(selectedSchema)}
                     >
                       ✏️ Edit Scope & Schools
                     </button>
                     <button
                       type="button"
-                      style={{ padding: '6px 12px', borderRadius: '7px', border: '1px solid #93c5fd', background: '#eff6ff', color: '#1d4ed8', fontWeight: 600, fontSize: '12.5px', cursor: 'pointer' }}
+                      style={{ padding: '6px 12px', borderRadius: "var(--radius-sm)", border: '1px solid #93c5fd', background: 'var(--accent-soft)', color: 'var(--primary-dark)', fontWeight: 600, fontSize: "var(--text-base)", cursor: 'pointer' }}
                       onClick={() => handleOpenCreateModal(selectedSchema)}
                     >
                       📋 Copy As New Form
                     </button>
                     <button
                       type="button"
-                      style={{ padding: '6px 14px', borderRadius: '7px', border: 'none', background: '#059669', color: '#fff', fontWeight: 700, fontSize: '12.5px', cursor: 'pointer' }}
+                      style={{ padding: '6px 14px', borderRadius: "var(--radius-sm)", border: 'none', background: 'var(--green-650)', color: 'var(--card)', fontWeight: 700, fontSize: "var(--text-base)", cursor: 'pointer' }}
                       onClick={() => handleCreateDraft(selectedSchema.id)}
                     >
                       + Open / Create Draft Version
@@ -620,9 +620,9 @@ export const SchemaManager = ({
                 </div>
 
                 <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: "var(--text-base)", textAlign: 'left' }}>
                     <thead>
-                      <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569' }}>
+                      <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)', color: '#475569' }}>
                         <th style={{ padding: '10px 14px', fontWeight: 700 }}>Version</th>
                         <th style={{ padding: '10px 14px', fontWeight: 700 }}>Status</th>
                         <th style={{ padding: '10px 14px', fontWeight: 700 }}>Academic Year</th>
@@ -636,20 +636,20 @@ export const SchemaManager = ({
                         const isDraft = String(v.status || '').toUpperCase() === 'DRAFT';
                         const isActive = v.id === selectedSchema.activeVersionId;
                         return (
-                          <tr key={v.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <tr key={v.id} style={{ borderBottom: '1px solid var(--bg-alt)' }}>
                             <td style={{ padding: '12px 14px', fontWeight: 700 }}>
                               V{v.versionNumber}{' '}
-                              {isActive && <span style={{ fontSize: '10px', padding: '2px 6px', background: '#2563eb', color: '#fff', borderRadius: '4px', marginLeft: '4px' }}>ACTIVE</span>}
+                              {isActive && <span style={{ fontSize: "var(--text-2xs)", padding: '2px 6px', background: 'var(--primary)', color: 'var(--card)', borderRadius: "var(--radius-2xs)", marginLeft: "var(--space-1)" }}>ACTIVE</span>}
                             </td>
                             <td style={{ padding: '12px 14px' }}>
                               <span
                                 style={{
-                                  fontSize: '11px',
+                                  fontSize: "var(--text-xs)",
                                   fontWeight: 700,
                                   padding: '3px 8px',
-                                  borderRadius: '5px',
-                                  background: isDraft ? '#fef3c7' : isActive ? '#d1fae5' : '#f1f5f9',
-                                  color: isDraft ? '#92400e' : isActive ? '#065f46' : '#475569',
+                                  borderRadius: "var(--radius-2xs)",
+                                  background: isDraft ? 'var(--amber-100)' : isActive ? 'var(--green-150)' : 'var(--bg-alt)',
+                                  color: isDraft ? 'var(--amber-700)' : isActive ? 'var(--green-800)' : '#475569',
                                 }}
                               >
                                 {v.status}
@@ -661,19 +661,19 @@ export const SchemaManager = ({
                               {v.publishedAt ? new Date(v.publishedAt).toLocaleDateString() : '-'}
                             </td>
                             <td style={{ padding: '12px 14px', textAlign: 'right' }}>
-                              <div style={{ display: 'inline-flex', gap: '6px' }}>
+                              <div style={{ display: 'inline-flex', gap: "var(--space-2)" }}>
                                 {isDraft ? (
                                   <>
                                     <button
                                       type="button"
-                                      style={{ padding: '5px 11px', borderRadius: '6px', border: 'none', background: '#2563eb', color: '#fff', fontWeight: 700, fontSize: '12px', cursor: 'pointer' }}
+                                      style={{ padding: '5px 11px', borderRadius: "var(--radius-sm)", border: 'none', background: 'var(--primary)', color: 'var(--card)', fontWeight: 700, fontSize: "var(--text-base)", cursor: 'pointer' }}
                                       onClick={() => onOpenBuilder(v.id)}
                                     >
                                       🛠️ Edit & Build Form
                                     </button>
                                     <button
                                       type="button"
-                                      style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid #fecaca', background: '#fff', color: '#b91c1c', cursor: 'pointer' }}
+                                      style={{ padding: '5px 8px', borderRadius: "var(--radius-sm)", border: '1px solid var(--red-200)', background: 'var(--card)', color: 'var(--red-700)', cursor: 'pointer' }}
                                       onClick={() => handleDeleteVersion(v)}
                                       title="Delete this draft version"
                                     >
@@ -684,7 +684,7 @@ export const SchemaManager = ({
                                   <>
                                     <button
                                       type="button"
-                                      style={{ padding: '5px 11px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#fff', color: '#334155', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}
+                                      style={{ padding: '5px 11px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', background: 'var(--card)', color: '#334155', fontWeight: 600, fontSize: "var(--text-base)", cursor: 'pointer' }}
                                       onClick={() => onOpenPreview(v.id)}
                                     >
                                       👁️ View
@@ -692,7 +692,7 @@ export const SchemaManager = ({
                                     {!isActive && (
                                       <button
                                         type="button"
-                                        style={{ padding: '5px 11px', borderRadius: '6px', border: '1px solid #fde68a', background: '#fffbeb', color: '#92400e', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}
+                                        style={{ padding: '5px 11px', borderRadius: "var(--radius-sm)", border: '1px solid var(--amber-200)', background: 'var(--amber-50)', color: 'var(--amber-700)', fontWeight: 600, fontSize: "var(--text-base)", cursor: 'pointer' }}
                                         onClick={() => handleRollback(v.id)}
                                       >
                                         Rollback
@@ -724,12 +724,12 @@ export const SchemaManager = ({
             background: 'rgba(15, 23, 42, 0.5)',
             display: 'grid',
             placeItems: 'center',
-            padding: '20px',
+            padding: "var(--space-8)",
           }}
         >
-          <div style={{ width: '100%', maxWidth: '560px', maxHeight: '90vh', background: '#fff', borderRadius: '12px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <div style={{ padding: '16px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h5 style={{ margin: 0, fontWeight: 800, color: '#0f172a', fontSize: '16px' }}>
+          <div style={{ width: '100%', maxWidth: '560px', maxHeight: '90vh', background: 'var(--card)', borderRadius: "var(--radius-lg)", boxShadow: '0 20px 40px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ padding: '16px 20px', background: 'var(--bg)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h5 style={{ margin: 0, fontWeight: 800, color: 'var(--ink)', fontSize: "var(--text-lg)" }}>
                 {cloneFromSchemaId
                   ? '📋 Copy & Duplicate Form Schema'
                   : isAdministrative
@@ -738,23 +738,23 @@ export const SchemaManager = ({
               </h5>
               <button
                 type="button"
-                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '18px', color: '#64748b' }}
+                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: "var(--text-xl)", color: 'var(--muted)' }}
                 onClick={() => setShowCreateModal(false)}
               >
                 ✕
               </button>
             </div>
             <form onSubmit={handleCreateSchemaSubmit} style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <div style={{ padding: '20px', overflowY: 'auto', display: 'grid', gap: '14px' }}>
+              <div style={{ padding: "var(--space-8)", overflowY: 'auto', display: 'grid', gap: "var(--space-6)" }}>
                 
                 {/* Clone From Source Dropdown (Academic Only) */}
                 {!isAdministrative && (
-                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
-                    <label style={{ display: 'block', fontWeight: 700, fontSize: '13px', marginBottom: '4px', color: '#1e40af' }}>
+                  <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: "var(--radius-sm)", padding: "var(--space-5)" }}>
+                    <label style={{ display: 'block', fontWeight: 700, fontSize: "var(--text-base)", marginBottom: "var(--space-1)", color: '#1e40af' }}>
                       📋 Base on Existing Form Structure (Avoid Rework)
                     </label>
                     <select
-                      style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px' }}
+                      style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)" }}
                       value={cloneFromSchemaId}
                       onChange={(e) => {
                         const sId = e.target.value;
@@ -778,17 +778,17 @@ export const SchemaManager = ({
                         </option>
                       ))}
                     </select>
-                    <small style={{ color: '#64748b', fontSize: '11.5px', display: 'block', marginTop: '4px' }}>
+                    <small style={{ color: 'var(--muted)', fontSize: "var(--text-sm)", display: 'block', marginTop: "var(--space-1)" }}>
                       Selecting an existing form will copy all sections, tables, and columns so you only need to modify what changes.
                     </small>
                   </div>
                 )}
 
                 <div>
-                  <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>Schema Title / Name*</label>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>Schema Title / Name*</label>
                   <input
                     type="text"
-                    style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                    style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
                     placeholder={isAdministrative ? 'e.g. University Administrative Appraisal Form' : 'e.g. School Appraisal Form'}
                     required
                     value={newSchemaForm.name}
@@ -800,12 +800,12 @@ export const SchemaManager = ({
 
                 {/* School Scope Selection (Academic Only) */}
                 {!isAdministrative && (
-                  <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px', background: '#fafafa' }}>
-                    <label style={{ display: 'block', fontWeight: 700, fontSize: '13px', marginBottom: '6px', color: '#0f172a' }}>
+                  <div style={{ border: '1px solid var(--border)', borderRadius: "var(--radius-sm)", padding: "var(--space-5)", background: '#fafafa' }}>
+                    <label style={{ display: 'block', fontWeight: 700, fontSize: "var(--text-base)", marginBottom: "var(--space-2)", color: 'var(--ink)' }}>
                       🏫 Form Assignment & Scope:
                     </label>
-                    <div style={{ display: 'flex', gap: '16px', marginBottom: '10px' }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                    <div style={{ display: 'flex', gap: "var(--space-7)", marginBottom: "var(--space-4)" }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: "var(--space-2)", fontSize: "var(--text-base)", cursor: 'pointer' }}>
                         <input
                           type="radio"
                           name="schemaScope"
@@ -814,7 +814,7 @@ export const SchemaManager = ({
                         />
                         <span><strong>All Schools (Default shared form)</strong></span>
                       </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: "var(--space-2)", fontSize: "var(--text-base)", cursor: 'pointer' }}>
                         <input
                           type="radio"
                           name="schemaScope"
@@ -826,16 +826,16 @@ export const SchemaManager = ({
                     </div>
 
                     {newSchemaScope === 'SPECIFIC' && (
-                      <div style={{ marginTop: '8px', borderTop: '1px solid #e2e8f0', paddingTop: '8px' }}>
-                        <div style={{ fontSize: '12px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
+                      <div style={{ marginTop: "var(--space-3)", borderTop: '1px solid var(--border)', paddingTop: "var(--space-3)" }}>
+                        <div style={{ fontSize: "var(--text-base)", fontWeight: 600, color: '#475569', marginBottom: "var(--space-2)" }}>
                           Select the school(s) that will use this form:
                         </div>
                         {universitySchools.length === 0 ? (
-                          <p style={{ color: '#dc2626', fontSize: '12px', margin: 0 }}>
+                          <p style={{ color: 'var(--red-600)', fontSize: "var(--text-base)", margin: 0 }}>
                             No schools configured yet. Please add schools in the "University Schools & Departments" tab first.
                           </p>
                         ) : (
-                          <div style={{ maxHeight: '140px', overflowY: 'auto', display: 'grid', gap: '6px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '8px' }}>
+                          <div style={{ maxHeight: '140px', overflowY: 'auto', display: 'grid', gap: "var(--space-2)", background: 'var(--card)', border: '1px solid var(--border-strong)', borderRadius: "var(--radius-sm)", padding: "var(--space-3)" }}>
                             {universitySchools.map((sch) => {
                               const isChecked = selectedSchoolCodes.includes(sch.code) || selectedSchoolCodes.includes(sch.name);
                               // Cloning still creates a brand-new schema, so the clone source itself isn't "current" here.
@@ -846,8 +846,8 @@ export const SchemaManager = ({
                                   style={{
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '8px',
-                                    fontSize: '12.5px',
+                                    gap: "var(--space-3)",
+                                    fontSize: "var(--text-base)",
                                     cursor: conflictSchema ? 'not-allowed' : 'pointer',
                                     opacity: conflictSchema ? 0.5 : 1,
                                   }}
@@ -858,9 +858,9 @@ export const SchemaManager = ({
                                     disabled={Boolean(conflictSchema)}
                                     onChange={() => handleToggleSchoolCode(sch.code || sch.name)}
                                   />
-                                  <span><strong>{sch.name}</strong> <span style={{ color: '#64748b' }}>({sch.code})</span></span>
+                                  <span><strong>{sch.name}</strong> <span style={{ color: 'var(--muted)' }}>({sch.code})</span></span>
                                   {conflictSchema && (
-                                    <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 6px', borderRadius: '5px', background: '#fef3c7', color: '#92400e' }}>
+                                    <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, padding: '2px 6px', borderRadius: "var(--radius-2xs)", background: 'var(--amber-100)', color: 'var(--amber-700)' }}>
                                       (Assigned to: {conflictSchema.name})
                                     </span>
                                   )}
@@ -875,9 +875,9 @@ export const SchemaManager = ({
                 )}
 
                 <div>
-                  <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>Description</label>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>Description</label>
                   <textarea
-                    style={{ width: '100%', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '8px 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                    style={{ width: '100%', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '8px 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
                     rows={2}
                     placeholder="Form details or specific notes..."
                     value={newSchemaForm.description}
@@ -888,17 +888,17 @@ export const SchemaManager = ({
                 </div>
               </div>
 
-              <div style={{ padding: '14px 20px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <div style={{ padding: '14px 20px', background: 'var(--bg)', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: "var(--space-4)" }}>
                 <button
                   type="button"
-                  style={{ padding: '8px 16px', borderRadius: '7px', border: '1px solid #cbd5e1', background: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
+                  style={{ padding: '8px 16px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', background: 'var(--card)', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
                   onClick={() => setShowCreateModal(false)}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  style={{ padding: '8px 18px', borderRadius: '7px', border: 'none', background: '#2563eb', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
+                  style={{ padding: '8px 18px', borderRadius: "var(--radius-sm)", border: 'none', background: 'var(--primary)', color: 'var(--card)', fontWeight: 700, cursor: 'pointer' }}
                 >
                   {cloneFromSchemaId ? '📋 Copy Structure & Create' : 'Create Schema & V1 Draft'}
                 </button>
@@ -918,29 +918,29 @@ export const SchemaManager = ({
             background: 'rgba(15, 23, 42, 0.5)',
             display: 'grid',
             placeItems: 'center',
-            padding: '20px',
+            padding: "var(--space-8)",
           }}
         >
-          <div style={{ width: '100%', maxWidth: '500px', background: '#fff', borderRadius: '12px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
-            <div style={{ padding: '16px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h5 style={{ margin: 0, fontWeight: 800, color: '#0f172a', fontSize: '16px' }}>
+          <div style={{ width: '100%', maxWidth: '500px', background: 'var(--card)', borderRadius: "var(--radius-lg)", boxShadow: '0 20px 40px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
+            <div style={{ padding: '16px 20px', background: 'var(--bg)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h5 style={{ margin: 0, fontWeight: 800, color: 'var(--ink)', fontSize: "var(--text-lg)" }}>
                 ✏️ Edit Form Scope & Assigned Schools
               </h5>
               <button
                 type="button"
-                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '18px', color: '#64748b' }}
+                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: "var(--text-xl)", color: 'var(--muted)' }}
                 onClick={() => setShowEditScopeModal(false)}
               >
                 ✕
               </button>
             </div>
             <form onSubmit={handleSaveScopeSubmit}>
-              <div style={{ padding: '20px', display: 'grid', gap: '14px' }}>
+              <div style={{ padding: "var(--space-8)", display: 'grid', gap: "var(--space-6)" }}>
                 <div>
-                  <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>Schema Name</label>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>Schema Name</label>
                   <input
                     type="text"
-                    style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                    style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
                     required
                     value={editScopeName}
                     onChange={(e) => setEditScopeName(e.target.value)}
@@ -948,11 +948,11 @@ export const SchemaManager = ({
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontWeight: 700, fontSize: '13px', marginBottom: '6px', color: '#0f172a' }}>
+                  <label style={{ display: 'block', fontWeight: 700, fontSize: "var(--text-base)", marginBottom: "var(--space-2)", color: 'var(--ink)' }}>
                     Assigned Schools:
                   </label>
-                  <div style={{ display: 'flex', gap: '16px', marginBottom: '10px' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                  <div style={{ display: 'flex', gap: "var(--space-7)", marginBottom: "var(--space-4)" }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: "var(--space-2)", fontSize: "var(--text-base)", cursor: 'pointer' }}>
                       <input
                         type="radio"
                         name="editScopeRadio"
@@ -961,7 +961,7 @@ export const SchemaManager = ({
                       />
                       <span><strong>All Schools (Default shared form)</strong></span>
                     </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: "var(--space-2)", fontSize: "var(--text-base)", cursor: 'pointer' }}>
                       <input
                         type="radio"
                         name="editScopeRadio"
@@ -973,7 +973,7 @@ export const SchemaManager = ({
                   </div>
 
                   {editScopeMode === 'SPECIFIC' && (
-                    <div style={{ maxHeight: '160px', overflowY: 'auto', display: 'grid', gap: '6px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '8px' }}>
+                    <div style={{ maxHeight: '160px', overflowY: 'auto', display: 'grid', gap: "var(--space-2)", background: 'var(--card)', border: '1px solid var(--border-strong)', borderRadius: "var(--radius-sm)", padding: "var(--space-3)" }}>
                       {universitySchools.map((sch) => {
                         const isChecked = editScopeSchools.includes(sch.code) || editScopeSchools.includes(sch.name);
                         const conflictSchema = isAssignedToOther(sch.code || sch.name, editScopeSchema?.id);
@@ -983,8 +983,8 @@ export const SchemaManager = ({
                             style={{
                               display: 'flex',
                               alignItems: 'center',
-                              gap: '8px',
-                              fontSize: '12.5px',
+                              gap: "var(--space-3)",
+                              fontSize: "var(--text-base)",
                               cursor: conflictSchema ? 'not-allowed' : 'pointer',
                               opacity: conflictSchema ? 0.5 : 1,
                             }}
@@ -1002,9 +1002,9 @@ export const SchemaManager = ({
                                 }
                               }}
                             />
-                            <span><strong>{sch.name}</strong> <span style={{ color: '#64748b' }}>({sch.code})</span></span>
+                            <span><strong>{sch.name}</strong> <span style={{ color: 'var(--muted)' }}>({sch.code})</span></span>
                             {conflictSchema && (
-                              <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 6px', borderRadius: '5px', background: '#fef3c7', color: '#92400e' }}>
+                              <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, padding: '2px 6px', borderRadius: "var(--radius-2xs)", background: 'var(--amber-100)', color: 'var(--amber-700)' }}>
                                 (Assigned to: {conflictSchema.name})
                               </span>
                             )}
@@ -1016,17 +1016,17 @@ export const SchemaManager = ({
                 </div>
               </div>
 
-              <div style={{ padding: '14px 20px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <div style={{ padding: '14px 20px', background: 'var(--bg)', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: "var(--space-4)" }}>
                 <button
                   type="button"
-                  style={{ padding: '8px 16px', borderRadius: '7px', border: '1px solid #cbd5e1', background: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
+                  style={{ padding: '8px 16px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', background: 'var(--card)', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
                   onClick={() => setShowEditScopeModal(false)}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  style={{ padding: '8px 18px', borderRadius: '7px', border: 'none', background: '#2563eb', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
+                  style={{ padding: '8px 18px', borderRadius: "var(--radius-sm)", border: 'none', background: 'var(--primary)', color: 'var(--card)', fontWeight: 700, cursor: 'pointer' }}
                 >
                   Save Changes
                 </button>
