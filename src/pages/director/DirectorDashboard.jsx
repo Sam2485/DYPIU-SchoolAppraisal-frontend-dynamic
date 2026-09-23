@@ -16,18 +16,62 @@ const compactYear = (str = "") => {
   const end = match[2].slice(-2);
   return `${start}-${end}`;
 };
-// draft.exists / draft.status can be truthy even for a year nobody has touched, if the
-// backend pre-provisions a blank row per cycle — so "does this year have real content"
-// is judged from actual saved values/tables/attachments instead of just record presence.
+// Check if a draft/submission has real submitted or filled content, matching IQAC reports dropdown behavior
 const draftHasSubmittedData = (draft = {}) => {
-  const hasValues = Object.values(draft.values || {}).some(
-    (value) => value !== null && value !== undefined && String(value).trim() !== ""
-  );
-  const hasTables = Object.values(draft.tables || {}).some(
-    (rows) => Array.isArray(rows) && rows.length > 0
-  );
+  if (!draft) return false;
+  if (draft.hasData === false) return false;
+
+  const isSubmittedOrApproved = Boolean(draft.isSubmitted) || [
+    "submitted",
+    "under-review",
+    "auditor-completed",
+    "external-auditor-completed",
+    "approved",
+    "final",
+    "completed",
+  ].includes(String(draft.status || draft.overallStatus || "").toLowerCase().replaceAll("_", "-"));
+
+  if (isSubmittedOrApproved) return true;
+
+  const hasValues = Object.entries(draft.values || {}).some(([key, value]) => {
+    if (
+      key === "__auditSignOff" ||
+      key === "auditorSignOff" ||
+      key === "administrativeProgress" ||
+      key === "administrativeApprovals"
+    ) {
+      return false;
+    }
+    if (value === null || value === undefined) return false;
+    if (typeof value === "object") {
+      return Array.isArray(value) ? value.length > 0 : Object.keys(value).length > 0;
+    }
+    return String(value).trim() !== "";
+  });
+
+  const hasTables = Object.values(draft.tables || {}).some((rows) => {
+    if (!Array.isArray(rows) || rows.length === 0) return false;
+    return rows.some((row) => {
+      if (!row || typeof row !== "object") return false;
+      return Object.entries(row).some(([col, val]) => {
+        const colLower = col.toLowerCase();
+        if (
+          colLower.includes("srno") ||
+          colLower.includes("sr_no") ||
+          colLower.includes("serial") ||
+          colLower.includes("slno") ||
+          colLower === "id"
+        ) {
+          return false;
+        }
+        return val !== null && val !== undefined && String(val).trim() !== "";
+      });
+    });
+  });
+
   const hasAttachments = Array.isArray(draft.attachments) && draft.attachments.length > 0;
-  return Boolean(draft.id) || hasValues || hasTables || hasAttachments;
+
+  return hasValues || hasTables || hasAttachments;
 };
 
 export default function DirectorDashboard() {
@@ -148,14 +192,15 @@ export default function DirectorDashboard() {
         const yearsWithData = candidateYears.filter((_, index) => existenceChecks[index]);
         const visibleYears = Array.from(
           new Set([...(activeFormatted ? [activeFormatted] : []), ...yearsWithData])
-        ).sort();
+        ).sort((a, b) => Number(b.slice(0, 4)) - Number(a.slice(0, 4)));
         if (!isActive) return;
         setAvailableYears(visibleYears);
 
         const stored = sessionStorage.getItem("academicYear");
-        const selected = stored ? compactYear(stored) : activeFormatted;
+        const candidateSelected = stored ? compactYear(stored) : activeFormatted;
+        const selected = visibleYears.includes(candidateSelected) ? candidateSelected : activeFormatted;
         setAcademicYear(selected);
-        sessionStorage.setItem("academicYear", selected);
+        if (selected) sessionStorage.setItem("academicYear", selected);
       } catch {
         // Fallback to initial
       }
