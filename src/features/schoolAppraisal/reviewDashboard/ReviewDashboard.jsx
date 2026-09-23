@@ -1,6 +1,6 @@
 import { UserRound, Shield, CircleCheck, Clock, FileText, Calendar } from "lucide-react";
 import { toast, confirmAction } from "../../../components/feedback/feedbackBus";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { clearAuthState, getApiErrorMessage } from "../../../api/client";
 import {
@@ -5620,6 +5620,71 @@ function PreviousReportAuditSection({
   );
 }
 
+function KebabMenu({ items = [] }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+  const visibleItems = items.filter(Boolean);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const handleOutsideClick = (event) => {
+      if (rootRef.current && !rootRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
+  if (!visibleItems.length) return null;
+
+  return (
+    <div ref={rootRef} style={styles.kebabMenuRoot}>
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="More actions"
+        style={styles.kebabMenuButton}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="5" r="1.4" />
+          <circle cx="12" cy="12" r="1.4" />
+          <circle cx="12" cy="19" r="1.4" />
+        </svg>
+      </button>
+      {open && (
+        <div role="menu" style={styles.kebabMenuDropdown}>
+          {visibleItems.map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              role="menuitem"
+              disabled={item.disabled}
+              aria-busy={item.disabled}
+              onClick={() => {
+                setOpen(false);
+                item.onClick();
+              }}
+              style={styles.kebabMenuItem}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SubmissionCard({
   submission,
   onOpen,
@@ -5662,9 +5727,23 @@ function SubmissionCard({
     submission.auditType,
   ]);
 
+  // When a Generate Report action exists (the Previous Reports card), Download Attachments and
+  // View Form move into a "⋮" menu so the row keeps a single primary action visible, matching
+  // the compact one-row layout. Other contexts (no Generate Report) keep them as visible buttons.
+  const kebabItems = onGenerateReport
+    ? [
+        onDownload && {
+          label: downloadingAttachments ? "Preparing ZIP..." : "Download Attachments",
+          onClick: onDownload,
+          disabled: downloadingAttachments,
+        },
+        onOpen && { label: "View Form", onClick: onOpen },
+      ]
+    : [];
+
   return (
-    <article className="app-surface-card review-submission-card" style={styles.submissionCard}>
-      <div style={styles.submissionTop}>
+    <article className="app-surface-card review-submission-card" style={styles.submissionRow}>
+      <div style={styles.submissionRowIdentity}>
         <div style={styles.schoolAvatar}>
           {submitterAvatarUrl ? <img src={submitterAvatarUrl} alt="" style={styles.schoolAvatarImg} /> : submitterInitials}
         </div>
@@ -5682,9 +5761,6 @@ function SubmissionCard({
           {submission.auditType === "academic" && (
             <small style={styles.schoolGroup}>{SCHOOL_GROUPS[submission.group] || titleCase(submission.group || "")}</small>
           )}
-        </div>
-        <div style={styles.submissionTopStatus}>
-          <AuditorProgressPanel submission={submission} compact directoryUsers={directoryUsers} />
         </div>
       </div>
 
@@ -5704,6 +5780,10 @@ function SubmissionCard({
         {isApprovedReport(submission) && <InfoPill label="Audit type" value={auditLabels[submission.auditType]} />}
         {isApprovedReport(submission) && <InfoPill label="Audit category" value={`${titleCase(submission.reportCategory || "unclassified")} Audit`} />}
         {isApprovedReport(submission) && <InfoPill label="Cycle / Version" value={`${submission.auditCycle} / V${submission.version}`} />}
+      </div>
+
+      <div style={styles.submissionTopStatus}>
+        <AuditorProgressPanel submission={submission} compact directoryUsers={directoryUsers} />
       </div>
 
       <div style={styles.cardActions}>
@@ -5729,19 +5809,25 @@ function SubmissionCard({
             Generate Report
           </button>
         )}
-        {onDownload && (
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={onDownload}
-            disabled={downloadingAttachments}
-            aria-busy={downloadingAttachments}
-          >
-            {downloadingAttachments && <InlineSpinner label="Preparing attachment archive" />}
-            {downloadingAttachments ? "Preparing ZIP..." : "Download Attachments"}
-          </button>
+        {onGenerateReport ? (
+          <KebabMenu items={kebabItems} />
+        ) : (
+          <>
+            {onDownload && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={onDownload}
+                disabled={downloadingAttachments}
+                aria-busy={downloadingAttachments}
+              >
+                {downloadingAttachments && <InlineSpinner label="Preparing attachment archive" />}
+                {downloadingAttachments ? "Preparing ZIP..." : "Download Attachments"}
+              </button>
+            )}
+            {onOpen && <button type="button" className="btn btn-secondary" onClick={onOpen}>View Form</button>}
+          </>
         )}
-        {onOpen && <button type="button" className="btn btn-secondary" onClick={onOpen}>View Form</button>}
       </div>
     </article>
   );
@@ -9746,26 +9832,31 @@ const styles = {
     fontSize: 12,
     textAlign: "center",
   },
-  submissionCard: {
+  // Single compact row per report (avatar/name | stat chips | progress | actions), wrapping onto
+  // extra lines only when the viewport is too narrow to fit everything on one line.
+  submissionRow: {
     border: "1px solid #e2e8f0",
     borderRadius: 14,
     background: "#fff",
-    padding: 18,
+    padding: "14px 18px",
     display: "flex",
-    flexDirection: "column",
-    gap: 16,
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 18,
     boxShadow: "0 10px 30px rgba(15, 23, 42, 0.04)",
   },
-  submissionTop: {
+  submissionRowIdentity: {
     display: "flex",
-    alignItems: "flex-start",
+    alignItems: "center",
     gap: 12,
+    flex: "1 1 260px",
+    minWidth: 220,
   },
   submissionTopStatus: {
     display: "flex",
     flexDirection: "column",
     alignItems: "flex-end",
-    gap: 8,
+    gap: 6,
     flexShrink: 0,
   },
   schoolAvatar: {
@@ -9828,40 +9919,37 @@ const styles = {
   submissionInfoGrid: {
     display: "flex",
     flexWrap: "wrap",
-    gap: 10,
+    alignItems: "flex-start",
+    gap: 18,
+    flex: "2 1 420px",
   },
   infoPill: {
-    border: "1px solid #e2e8f0",
-    borderRadius: 10,
-    background: "#f8fafc",
-    padding: "9px 12px",
     display: "flex",
     flexDirection: "column",
-    gap: 3,
+    gap: 2,
     color: "#64748b",
     fontSize: 11,
-    minWidth: 128,
-    flex: "1 1 128px",
   },
   infoPillLabel: {
     display: "flex",
     alignItems: "center",
-    gap: 6,
-    fontSize: 11,
-    color: "#64748b",
+    gap: 5,
+    fontSize: 10.5,
+    color: "#94a3b8",
     fontWeight: 500,
+    whiteSpace: "nowrap",
   },
   infoPillIcon: {
     color: "#94a3b8",
     flexShrink: 0,
-    width: 12,
-    height: 12,
+    width: 11,
+    height: 11,
   },
   infoPillValue: {
-    fontSize: 13.5,
+    fontSize: 12.5,
     fontWeight: 650,
     color: "#0f172a",
-    marginTop: 1,
+    whiteSpace: "nowrap",
   },
   forwardedNotice: {
     display: "grid",
@@ -10183,8 +10271,51 @@ const styles = {
   cardActions: {
     display: "flex",
     justifyContent: "flex-end",
+    alignItems: "center",
     gap: 10,
     flexWrap: "wrap",
+  },
+  kebabMenuRoot: {
+    position: "relative",
+    display: "inline-flex",
+  },
+  kebabMenuButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    border: "1px solid #cbd5e1",
+    background: "#fff",
+    color: "#64748b",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+  },
+  kebabMenuDropdown: {
+    position: "absolute",
+    top: "calc(100% + 6px)",
+    right: 0,
+    zIndex: 20,
+    minWidth: 190,
+    background: "#fff",
+    border: "1px solid #e2e8f0",
+    borderRadius: 10,
+    boxShadow: "0 10px 30px rgba(15, 23, 42, 0.12)",
+    padding: 6,
+    display: "flex",
+    flexDirection: "column",
+    gap: 2,
+  },
+  kebabMenuItem: {
+    textAlign: "left",
+    background: "transparent",
+    border: "none",
+    borderRadius: 7,
+    padding: "9px 10px",
+    fontSize: 13,
+    fontWeight: 600,
+    color: "#0f172a",
+    cursor: "pointer",
   },
   fullReviewPage: {
     display: "flex",
