@@ -5778,7 +5778,6 @@ function SubmissionCard({
         />
         <InfoPill label="Attachments" value={submission.attachments.length} />
         {isApprovedReport(submission) && <InfoPill label="Audit type" value={auditLabels[submission.auditType]} />}
-        {isApprovedReport(submission) && <InfoPill label="Audit category" value={`${titleCase(submission.reportCategory || "unclassified")} Audit`} />}
         {isApprovedReport(submission) && <InfoPill label="Cycle / Version" value={`${submission.auditCycle} / V${submission.version}`} />}
       </div>
 
