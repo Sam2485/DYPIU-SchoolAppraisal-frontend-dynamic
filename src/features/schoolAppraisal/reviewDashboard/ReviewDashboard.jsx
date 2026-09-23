@@ -2477,9 +2477,14 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
     return items;
   }, [isAuditor, role]);
   const visibleActiveView = !canManageUsers && activeView === "user-management" ? defaultActiveView : activeView;
+  const currentCompactAcademicYear = compactAcademicYear(academicYear);
   const auditorReviewedSubmissions = useMemo(
-    () => allSubmissions.filter((submission) => isAuditorCompleted(submission) && !isApprovedReport(submission)),
-    [allSubmissions],
+    () => allSubmissions.filter((submission) =>
+      isAuditorCompleted(submission) &&
+      !isApprovedReport(submission) &&
+      compactAcademicYear(submission.auditCycle || academicYear) === currentCompactAcademicYear
+    ),
+    [allSubmissions, academicYear, currentCompactAcademicYear],
   );
   const previousReports = useMemo(
     () => allSubmissions.filter(isApprovedReport).map((report) => {
