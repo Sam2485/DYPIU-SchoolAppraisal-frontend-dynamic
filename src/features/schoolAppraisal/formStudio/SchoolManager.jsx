@@ -98,13 +98,13 @@ export const SchoolManager = ({ selectedUniversity }) => {
   };
 
   return (
-    <div className="school-manager-container" style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '24px' }}>
-      <div className="d-flex justify-content-between align-items-flex-start mb-4 flex-wrap gap-3">
-        <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+    <div className="school-manager-container" style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: "var(--radius-sm)", padding: "var(--space-9)" }}>
+      <div className="d-flex justify-content-between align-items-flex-start flex-wrap gap-3" style={{ marginBottom: '28px' }}>
+        <div style={{ display: 'flex', gap: "var(--space-6)", alignItems: 'flex-start' }}>
           <IconBadge tone="emerald" icon={<SchoolHouseIcon />} />
           <div>
-            <h2 className="fw-bold text-dark mb-1" style={{ fontSize: '20px' }}>University Schools & Departments</h2>
-            <p className="text-muted mb-0" style={{ fontSize: '13px' }}>
+            <h2 className="fw-bold text-dark mb-1" style={{ fontSize: "var(--text-2xl)" }}>University Schools & Departments</h2>
+            <p className="text-muted mb-0" style={{ fontSize: "var(--text-base)" }}>
               Configure academic schools, faculties, and departments for{' '}
               <strong className="text-primary">{selectedUniversity?.name || 'Your University'}</strong>.
             </p>
@@ -113,7 +113,7 @@ export const SchoolManager = ({ selectedUniversity }) => {
         <button
           type="button"
           className="btn btn-primary px-3 py-2 fw-semibold shadow-sm"
-          style={{ borderRadius: '8px', background: '#2563eb', color: '#fff', border: 'none', cursor: 'pointer', padding: '8px 16px', fontWeight: 600 }}
+          style={{ borderRadius: "var(--radius-sm)", background: 'var(--primary)', color: 'var(--card)', border: 'none', cursor: 'pointer', padding: '11px 22px', fontSize: "var(--text-md)", fontWeight: 600 }}
           onClick={handleOpenAdd}
         >
           + Add New School / Department
@@ -135,14 +135,14 @@ export const SchoolManager = ({ selectedUniversity }) => {
           description={`Click on "Add New School / Department" to configure academic units for ${selectedUniversity?.name || 'this university'}.`}
         />
       ) : (
-        <div className="card" style={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: 'none', background: '#fff', overflow: 'hidden' }}>
-          <div style={{ padding: '14px 18px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontWeight: 700, color: '#0f172a' }}>Configured Schools ({schools.length})</span>
+        <div className="card" style={{ borderRadius: "var(--radius-sm)", border: '1px solid var(--border)', boxShadow: 'none', background: 'var(--card)', overflow: 'hidden' }}>
+          <div style={{ padding: '14px 18px', background: 'var(--bg)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontWeight: 700, color: 'var(--ink)' }}>Configured Schools ({schools.length})</span>
           </div>
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px', textAlign: 'left' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: "var(--text-base)", textAlign: 'left' }}>
               <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569' }}>
+                <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)', color: '#475569' }}>
                   <th style={{ padding: '12px 16px', fontWeight: 700 }}>Code / Short Name</th>
                   <th style={{ padding: '12px 16px', fontWeight: 700 }}>Full School Name</th>
                   <th style={{ padding: '12px 16px', fontWeight: 700 }}>Group / Category</th>
@@ -154,24 +154,24 @@ export const SchoolManager = ({ selectedUniversity }) => {
                 {schools.map((school) => {
                   const isEng = school.groupName === 'engineering';
                   return (
-                    <tr key={school.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <tr key={school.id} style={{ borderBottom: '1px solid var(--bg-alt)' }}>
                       <td style={{ padding: '12px 16px', fontWeight: 700 }}>
-                        <code style={{ background: '#e0f2fe', color: '#0369a1', padding: '3px 7px', borderRadius: '5px' }}>
+                        <code style={{ background: '#e0f2fe', color: '#0369a1', padding: '3px 7px', borderRadius: "var(--radius-2xs)" }}>
                           {school.code}
                         </code>
                       </td>
-                      <td style={{ padding: '12px 16px', fontWeight: 600, color: '#0f172a' }}>
+                      <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--ink)' }}>
                         {school.name}
                       </td>
                       <td style={{ padding: '12px 16px' }}>
                         <span
                           style={{
-                            fontSize: '11px',
+                            fontSize: "var(--text-xs)",
                             fontWeight: 700,
                             padding: '3px 8px',
-                            borderRadius: '5px',
-                            background: isEng ? '#eff6ff' : '#fdf2f8',
-                            color: isEng ? '#1d4ed8' : '#be185d',
+                            borderRadius: "var(--radius-2xs)",
+                            background: isEng ? 'var(--accent-soft)' : '#fdf2f8',
+                            color: isEng ? 'var(--primary-dark)' : '#be185d',
                           }}
                         >
                           {school.groupName === 'engineering' ? 'Engineering' : school.groupName === 'nonEngineering' ? 'Non-Engineering' : 'General'}
@@ -180,29 +180,29 @@ export const SchoolManager = ({ selectedUniversity }) => {
                       <td style={{ padding: '12px 16px' }}>
                         <span
                           style={{
-                            fontSize: '11px',
+                            fontSize: "var(--text-xs)",
                             fontWeight: 700,
                             padding: '3px 8px',
-                            borderRadius: '5px',
-                            background: school.status === 'ACTIVE' ? '#d1fae5' : '#f1f5f9',
-                            color: school.status === 'ACTIVE' ? '#065f46' : '#64748b',
+                            borderRadius: "var(--radius-2xs)",
+                            background: school.status === 'ACTIVE' ? 'var(--green-150)' : 'var(--bg-alt)',
+                            color: school.status === 'ACTIVE' ? 'var(--green-800)' : 'var(--muted)',
                           }}
                         >
                           {school.status}
                         </span>
                       </td>
                       <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                        <div style={{ display: 'inline-flex', gap: '8px' }}>
+                        <div style={{ display: 'inline-flex', gap: "var(--space-3)" }}>
                           <button
                             type="button"
-                            style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#fff', color: '#334155', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}
+                            style={{ padding: '5px 12px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', background: 'var(--card)', color: '#334155', fontWeight: 600, fontSize: "var(--text-base)", cursor: 'pointer' }}
                             onClick={() => handleOpenEdit(school)}
                           >
                             ✏️ Edit
                           </button>
                           <button
                             type="button"
-                            style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid #fecaca', background: '#fff', color: '#b91c1c', cursor: 'pointer' }}
+                            style={{ padding: '5px 8px', borderRadius: "var(--radius-sm)", border: '1px solid var(--red-200)', background: 'var(--card)', color: 'var(--red-700)', cursor: 'pointer' }}
                             onClick={() => handleDelete(school)}
                             title="Delete School"
                           >
@@ -229,29 +229,29 @@ export const SchoolManager = ({ selectedUniversity }) => {
             background: 'rgba(15, 23, 42, 0.5)',
             display: 'grid',
             placeItems: 'center',
-            padding: '20px',
+            padding: "var(--space-8)",
           }}
         >
-          <div style={{ width: '100%', maxWidth: '500px', background: '#fff', borderRadius: '12px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
-            <div style={{ padding: '16px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h4 style={{ margin: 0, fontWeight: 800, color: '#0f172a', fontSize: '16px' }}>
+          <div style={{ width: '100%', maxWidth: '500px', background: 'var(--card)', borderRadius: "var(--radius-lg)", boxShadow: '0 20px 40px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
+            <div style={{ padding: '16px 20px', background: 'var(--bg)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h4 style={{ margin: 0, fontWeight: 800, color: 'var(--ink)', fontSize: "var(--text-lg)" }}>
                 {isEdit ? '✏️ Edit School / Department' : '🏫 Add New School / Department'}
               </h4>
               <button
                 type="button"
-                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '18px', color: '#64748b' }}
+                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: "var(--text-xl)", color: 'var(--muted)' }}
                 onClick={() => setShowModal(false)}
               >
                 ✕
               </button>
             </div>
             <form onSubmit={handleSubmit}>
-              <div style={{ padding: '20px', display: 'grid', gap: '14px' }}>
+              <div style={{ padding: "var(--space-8)", display: 'grid', gap: "var(--space-6)" }}>
                 <div>
-                  <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>Full School / Department Name*</label>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>Full School / Department Name*</label>
                   <input
                     type="text"
-                    style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                    style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
                     placeholder="e.g. School of Computer Science & Engineering"
                     required
                     value={formData.name}
@@ -259,21 +259,21 @@ export const SchoolManager = ({ selectedUniversity }) => {
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>School Code / Abbreviation*</label>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>School Code / Abbreviation*</label>
                   <input
                     type="text"
-                    style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                    style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
                     placeholder="e.g. SoCSE, SoE, SoM, CSE"
                     required
                     value={formData.code}
                     onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                   />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: "var(--space-4)" }}>
                   <div>
-                    <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>Category / Group</label>
+                    <label style={{ display: 'block', fontWeight: 600, fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>Category / Group</label>
                     <select
-                      style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                      style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
                       value={formData.groupName}
                       onChange={(e) => setFormData({ ...formData, groupName: e.target.value })}
                     >
@@ -283,9 +283,9 @@ export const SchoolManager = ({ selectedUniversity }) => {
                     </select>
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>Status</label>
+                    <label style={{ display: 'block', fontWeight: 600, fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>Status</label>
                     <select
-                      style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                      style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
                       value={formData.status}
                       onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                     >
@@ -295,17 +295,17 @@ export const SchoolManager = ({ selectedUniversity }) => {
                   </div>
                 </div>
               </div>
-              <div style={{ padding: '14px 20px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <div style={{ padding: '14px 20px', background: 'var(--bg)', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: "var(--space-4)" }}>
                 <button
                   type="button"
-                  style={{ padding: '8px 16px', borderRadius: '7px', border: '1px solid #cbd5e1', background: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
+                  style={{ padding: '8px 16px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', background: 'var(--card)', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
                   onClick={() => setShowModal(false)}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  style={{ padding: '8px 18px', borderRadius: '7px', border: 'none', background: '#2563eb', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
+                  style={{ padding: '8px 18px', borderRadius: "var(--radius-sm)", border: 'none', background: 'var(--primary)', color: 'var(--card)', fontWeight: 700, cursor: 'pointer' }}
                 >
                   {isEdit ? 'Update School' : 'Save School'}
                 </button>

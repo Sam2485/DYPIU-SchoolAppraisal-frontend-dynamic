@@ -58,7 +58,7 @@ export const TipBadgeIcon = ({ size = 22 }) => base(size, (
 export const IconBadge = ({ icon, tone = 'indigo', size = 42 }) => {
   const tones = {
     indigo: { background: '#e0e7ff', color: '#4338ca' },
-    emerald: { background: '#d1fae5', color: '#047857' },
+    emerald: { background: 'var(--green-150)', color: 'var(--green-750)' },
   };
   const { background, color } = tones[tone] || tones.indigo;
   return (
@@ -67,7 +67,7 @@ export const IconBadge = ({ icon, tone = 'indigo', size = 42 }) => {
         width: `${size}px`,
         height: `${size}px`,
         flexShrink: 0,
-        borderRadius: '10px',
+        borderRadius: "var(--radius-md)",
         display: 'grid',
         placeItems: 'center',
         background,
@@ -82,7 +82,7 @@ export const IconBadge = ({ icon, tone = 'indigo', size = 42 }) => {
 export const EmptyState = ({ icon, title, description, tone = 'indigo' }) => {
   const tones = {
     indigo: { background: '#eef2ff', color: '#a5b4fc' },
-    emerald: { background: '#ecfdf5', color: '#6ee7b7' },
+    emerald: { background: 'var(--teal-soft)', color: '#6ee7b7' },
   };
   const { background, color } = tones[tone] || tones.indigo;
   return (
@@ -90,8 +90,8 @@ export const EmptyState = ({ icon, title, description, tone = 'indigo' }) => {
       <div style={{ width: '72px', height: '72px', margin: '0 auto 18px', borderRadius: '50%', background, color, display: 'grid', placeItems: 'center' }}>
         {icon}
       </div>
-      <h4 className="fw-bold text-dark mb-1" style={{ fontSize: '16px' }}>{title}</h4>
-      <p className="text-muted mb-0" style={{ fontSize: '13px', maxWidth: '440px', margin: '0 auto' }}>{description}</p>
+      <h4 className="fw-bold text-dark mb-1" style={{ fontSize: "var(--text-lg)" }}>{title}</h4>
+      <p className="text-muted mb-0" style={{ fontSize: "var(--text-base)", maxWidth: '440px', margin: '0 auto' }}>{description}</p>
     </div>
   );
 };
@@ -106,16 +106,16 @@ export const AlertIcon = ({ size = 22 }) => base(size, (
 
 export const ErrorState = ({ title = 'Unable to load right now', message, onRetry }) => (
   <div style={{ padding: '40px 24px', textAlign: 'center' }}>
-    <div style={{ width: '72px', height: '72px', margin: '0 auto 18px', borderRadius: '50%', background: '#fef2f2', color: '#f87171', display: 'grid', placeItems: 'center' }}>
+    <div style={{ width: '72px', height: '72px', margin: '0 auto 18px', borderRadius: '50%', background: 'var(--red-50)', color: 'var(--red-400)', display: 'grid', placeItems: 'center' }}>
       <AlertIcon size={30} />
     </div>
-    <h4 className="fw-bold text-dark mb-1" style={{ fontSize: '16px' }}>{title}</h4>
-    <p className="text-muted mb-3" style={{ fontSize: '13px', maxWidth: '440px', margin: '0 auto' }}>{message}</p>
+    <h4 className="fw-bold text-dark mb-1" style={{ fontSize: "var(--text-lg)" }}>{title}</h4>
+    <p className="text-muted mb-3" style={{ fontSize: "var(--text-base)", maxWidth: '440px', margin: '0 auto' }}>{message}</p>
     {onRetry && (
       <button
         type="button"
         onClick={onRetry}
-        style={{ border: '1px solid #cbd5e1', borderRadius: '8px', background: '#fff', color: '#334155', fontWeight: 600, fontSize: '13px', padding: '8px 18px', cursor: 'pointer' }}
+        style={{ border: '1px solid var(--border-strong)', borderRadius: "var(--radius-sm)", background: 'var(--card)', color: '#334155', fontWeight: 600, fontSize: "var(--text-base)", padding: '8px 18px', cursor: 'pointer' }}
       >
         Retry
       </button>

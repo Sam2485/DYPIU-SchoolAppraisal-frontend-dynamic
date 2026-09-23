@@ -98,13 +98,13 @@ export const PostManager = ({ selectedUniversity }) => {
   };
 
   return (
-    <div className="post-manager-container" style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '24px' }}>
+    <div className="post-manager-container" style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: "var(--radius-sm)", padding: "var(--space-9)" }}>
       <div className="d-flex justify-content-between align-items-flex-start mb-4 flex-wrap gap-3">
-        <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', gap: "var(--space-6)", alignItems: 'flex-start' }}>
           <IconBadge tone="indigo" icon={<UsersIcon />} />
           <div>
-            <h2 className="fw-bold text-dark mb-1" style={{ fontSize: '20px' }}>University Administrative Posts</h2>
-            <p className="text-muted mb-0" style={{ fontSize: '13px' }}>
+            <h2 className="fw-bold text-dark mb-1" style={{ fontSize: "var(--text-2xl)" }}>University Administrative Posts</h2>
+            <p className="text-muted mb-0" style={{ fontSize: "var(--text-base)" }}>
               Configure administrative posts & offices (Registrar, HR, Dean Student Welfare, CFO, etc.) for{' '}
               <strong className="text-primary">{selectedUniversity?.name || 'Your University'}</strong>.
             </p>
@@ -113,17 +113,17 @@ export const PostManager = ({ selectedUniversity }) => {
         <button
           type="button"
           className="btn btn-primary px-3 py-2 fw-semibold shadow-sm"
-          style={{ borderRadius: '8px', background: '#2563eb', color: '#fff', border: 'none', cursor: 'pointer', padding: '8px 16px', fontWeight: 600 }}
+          style={{ borderRadius: "var(--radius-sm)", background: 'var(--primary)', color: 'var(--card)', border: 'none', cursor: 'pointer', padding: '8px 16px', fontWeight: 600 }}
           onClick={handleOpenAdd}
         >
           + Add New Administrative Post
         </button>
       </div>
 
-      <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '14px 16px', marginBottom: '20px', wordBreak: 'break-word' }}>
-        <span style={{ width: '26px', height: '26px', flexShrink: 0, borderRadius: '50%', background: '#2563eb', color: '#fff', display: 'grid', placeItems: 'center' }}><InfoBadgeIcon size={15} /></span>
-        <div style={{ fontSize: '12px', lineHeight: '1.55', color: '#334155' }}>
-          <strong style={{ display: 'block', color: '#1e3a8a', fontSize: '12.5px', marginBottom: '2px' }}>Role of Administrative Posts</strong>
+      <div style={{ display: 'flex', gap: "var(--space-5)", alignItems: 'flex-start', background: 'var(--accent-soft)', border: '1px solid var(--accent-border)', borderRadius: "var(--radius-md)", padding: '14px 16px', marginBottom: "var(--space-8)", wordBreak: 'break-word' }}>
+        <span style={{ width: '26px', height: '26px', flexShrink: 0, borderRadius: '50%', background: 'var(--primary)', color: 'var(--card)', display: 'grid', placeItems: 'center' }}><InfoBadgeIcon size={15} /></span>
+        <div style={{ fontSize: "var(--text-base)", lineHeight: '1.55', color: '#334155' }}>
+          <strong style={{ display: 'block', color: '#1e3a8a', fontSize: "var(--text-base)", marginBottom: '2px' }}>Role of Administrative Posts</strong>
           In the Administrative flow, there is <strong>one unified form</strong> divided into sections. Each section is assigned to one of these posts. Administrative users mapped to a post will fill only their assigned section(s).
         </div>
       </div>
@@ -143,14 +143,14 @@ export const PostManager = ({ selectedUniversity }) => {
           description={`Click on "Add New Administrative Post" to set up posts such as Registrar, HR, Dean Student Welfare, CFO, etc. for ${selectedUniversity?.name || 'this university'}.`}
         />
       ) : (
-        <div className="card" style={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: 'none', background: '#fff', overflow: 'hidden' }}>
-          <div style={{ padding: '14px 18px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontWeight: 700, color: '#0f172a' }}>Configured Posts ({posts.length})</span>
+        <div className="card" style={{ borderRadius: "var(--radius-sm)", border: '1px solid var(--border)', boxShadow: 'none', background: 'var(--card)', overflow: 'hidden' }}>
+          <div style={{ padding: '14px 18px', background: 'var(--bg)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontWeight: 700, color: 'var(--ink)' }}>Configured Posts ({posts.length})</span>
           </div>
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px', textAlign: 'left' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: "var(--text-base)", textAlign: 'left' }}>
               <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569' }}>
+                <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)', color: '#475569' }}>
                   <th style={{ padding: '12px 16px', fontWeight: 700 }}>Post Code / Identifier</th>
                   <th style={{ padding: '12px 16px', fontWeight: 700 }}>Post Title / Designation</th>
                   <th style={{ padding: '12px 16px', fontWeight: 700 }}>Description</th>
@@ -160,44 +160,44 @@ export const PostManager = ({ selectedUniversity }) => {
               </thead>
               <tbody>
                 {posts.map((post) => (
-                  <tr key={post.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <tr key={post.id} style={{ borderBottom: '1px solid var(--bg-alt)' }}>
                     <td style={{ padding: '12px 16px', fontWeight: 700 }}>
-                      <code style={{ background: '#f1f5f9', color: '#475569', padding: '3px 7px', borderRadius: '5px' }}>
+                      <code style={{ background: 'var(--bg-alt)', color: '#475569', padding: '3px 7px', borderRadius: "var(--radius-2xs)" }}>
                         {post.code}
                       </code>
                     </td>
-                    <td style={{ padding: '12px 16px', fontWeight: 600, color: '#0f172a' }}>
+                    <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--ink)' }}>
                       {post.name}
                     </td>
-                    <td style={{ padding: '12px 16px', color: '#64748b' }}>
+                    <td style={{ padding: '12px 16px', color: 'var(--muted)' }}>
                       {post.description || '-'}
                     </td>
                     <td style={{ padding: '12px 16px' }}>
                       <span
                         style={{
-                          fontSize: '11px',
+                          fontSize: "var(--text-xs)",
                           fontWeight: 700,
                           padding: '3px 8px',
-                          borderRadius: '5px',
-                          background: post.status === 'ACTIVE' ? '#d1fae5' : '#f1f5f9',
-                          color: post.status === 'ACTIVE' ? '#065f46' : '#64748b',
+                          borderRadius: "var(--radius-2xs)",
+                          background: post.status === 'ACTIVE' ? 'var(--green-150)' : 'var(--bg-alt)',
+                          color: post.status === 'ACTIVE' ? 'var(--green-800)' : 'var(--muted)',
                         }}
                       >
                         {post.status}
                       </span>
                     </td>
                     <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                      <div style={{ display: 'inline-flex', gap: '8px' }}>
+                      <div style={{ display: 'inline-flex', gap: "var(--space-3)" }}>
                         <button
                           type="button"
-                          style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#fff', color: '#334155', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}
+                          style={{ padding: '5px 12px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', background: 'var(--card)', color: '#334155', fontWeight: 600, fontSize: "var(--text-base)", cursor: 'pointer' }}
                           onClick={() => handleOpenEdit(post)}
                         >
                           ✏️ Edit
                         </button>
                         <button
                           type="button"
-                          style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid #fecaca', background: '#fff', color: '#b91c1c', cursor: 'pointer' }}
+                          style={{ padding: '5px 8px', borderRadius: "var(--radius-sm)", border: '1px solid var(--red-200)', background: 'var(--card)', color: 'var(--red-700)', cursor: 'pointer' }}
                           onClick={() => handleDelete(post)}
                           title="Delete Post"
                         >
@@ -223,29 +223,29 @@ export const PostManager = ({ selectedUniversity }) => {
             background: 'rgba(15, 23, 42, 0.5)',
             display: 'grid',
             placeItems: 'center',
-            padding: '20px',
+            padding: "var(--space-8)",
           }}
         >
-          <div style={{ width: '100%', maxWidth: '500px', background: '#fff', borderRadius: '12px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
-            <div style={{ padding: '16px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h4 style={{ margin: 0, fontWeight: 800, color: '#0f172a', fontSize: '16px' }}>
+          <div style={{ width: '100%', maxWidth: '500px', background: 'var(--card)', borderRadius: "var(--radius-lg)", boxShadow: '0 20px 40px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
+            <div style={{ padding: '16px 20px', background: 'var(--bg)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h4 style={{ margin: 0, fontWeight: 800, color: 'var(--ink)', fontSize: "var(--text-lg)" }}>
                 {isEdit ? '✏️ Edit Administrative Post' : '👔 Add New Administrative Post'}
               </h4>
               <button
                 type="button"
-                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '18px', color: '#64748b' }}
+                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: "var(--text-xl)", color: 'var(--muted)' }}
                 onClick={() => setShowModal(false)}
               >
                 ✕
               </button>
             </div>
             <form onSubmit={handleSubmit}>
-              <div style={{ padding: '20px', display: 'grid', gap: '14px' }}>
+              <div style={{ padding: "var(--space-8)", display: 'grid', gap: "var(--space-6)" }}>
                 <div>
-                  <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>Post Title / Name*</label>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>Post Title / Name*</label>
                   <input
                     type="text"
-                    style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                    style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
                     placeholder="e.g. Registrar, HR, Dean Student Welfare, Chief Financial Officer"
                     required
                     value={formData.name}
@@ -253,10 +253,10 @@ export const PostManager = ({ selectedUniversity }) => {
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>Post Code / Identifier*</label>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>Post Code / Identifier*</label>
                   <input
                     type="text"
-                    style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                    style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
                     placeholder="e.g. REGISTRAR, HR, DSW, PLACEMENT, CFO"
                     required
                     value={formData.code}
@@ -264,9 +264,9 @@ export const PostManager = ({ selectedUniversity }) => {
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>Description / Department Office</label>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>Description / Department Office</label>
                   <textarea
-                    style={{ width: '100%', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '8px 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                    style={{ width: '100%', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '8px 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
                     rows={2}
                     placeholder="e.g. Office of the Registrar, responsible for governance & academic operations"
                     value={formData.description}
@@ -274,9 +274,9 @@ export const PostManager = ({ selectedUniversity }) => {
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>Status</label>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>Status</label>
                   <select
-                    style={{ width: '100%', height: '38px', borderRadius: '7px', border: '1px solid #cbd5e1', padding: '0 10px', fontSize: '13px', boxSizing: 'border-box' }}
+                    style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                   >
@@ -285,17 +285,17 @@ export const PostManager = ({ selectedUniversity }) => {
                   </select>
                 </div>
               </div>
-              <div style={{ padding: '14px 20px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <div style={{ padding: '14px 20px', background: 'var(--bg)', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: "var(--space-4)" }}>
                 <button
                   type="button"
-                  style={{ padding: '8px 16px', borderRadius: '7px', border: '1px solid #cbd5e1', background: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
+                  style={{ padding: '8px 16px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', background: 'var(--card)', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
                   onClick={() => setShowModal(false)}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  style={{ padding: '8px 18px', borderRadius: '7px', border: 'none', background: '#2563eb', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
+                  style={{ padding: '8px 18px', borderRadius: "var(--radius-sm)", border: 'none', background: 'var(--primary)', color: 'var(--card)', fontWeight: 700, cursor: 'pointer' }}
                 >
                   {isEdit ? 'Update Post' : 'Save Post'}
                 </button>

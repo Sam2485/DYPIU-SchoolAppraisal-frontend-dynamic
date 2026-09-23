@@ -185,37 +185,37 @@ export default function DirectorDashboard() {
         {schemaLoading ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
             <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}></div>
-            <p style={{ marginTop: '16px', color: '#64748b', fontWeight: 600 }}>Loading Appraisal Form...</p>
+            <p style={{ marginTop: "var(--space-7)", color: 'var(--muted)', fontWeight: 600 }}>Loading Appraisal Form...</p>
           </div>
         ) : !schema || !schema.sections || schema.sections.length === 0 ? (
           <div style={{ padding: "40px 24px", maxWidth: "820px", margin: "40px auto" }}>
             <div style={{
-              background: "#fff",
-              border: "1px solid #e2e8f0",
-              borderRadius: "16px",
+              background: "var(--card)",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius-xl)",
               padding: "48px 36px",
               textAlign: "center",
               boxShadow: "0 4px 24px rgba(0,0,0,0.06)"
             }}>
-              <div style={{ fontSize: "56px", marginBottom: "16px" }}>📋</div>
-              <h2 style={{ fontSize: "22px", fontWeight: "800", color: "#0f172a", marginBottom: "8px" }}>
+              <div style={{ fontSize: "var(--text-8xl)", marginBottom: "var(--space-7)" }}>📋</div>
+              <h2 style={{ fontSize: "var(--text-3xl)", fontWeight: "800", color: "var(--ink)", marginBottom: "var(--space-3)" }}>
                 No Active Appraisal Form Published
               </h2>
-              <p style={{ color: "#64748b", fontSize: "15px", lineHeight: "1.6", maxWidth: "580px", margin: "0 auto 24px" }}>
+              <p style={{ color: "var(--muted)", fontSize: "var(--text-md)", lineHeight: "1.6", maxWidth: "580px", margin: "0 auto 24px" }}>
                 IQAC has not yet published an appraisal form for <strong>{profile.school || "your school/department"}</strong> for Academic Year <strong>{academicYear}</strong>.
               </p>
               <div style={{
-                background: "#f0fdf4",
-                border: "1px solid #bbf7d0",
-                borderRadius: "10px",
+                background: "var(--green-50)",
+                border: "1px solid var(--green-200)",
+                borderRadius: "var(--radius-md)",
                 padding: "16px 20px",
                 textAlign: "left",
-                color: "#166534",
-                fontSize: "14px",
+                color: "var(--green-700)",
+                fontSize: "var(--text-md)",
                 display: "inline-block"
               }}>
                 <strong>💡 What happens next?</strong>
-                <ul style={{ margin: "8px 0 0 0", paddingLeft: "20px" }}>
+                <ul style={{ margin: "8px 0 0 0", paddingLeft: "var(--space-8)" }}>
                   <li>IQAC creates and designs the appraisal sections and tables in <strong>Appraisal Form Studio</strong>.</li>
                   <li>Once IQAC clicks <strong>🚀 Publish Version</strong>, your form will instantly become available here for data entry and submission.</li>
                 </ul>
@@ -267,14 +267,14 @@ function PrintStyles() {
         }
         .academic-audit-shell {
           display: block !important;
-          background: #fff !important;
+          background: var(--card) !important;
         }
         .academic-audit-main {
           padding: 0 !important;
           overflow: visible !important;
         }
         body {
-          background: #fff !important;
+          background: var(--card) !important;
         }
       }
     `}</style>
@@ -305,7 +305,7 @@ const styles = {
     minHeight: "100vh",
     display: "flex",
     background: "#f5f7fb",
-    color: "#0f172a",
+    color: "var(--ink)",
     fontFamily: "Inter, 'Segoe UI', sans-serif",
   },
   sidebar: {
@@ -316,12 +316,12 @@ const styles = {
     flexShrink: 0,
     boxSizing: "border-box",
     overflow: "hidden",
-    background: "#0f172a",
+    background: "var(--ink)",
     display: "flex",
     flexDirection: "column",
     padding: "22px 16px",
     gap: 12,
-    color: "#e2e8f0",
+    color: "var(--border)",
     borderRight: "1px solid rgba(255,255,255,0.06)",
     boxShadow: "2px 0 16px rgba(15,23,42,0.14)",
   },
@@ -335,43 +335,43 @@ const styles = {
     width: 40,
     height: 40,
     borderRadius: 12,
-    background: "linear-gradient(135deg,#3b82f6,#2563eb)",
+    background: "linear-gradient(135deg,#3b82f6,var(--primary))",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    color: "#fff",
+    color: "var(--card)",
     fontWeight: 900,
     fontSize: 14,
   },
   brandTitle: {
-    color: "#f8fafc",
+    color: "var(--bg)",
     fontWeight: 800,
     fontSize: 14,
   },
   brandSub: {
-    color: "#94a3b8",
+    color: "var(--muted)",
     fontSize: 14,
     marginTop: 2,
     lineHeight: 1.3,
   },
   roleCard: {
-    background: "#1d4ed8",
+    background: "var(--primary-dark)",
     borderRadius: 12,
     padding: "11px 12px",
     fontSize: 14,
-    color: "#bfdbfe",
+    color: "var(--accent-border)",
   },
   roleTitle: {
     fontWeight: 800,
     marginBottom: 2,
-    color: "#fff",
+    color: "var(--card)",
   },
   roleText: {
     color: "#dbeafe",
     fontSize: 14,
   },
   roleYear: {
-    color: "#bfdbfe",
+    color: "var(--accent-border)",
     fontSize: 14,
     marginTop: 6,
     fontWeight: 800,
@@ -383,11 +383,11 @@ const styles = {
   navCard: {
     background: "#1e293b",
     borderRadius: 10,
-    padding: "12px",
+    padding: "var(--space-5)",
   },
   navLabel: {
     display: "block",
-    color: "#94a3b8",
+    color: "var(--muted)",
     fontWeight: 800,
     fontSize: 14,
     textTransform: "uppercase",
@@ -398,8 +398,8 @@ const styles = {
     width: "100%",
     border: "1px solid #334155",
     borderRadius: 8,
-    background: "#0f172a",
-    color: "#e2e8f0",
+    background: "var(--ink)",
+    color: "var(--border)",
     padding: "9px 10px",
     fontSize: 14,
     fontWeight: 700,
@@ -409,11 +409,11 @@ const styles = {
     margin: "8px 0",
     padding: "10px 12px",
     background: "rgba(37,99,235,0.15)",
-    border: "1px solid #2563eb",
+    border: "1px solid var(--primary)",
     borderRadius: 8,
   },
   queryLabel: {
-    color: "#94a3b8",
+    color: "var(--muted)",
     fontWeight: 700,
     fontSize: 14,
     textTransform: "uppercase",
@@ -446,8 +446,8 @@ const styles = {
     width: 34,
     height: 34,
     borderRadius: 10,
-    background: "#2563eb",
-    color: "#fff",
+    background: "var(--primary)",
+    color: "var(--card)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -459,13 +459,13 @@ const styles = {
     minWidth: 0,
   },
   profileName: {
-    color: "#e2e8f0",
+    color: "var(--border)",
     fontSize: 14,
     fontWeight: 800,
     overflowWrap: "anywhere",
   },
   profileMeta: {
-    color: "#64748b",
+    color: "var(--muted)",
     fontSize: 14,
     marginTop: 2,
     overflowWrap: "anywhere",
@@ -475,7 +475,7 @@ const styles = {
     border: "1px solid #374151",
     borderRadius: 8,
     background: "transparent",
-    color: "#f87171",
+    color: "var(--red-400)",
     padding: "9px 11px",
     cursor: "pointer",
     fontWeight: 800,
@@ -499,19 +499,19 @@ const styles = {
   },
   modal: {
     width: "min(380px, 92vw)",
-    background: "#fff",
+    background: "var(--card)",
     borderRadius: 12,
     padding: "26px 28px",
     boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
   },
   modalTitle: {
-    color: "#0f172a",
+    color: "var(--ink)",
     fontWeight: 900,
     fontSize: 18,
     marginBottom: 8,
   },
   modalText: {
-    color: "#64748b",
+    color: "var(--muted)",
     fontSize: 14,
     lineHeight: 1.6,
     marginBottom: 18,
@@ -524,7 +524,7 @@ const styles = {
     flex: 1,
     border: "none",
     borderRadius: 8,
-    background: "#f1f5f9",
+    background: "var(--bg-alt)",
     color: "#475569",
     padding: 10,
     fontWeight: 800,
@@ -535,8 +535,8 @@ const styles = {
     flex: 1,
     border: "none",
     borderRadius: 8,
-    background: "#dc2626",
-    color: "#fff",
+    background: "var(--red-600)",
+    color: "var(--card)",
     padding: 10,
     fontWeight: 800,
     cursor: "pointer",

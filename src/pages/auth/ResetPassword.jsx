@@ -82,7 +82,7 @@ export default function ResetPassword() {
         .dyp-btn {
           width: 100%;
           padding: 12px;
-          background: #2563eb;
+          background: var(--primary);
           color: white;
           border: none;
           border-radius: 4px;
@@ -94,7 +94,7 @@ export default function ResetPassword() {
           margin-bottom: 12px;
           letter-spacing: 0.2px;
         }
-        .dyp-btn:hover:not(:disabled) { background: #1d4ed8; }
+        .dyp-btn:hover:not(:disabled) { background: var(--primary-dark); }
         .dyp-btn:disabled { opacity: 0.72; cursor: not-allowed; }
         .dyp-link {
           background: none;
@@ -280,7 +280,7 @@ const s = {
   error: {
     background: "rgba(185,28,28,0.25)",
     border: "1px solid rgba(252,165,165,0.5)",
-    color: "#fca5a5",
+    color: "var(--red-300)",
     padding: "9px 12px",
     borderRadius: 4,
     fontSize: 12,

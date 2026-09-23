@@ -79,7 +79,7 @@ const PreviewTableCell = ({
   // 1. SR NO CELL
   if (type === 'SR_NO') {
     return (
-      <div style={{ textAlign: 'center', fontWeight: 700, color: '#64748b', fontSize: '12.5px' }}>
+      <div style={{ textAlign: 'center', fontWeight: 700, color: 'var(--muted)', fontSize: "var(--text-base)" }}>
         {cellVal || rowIndex + 1}
       </div>
     );
@@ -90,22 +90,22 @@ const PreviewTableCell = ({
     const hasFile = Boolean(cellVal && String(cellVal).trim());
 
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-3)", flexWrap: 'wrap' }}>
         {hasFile ? (
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '6px',
+            gap: "var(--space-2)",
             padding: '4px 10px',
-            borderRadius: '6px',
-            background: '#eff6ff',
-            border: '1px solid #bfdbfe',
+            borderRadius: "var(--radius-sm)",
+            background: 'var(--accent-soft)',
+            border: '1px solid var(--accent-border)',
             color: '#1e40af',
-            fontSize: '12px',
+            fontSize: "var(--text-base)",
             fontWeight: 600,
             maxWidth: '220px',
           }}>
-            <span style={{ fontSize: '13px' }}>📄</span>
+            <span style={{ fontSize: "var(--text-base)" }}>📄</span>
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={String(cellVal)}>
               {cellVal}
             </span>
@@ -116,10 +116,10 @@ const PreviewTableCell = ({
                 style={{
                   border: 'none',
                   background: 'transparent',
-                  color: '#ef4444',
+                  color: 'var(--red-500)',
                   cursor: 'pointer',
                   fontWeight: 800,
-                  fontSize: '13px',
+                  fontSize: "var(--text-base)",
                   padding: '0 2px',
                   lineHeight: 1,
                 }}
@@ -130,7 +130,7 @@ const PreviewTableCell = ({
             )}
           </div>
         ) : !isLocked ? (
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: "var(--space-2)" }}>
             <input
               type="file"
               ref={fileInputRef}
@@ -143,21 +143,21 @@ const PreviewTableCell = ({
               onClick={() => fileInputRef.current?.click()}
               style={{
                 padding: '5px 11px',
-                borderRadius: '6px',
-                border: '1px solid #cbd5e1',
-                background: '#ffffff',
-                color: '#2563eb',
-                fontSize: '12px',
+                borderRadius: "var(--radius-sm)",
+                border: '1px solid var(--border-strong)',
+                background: 'var(--card)',
+                color: 'var(--primary)',
+                fontSize: "var(--text-base)",
                 fontWeight: 650,
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '5px',
+                gap: "var(--space-2)",
                 boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
                 transition: 'all 0.15s ease',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#93c5fd'; e.currentTarget.style.background = '#eff6ff'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.background = '#ffffff'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#93c5fd'; e.currentTarget.style.background = 'var(--accent-soft)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-strong)'; e.currentTarget.style.background = 'var(--card)'; }}
             >
               <span>📎</span>
               <span>Upload Doc</span>
@@ -170,11 +170,11 @@ const PreviewTableCell = ({
               }}
               style={{
                 padding: '5px 8px',
-                borderRadius: '6px',
-                border: '1px dashed #cbd5e1',
-                background: '#f8fafc',
-                color: '#64748b',
-                fontSize: '11px',
+                borderRadius: "var(--radius-sm)",
+                border: '1px dashed var(--border-strong)',
+                background: 'var(--bg)',
+                color: 'var(--muted)',
+                fontSize: "var(--text-xs)",
                 fontWeight: 600,
                 cursor: 'pointer',
               }}
@@ -184,7 +184,7 @@ const PreviewTableCell = ({
             </button>
           </div>
         ) : (
-          <span style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>No document</span>
+          <span style={{ fontSize: "var(--text-base)", color: 'var(--muted)', fontStyle: 'italic' }}>No document</span>
         )}
       </div>
     );
@@ -201,11 +201,11 @@ const PreviewTableCell = ({
         style={{
           width: '100%',
           height: '34px',
-          borderRadius: '6px',
-          border: '1px solid #cbd5e1',
+          borderRadius: "var(--radius-sm)",
+          border: '1px solid var(--border-strong)',
           padding: '0 8px',
-          fontSize: '12.5px',
-          background: isLocked ? '#f8fafc' : '#fff',
+          fontSize: "var(--text-base)",
+          background: isLocked ? 'var(--bg)' : 'var(--card)',
           boxSizing: 'border-box',
           outline: 'none',
         }}
@@ -229,11 +229,11 @@ const PreviewTableCell = ({
         style={{
           width: '100%',
           height: '34px',
-          borderRadius: '6px',
-          border: '1px solid #cbd5e1',
+          borderRadius: "var(--radius-sm)",
+          border: '1px solid var(--border-strong)',
           padding: '0 8px',
-          fontSize: '12.5px',
-          background: isLocked ? '#f8fafc' : '#fff',
+          fontSize: "var(--text-base)",
+          background: isLocked ? 'var(--bg)' : 'var(--card)',
           boxSizing: 'border-box',
           outline: 'none',
         }}
@@ -253,11 +253,11 @@ const PreviewTableCell = ({
         style={{
           width: '100%',
           height: '34px',
-          borderRadius: '6px',
-          border: '1px solid #cbd5e1',
+          borderRadius: "var(--radius-sm)",
+          border: '1px solid var(--border-strong)',
           padding: '0 8px',
-          fontSize: '12.5px',
-          background: isLocked ? '#f8fafc' : '#fff',
+          fontSize: "var(--text-base)",
+          background: isLocked ? 'var(--bg)' : 'var(--card)',
           boxSizing: 'border-box',
           outline: 'none',
         }}
@@ -276,11 +276,11 @@ const PreviewTableCell = ({
         onChange={(e) => onCellChange(tableKey, rowIndex, colName, e.target.value)}
         style={{
           width: '100%',
-          borderRadius: '6px',
-          border: '1px solid #cbd5e1',
+          borderRadius: "var(--radius-sm)",
+          border: '1px solid var(--border-strong)',
           padding: '6px 8px',
-          fontSize: '12.5px',
-          background: isLocked ? '#f8fafc' : '#fff',
+          fontSize: "var(--text-base)",
+          background: isLocked ? 'var(--bg)' : 'var(--card)',
           boxSizing: 'border-box',
           outline: 'none',
           resize: 'vertical',
@@ -300,11 +300,11 @@ const PreviewTableCell = ({
       style={{
         width: '100%',
         height: '34px',
-        borderRadius: '6px',
-        border: '1px solid #cbd5e1',
+        borderRadius: "var(--radius-sm)",
+        border: '1px solid var(--border-strong)',
         padding: '0 8px',
-        fontSize: '12.5px',
-        background: isLocked ? '#f8fafc' : '#fff',
+        fontSize: "var(--text-base)",
+        background: isLocked ? 'var(--bg)' : 'var(--card)',
         boxSizing: 'border-box',
         outline: 'none',
       }}
@@ -347,10 +347,10 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
 
   if (loading) {
     return (
-      <div style={{ padding: '80px 24px', textAlign: 'center', background: '#f8fafc', minHeight: '80vh' }}>
-        <div style={{ display: 'inline-block', width: '48px', height: '48px', border: '4px solid #e2e8f0', borderTopColor: '#2563eb', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
-        <h3 style={{ margin: '20px 0 8px', color: '#1e293b', fontWeight: 700, fontSize: '18px' }}>Generating Live Form Simulator...</h3>
-        <p style={{ margin: 0, color: '#64748b', fontSize: '14px' }}>Loading dynamic form hierarchy, sections, and tables.</p>
+      <div style={{ padding: '80px 24px', textAlign: 'center', background: 'var(--bg)', minHeight: '80vh' }}>
+        <div style={{ display: 'inline-block', width: '48px', height: '48px', border: '4px solid var(--border)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
+        <h3 style={{ margin: '20px 0 8px', color: '#1e293b', fontWeight: 700, fontSize: "var(--text-xl)" }}>Generating Live Form Simulator...</h3>
+        <p style={{ margin: 0, color: 'var(--muted)', fontSize: "var(--text-md)" }}>Loading dynamic form hierarchy, sections, and tables.</p>
         <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
       </div>
     );
@@ -359,10 +359,10 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
   if (!schema) {
     return (
       <div style={{ padding: '60px 24px', maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
-        <div style={{ padding: '32px', background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-          <div style={{ fontSize: '42px', marginBottom: '16px' }}>⚠️</div>
-          <h3 style={{ margin: '0 0 10px', color: '#0f172a', fontWeight: 800, fontSize: '18px' }}>No Schema Loaded</h3>
-          <p style={{ margin: '0 0 24px', color: '#64748b', fontSize: '14px', lineHeight: 1.5 }}>
+        <div style={{ padding: "var(--space-10)", background: 'var(--card)', borderRadius: "var(--radius-xl)", border: '1px solid var(--border)', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+          <div style={{ fontSize: "var(--text-6xl)", marginBottom: "var(--space-7)" }}>⚠️</div>
+          <h3 style={{ margin: '0 0 10px', color: 'var(--ink)', fontWeight: 800, fontSize: "var(--text-xl)" }}>No Schema Loaded</h3>
+          <p style={{ margin: '0 0 24px', color: 'var(--muted)', fontSize: "var(--text-md)", lineHeight: 1.5 }}>
             Unable to retrieve the form schema tree for version ID: <strong>{versionId || 'None'}</strong>. Please return to the Form Studio editor and try again.
           </p>
           <button
@@ -370,12 +370,12 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
             onClick={onBack}
             style={{
               padding: '10px 24px',
-              borderRadius: '9px',
-              border: '1px solid #cbd5e1',
-              background: '#2563eb',
-              color: '#fff',
+              borderRadius: "var(--radius-md)",
+              border: '1px solid var(--border-strong)',
+              background: 'var(--primary)',
+              color: 'var(--card)',
               fontWeight: 700,
-              fontSize: '14px',
+              fontSize: "var(--text-md)",
               cursor: 'pointer',
               boxShadow: '0 2px 6px rgba(37,99,235,0.25)',
             }}
@@ -455,50 +455,50 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
   const isSectionLockedInCurrentRole = simulationRole === 'submitter' && isAuditorSection;
 
   return (
-    <div style={{ minHeight: '100%', background: '#f8fafc', paddingBottom: '80px', fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+    <div style={{ minHeight: '100%', background: 'var(--bg)', paddingBottom: '80px', fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       
       {/* 1. TOP STICKY APP BAR */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 100, background: '#ffffff', borderBottom: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', padding: '12px 24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 100, background: 'var(--card)', borderBottom: '1px solid var(--border)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', padding: '12px 24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: "var(--space-5)" }}>
           
           {/* Left: Back button & Breadcrumbs */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-6)" }}>
             <button
               type="button"
               onClick={onBack}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '6px',
+                gap: "var(--space-2)",
                 padding: '7px 14px',
-                borderRadius: '8px',
-                border: '1px solid #cbd5e1',
-                background: '#f8fafc',
+                borderRadius: "var(--radius-sm)",
+                border: '1px solid var(--border-strong)',
+                background: 'var(--bg)',
                 color: '#334155',
                 fontWeight: 650,
-                fontSize: '13px',
+                fontSize: "var(--text-base)",
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#e2e8f0'; e.currentTarget.style.borderColor = '#94a3b8'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--border)'; e.currentTarget.style.borderColor = 'var(--faint)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg)'; e.currentTarget.style.borderColor = 'var(--border-strong)'; }}
             >
               <span>←</span>
               <span>Back to Editor</span>
             </button>
 
-            <div style={{ height: '24px', width: '1px', background: '#e2e8f0' }} />
+            <div style={{ height: '24px', width: '1px', background: 'var(--border)' }} />
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '20px', background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#047857', fontSize: '12px', fontWeight: 700 }}>
-                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 0 2px #d1fae5' }}></span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-4)" }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: "var(--space-2)", padding: '4px 10px', borderRadius: "var(--radius-2xl)", background: 'var(--teal-soft)', border: '1px solid var(--green-250)', color: 'var(--green-750)', fontSize: "var(--text-base)", fontWeight: 700 }}>
+                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--emerald-500)', boxShadow: '0 0 0 2px var(--green-150)' }}></span>
                 Live Form Simulator
               </span>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '15px', lineHeight: 1.2 }}>
+                <span style={{ fontWeight: 800, color: 'var(--ink)', fontSize: "var(--text-md)", lineHeight: 1.2 }}>
                   {schema.title || 'Untitled Appraisal Form'}
                 </span>
-                <span style={{ fontSize: '11.5px', color: '#64748b' }}>
+                <span style={{ fontSize: "var(--text-sm)", color: 'var(--muted)' }}>
                   Academic Cycle: <strong>{schema.academicYear || 'Current'}</strong> • Type: <span style={{ textTransform: 'capitalize' }}>{schema.auditType || 'Academic'}</span>
                 </span>
               </div>
@@ -506,26 +506,26 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
           </div>
 
           {/* Right: Simulation Controls & Actions */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-4)", flexWrap: 'wrap' }}>
             
             {/* Simulation Role Selector */}
-            <div style={{ display: 'inline-flex', alignItems: 'center', background: '#f1f5f9', padding: '3px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', background: 'var(--bg-alt)', padding: "var(--space-1)", borderRadius: "var(--radius-sm)", border: '1px solid var(--border)' }}>
               <button
                 type="button"
                 onClick={() => setSimulationRole('submitter')}
                 style={{
                   padding: '5px 12px',
-                  borderRadius: '6px',
+                  borderRadius: "var(--radius-sm)",
                   border: 'none',
-                  background: simulationRole === 'submitter' ? '#2563eb' : 'transparent',
-                  color: simulationRole === 'submitter' ? '#fff' : '#475569',
+                  background: simulationRole === 'submitter' ? 'var(--primary)' : 'transparent',
+                  color: simulationRole === 'submitter' ? 'var(--card)' : '#475569',
                   fontWeight: 650,
-                  fontSize: '12px',
+                  fontSize: "var(--text-base)",
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '4px',
+                  gap: "var(--space-1)",
                 }}
                 title="Preview as Director / Submitting Department"
               >
@@ -537,17 +537,17 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                 onClick={() => setSimulationRole('auditor')}
                 style={{
                   padding: '5px 12px',
-                  borderRadius: '6px',
+                  borderRadius: "var(--radius-sm)",
                   border: 'none',
-                  background: simulationRole === 'auditor' ? '#f59e0b' : 'transparent',
-                  color: simulationRole === 'auditor' ? '#fff' : '#475569',
+                  background: simulationRole === 'auditor' ? 'var(--amber-500)' : 'transparent',
+                  color: simulationRole === 'auditor' ? 'var(--card)' : '#475569',
                   fontWeight: 650,
-                  fontSize: '12px',
+                  fontSize: "var(--text-base)",
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '4px',
+                  gap: "var(--space-1)",
                 }}
                 title="Preview as Internal / External Auditor"
               >
@@ -557,18 +557,18 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
             </div>
 
             {/* View Mode (Interactive vs Clean Document) */}
-            <div style={{ display: 'inline-flex', alignItems: 'center', background: '#f1f5f9', padding: '3px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', background: 'var(--bg-alt)', padding: "var(--space-1)", borderRadius: "var(--radius-sm)", border: '1px solid var(--border)' }}>
               <button
                 type="button"
                 onClick={() => setViewMode('interactive')}
                 style={{
                   padding: '5px 10px',
-                  borderRadius: '6px',
+                  borderRadius: "var(--radius-sm)",
                   border: 'none',
-                  background: viewMode === 'interactive' ? '#0f172a' : 'transparent',
-                  color: viewMode === 'interactive' ? '#fff' : '#64748b',
+                  background: viewMode === 'interactive' ? 'var(--ink)' : 'transparent',
+                  color: viewMode === 'interactive' ? 'var(--card)' : 'var(--muted)',
                   fontWeight: 600,
-                  fontSize: '12px',
+                  fontSize: "var(--text-base)",
                   cursor: 'pointer',
                 }}
               >
@@ -579,12 +579,12 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                 onClick={() => setViewMode('document')}
                 style={{
                   padding: '5px 10px',
-                  borderRadius: '6px',
+                  borderRadius: "var(--radius-sm)",
                   border: 'none',
-                  background: viewMode === 'document' ? '#0f172a' : 'transparent',
-                  color: viewMode === 'document' ? '#fff' : '#64748b',
+                  background: viewMode === 'document' ? 'var(--ink)' : 'transparent',
+                  color: viewMode === 'document' ? 'var(--card)' : 'var(--muted)',
                   fontWeight: 600,
-                  fontSize: '12px',
+                  fontSize: "var(--text-base)",
                   cursor: 'pointer',
                 }}
               >
@@ -598,16 +598,16 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
               onClick={() => setShowPayloadModal(true)}
               style={{
                 padding: '6px 12px',
-                borderRadius: '8px',
-                border: '1px solid #bfdbfe',
-                background: '#eff6ff',
-                color: '#1d4ed8',
+                borderRadius: "var(--radius-sm)",
+                border: '1px solid var(--accent-border)',
+                background: 'var(--accent-soft)',
+                color: 'var(--primary-dark)',
                 fontWeight: 650,
-                fontSize: '12.5px',
+                fontSize: "var(--text-base)",
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '5px',
+                gap: "var(--space-2)",
               }}
             >
               <span>📦</span>
@@ -620,12 +620,12 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
               onClick={handleResetAllData}
               style={{
                 padding: '6px 10px',
-                borderRadius: '8px',
-                border: '1px solid #fecaca',
-                background: '#fff',
-                color: '#dc2626',
+                borderRadius: "var(--radius-sm)",
+                border: '1px solid var(--red-200)',
+                background: 'var(--card)',
+                color: 'var(--red-600)',
                 fontWeight: 600,
-                fontSize: '12.5px',
+                fontSize: "var(--text-base)",
                 cursor: 'pointer',
               }}
               title="Clear all test inputs"
@@ -640,20 +640,20 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
         
         {/* 2. UNIVERSITY LETTERHEAD BANNER */}
         <div style={{
-          background: '#ffffff',
-          borderRadius: '16px',
-          border: '1px solid #e2e8f0',
+          background: 'var(--card)',
+          borderRadius: "var(--radius-xl)",
+          border: '1px solid var(--border)',
           boxShadow: '0 4px 20px -4px rgba(15,23,42,0.05)',
           padding: '24px 32px',
-          marginBottom: '24px',
+          marginBottom: "var(--space-9)",
           position: 'relative',
           overflow: 'hidden',
         }}>
           {/* Background Accent Top Stripe */}
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '5px', background: 'linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa, #93c5fd)' }} />
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '5px', background: 'linear-gradient(90deg, var(--primary), #3b82f6, #60a5fa, #93c5fd)' }} />
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: "var(--space-8)" }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-8)" }}>
               {header?.logoUrl ? (
                 <img
                   src={header.logoUrl}
@@ -661,21 +661,21 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                   style={{ maxHeight: '68px', maxWidth: '140px', objectFit: 'contain' }}
                 />
               ) : (
-                <div style={{ width: '64px', height: '64px', borderRadius: '14px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '28px', fontWeight: 900, boxShadow: '0 4px 12px rgba(37,99,235,0.3)' }}>
+                <div style={{ width: '64px', height: '64px', borderRadius: "var(--radius-xl)", background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--card)', fontSize: "var(--text-4xl)", fontWeight: 900, boxShadow: '0 4px 12px rgba(37,99,235,0.3)' }}>
                   🏛️
                 </div>
               )}
               <div>
-                <h1 style={{ margin: '0 0 4px', fontSize: '22px', fontWeight: 800, color: '#1e3a8a', letterSpacing: '-0.02em' }}>
+                <h1 style={{ margin: '0 0 4px', fontSize: "var(--text-3xl)", fontWeight: 800, color: '#1e3a8a', letterSpacing: '-0.02em' }}>
                   {header?.university || 'University Institutional Appraisal'}
                 </h1>
                 {header?.address && (
-                  <p style={{ margin: '0 0 4px', fontSize: '13px', color: '#64748b' }}>
+                  <p style={{ margin: '0 0 4px', fontSize: "var(--text-base)", color: 'var(--muted)' }}>
                     📍 {header.address}
                   </p>
                 )}
                 {header?.act && (
-                  <p style={{ margin: '0', fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
+                  <p style={{ margin: '0', fontSize: "var(--text-base)", color: 'var(--muted)', fontStyle: 'italic' }}>
                     ⚖️ {header.act}
                   </p>
                 )}
@@ -683,23 +683,23 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
             </div>
 
             {/* Quick Metrics Bar */}
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '8px 14px', textAlign: 'center', minWidth: '85px' }}>
-                <div style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>{sections.length}</div>
-                <div style={{ fontSize: '11px', fontWeight: 650, color: '#64748b', textTransform: 'uppercase' }}>Sections</div>
+            <div style={{ display: 'flex', gap: "var(--space-5)", flexWrap: 'wrap' }}>
+              <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: "var(--radius-md)", padding: '8px 14px', textAlign: 'center', minWidth: '85px' }}>
+                <div style={{ fontSize: "var(--text-xl)", fontWeight: 800, color: 'var(--ink)' }}>{sections.length}</div>
+                <div style={{ fontSize: "var(--text-xs)", fontWeight: 650, color: 'var(--muted)', textTransform: 'uppercase' }}>Sections</div>
               </div>
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '8px 14px', textAlign: 'center', minWidth: '85px' }}>
-                <div style={{ fontSize: '18px', fontWeight: 800, color: '#2563eb' }}>{totalTables}</div>
-                <div style={{ fontSize: '11px', fontWeight: 650, color: '#64748b', textTransform: 'uppercase' }}>Tables</div>
+              <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: "var(--radius-md)", padding: '8px 14px', textAlign: 'center', minWidth: '85px' }}>
+                <div style={{ fontSize: "var(--text-xl)", fontWeight: 800, color: 'var(--primary)' }}>{totalTables}</div>
+                <div style={{ fontSize: "var(--text-xs)", fontWeight: 650, color: 'var(--muted)', textTransform: 'uppercase' }}>Tables</div>
               </div>
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '8px 14px', textAlign: 'center', minWidth: '85px' }}>
-                <div style={{ fontSize: '18px', fontWeight: 800, color: '#059669' }}>{totalFields}</div>
-                <div style={{ fontSize: '11px', fontWeight: 650, color: '#64748b', textTransform: 'uppercase' }}>Fields</div>
+              <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: "var(--radius-md)", padding: '8px 14px', textAlign: 'center', minWidth: '85px' }}>
+                <div style={{ fontSize: "var(--text-xl)", fontWeight: 800, color: 'var(--green-650)' }}>{totalFields}</div>
+                <div style={{ fontSize: "var(--text-xs)", fontWeight: 650, color: 'var(--muted)', textTransform: 'uppercase' }}>Fields</div>
               </div>
               {totalAuditorSections > 0 && (
-                <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '10px', padding: '8px 14px', textAlign: 'center', minWidth: '85px' }}>
-                  <div style={{ fontSize: '18px', fontWeight: 800, color: '#b45309' }}>{totalAuditorSections}</div>
-                  <div style={{ fontSize: '11px', fontWeight: 650, color: '#92400e', textTransform: 'uppercase' }}>Auditor</div>
+                <div style={{ background: 'var(--amber-50)', border: '1px solid var(--amber-200)', borderRadius: "var(--radius-md)", padding: '8px 14px', textAlign: 'center', minWidth: '85px' }}>
+                  <div style={{ fontSize: "var(--text-xl)", fontWeight: 800, color: 'var(--amber-650)' }}>{totalAuditorSections}</div>
+                  <div style={{ fontSize: "var(--text-xs)", fontWeight: 650, color: 'var(--amber-700)', textTransform: 'uppercase' }}>Auditor</div>
                 </div>
               )}
             </div>
@@ -707,18 +707,18 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
         </div>
 
         {/* 3. SECTION STEPPER NAVIGATION TABS */}
-        <div style={{ background: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '8px', marginBottom: '24px', boxShadow: '0 2px 6px rgba(0,0,0,0.03)' }}>
+        <div style={{ background: 'var(--card)', borderRadius: "var(--radius-xl)", border: '1px solid var(--border)', padding: "var(--space-3)", marginBottom: "var(--space-9)", boxShadow: '0 2px 6px rgba(0,0,0,0.03)' }}>
           {/* Progress overview */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 12px 8px', borderBottom: '1px solid #f1f5f9', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 12px 8px', borderBottom: '1px solid var(--bg-alt)', marginBottom: "var(--space-3)" }}>
+            <span style={{ fontSize: "var(--text-base)", fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Form Sections Breakdown ({currentSectionIndex + 1} of {sections.length})
             </span>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b' }}>
+            <span style={{ fontSize: "var(--text-base)", fontWeight: 600, color: 'var(--muted)' }}>
               {Math.round(((currentSectionIndex + 1) / sections.length) * 100)}% Stepped
             </span>
           </div>
 
-          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+          <div style={{ display: 'flex', gap: "var(--space-3)", overflowX: 'auto', paddingBottom: "var(--space-1)" }}>
             {sections.map((sec, idx) => {
               const sKey = sec.sectionKey || sec.idString || sec.id;
               const isActive = sKey === activeSectionId;
@@ -733,18 +733,18 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                     flex: '0 0 auto',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '10px',
+                    gap: "var(--space-4)",
                     padding: '10px 16px',
-                    borderRadius: '10px',
-                    border: isActive ? '1px solid #2563eb' : '1px solid transparent',
-                    background: isActive ? '#eff6ff' : 'transparent',
-                    color: isActive ? '#1d4ed8' : '#475569',
+                    borderRadius: "var(--radius-md)",
+                    border: isActive ? '1px solid var(--primary)' : '1px solid transparent',
+                    background: isActive ? 'var(--accent-soft)' : 'transparent',
+                    color: isActive ? 'var(--primary-dark)' : '#475569',
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
                     textAlign: 'left',
                   }}
                   onMouseEnter={(e) => {
-                    if (!isActive) e.currentTarget.style.background = '#f8fafc';
+                    if (!isActive) e.currentTarget.style.background = 'var(--bg)';
                   }}
                   onMouseLeave={(e) => {
                     if (!isActive) e.currentTarget.style.background = 'transparent';
@@ -754,29 +754,29 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                     width: '26px',
                     height: '26px',
                     borderRadius: '50%',
-                    background: isActive ? '#2563eb' : isSecAuditor ? '#fef3c7' : '#e2e8f0',
-                    color: isActive ? '#fff' : isSecAuditor ? '#92400e' : '#475569',
+                    background: isActive ? 'var(--primary)' : isSecAuditor ? 'var(--amber-100)' : 'var(--border)',
+                    color: isActive ? 'var(--card)' : isSecAuditor ? 'var(--amber-700)' : '#475569',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '12px',
+                    fontSize: "var(--text-base)",
                     fontWeight: 800,
                   }}>
                     {sec.number || (idx + 1)}
                   </span>
                   
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontWeight: isActive ? 800 : 650, fontSize: '13.5px', whiteSpace: 'nowrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-2)" }}>
+                      <span style={{ fontWeight: isActive ? 800 : 650, fontSize: "var(--text-base)", whiteSpace: 'nowrap' }}>
                         {sec.title || `Section ${idx + 1}`}
                       </span>
                       {isSecAuditor && (
-                        <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', background: '#fef3c7', color: '#92400e', fontWeight: 700 }}>
+                        <span style={{ fontSize: "var(--text-2xs)", padding: '2px 6px', borderRadius: "var(--radius-2xs)", background: 'var(--amber-100)', color: 'var(--amber-700)', fontWeight: 700 }}>
                           🔒 Auditor
                         </span>
                       )}
                     </div>
-                    <span style={{ fontSize: '11px', color: '#64748b' }}>
+                    <span style={{ fontSize: "var(--text-xs)", color: 'var(--muted)' }}>
                       {(sec.tables?.length || 0)} table(s) • {(sec.fields?.length || 0)} field(s)
                     </span>
                   </div>
@@ -788,16 +788,16 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
 
         {/* 4. ACTIVE SECTION CONTAINER */}
         {currentSection ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: "var(--space-8)" }}>
             
             {/* Modern Section Header Banner */}
             <div style={{
               background: isAuditorSection
                 ? 'linear-gradient(135deg, #1e293b 0%, #334155 100%)'
-                : 'linear-gradient(135deg, #1e40af 0%, #2563eb 100%)',
-              borderRadius: '14px',
+                : 'linear-gradient(135deg, #1e40af 0%, var(--primary) 100%)',
+              borderRadius: "var(--radius-xl)",
               padding: '20px 24px',
-              color: '#ffffff',
+              color: 'var(--card)',
               boxShadow: isAuditorSection
                 ? '0 4px 14px rgba(30,41,59,0.25)'
                 : '0 4px 14px rgba(37,99,235,0.25)',
@@ -805,35 +805,35 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
               justifyContent: 'space-between',
               alignItems: 'center',
               flexWrap: 'wrap',
-              gap: '14px',
+              gap: "var(--space-6)",
             }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                  <span style={{ background: 'rgba(255,255,255,0.2)', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-3)", marginBottom: "var(--space-1)" }}>
+                  <span style={{ background: 'rgba(255,255,255,0.2)', padding: '3px 8px', borderRadius: "var(--radius-sm)", fontSize: "var(--text-xs)", fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                     Section {currentSection.number || (currentSectionIndex + 1)}
                   </span>
                   {isAuditorSection ? (
-                    <span style={{ background: '#f59e0b', color: '#fff', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 800 }}>
+                    <span style={{ background: 'var(--amber-500)', color: 'var(--card)', padding: '3px 8px', borderRadius: "var(--radius-sm)", fontSize: "var(--text-xs)", fontWeight: 800 }}>
                       🔒 Designated Auditor Evaluation
                     </span>
                   ) : (
-                    <span style={{ background: 'rgba(255,255,255,0.2)', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
+                    <span style={{ background: 'rgba(255,255,255,0.2)', padding: '3px 8px', borderRadius: "var(--radius-sm)", fontSize: "var(--text-xs)", fontWeight: 700 }}>
                       📝 Submitter Section
                     </span>
                   )}
                 </div>
-                <h2 style={{ margin: '0 0 6px', fontSize: '20px', fontWeight: 800, letterSpacing: '-0.01em' }}>
+                <h2 style={{ margin: '0 0 6px', fontSize: "var(--text-2xl)", fontWeight: 800, letterSpacing: '-0.01em' }}>
                   {currentSection.title}
                 </h2>
                 {currentSection.description && (
-                  <p style={{ margin: 0, fontSize: '13.5px', color: 'rgba(255,255,255,0.9)', maxWidth: '800px', lineHeight: 1.4 }}>
+                  <p style={{ margin: 0, fontSize: "var(--text-base)", color: 'rgba(255,255,255,0.9)', maxWidth: '800px', lineHeight: 1.4 }}>
                     {currentSection.description}
                   </p>
                 )}
               </div>
 
               {/* Jump to next/prev section buttons */}
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: "var(--space-3)" }}>
                 <button
                   type="button"
                   disabled={currentSectionIndex === 0}
@@ -843,12 +843,12 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                   }}
                   style={{
                     padding: '8px 14px',
-                    borderRadius: '8px',
+                    borderRadius: "var(--radius-sm)",
                     border: '1px solid rgba(255,255,255,0.3)',
                     background: 'rgba(255,255,255,0.12)',
-                    color: '#fff',
+                    color: 'var(--card)',
                     fontWeight: 650,
-                    fontSize: '12.5px',
+                    fontSize: "var(--text-base)",
                     cursor: currentSectionIndex === 0 ? 'not-allowed' : 'pointer',
                     opacity: currentSectionIndex === 0 ? 0.4 : 1,
                   }}
@@ -864,12 +864,12 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                   }}
                   style={{
                     padding: '8px 14px',
-                    borderRadius: '8px',
+                    borderRadius: "var(--radius-sm)",
                     border: '1px solid rgba(255,255,255,0.3)',
                     background: 'rgba(255,255,255,0.12)',
-                    color: '#fff',
+                    color: 'var(--card)',
                     fontWeight: 650,
-                    fontSize: '12.5px',
+                    fontSize: "var(--text-base)",
                     cursor: currentSectionIndex === sections.length - 1 ? 'not-allowed' : 'pointer',
                     opacity: currentSectionIndex === sections.length - 1 ? 0.4 : 1,
                   }}
@@ -882,20 +882,20 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
             {/* Role Disclaimer Notice */}
             {isAuditorSection && (
               <div style={{
-                background: '#fffbeb',
-                border: '1px solid #fde68a',
-                borderRadius: '12px',
+                background: 'var(--amber-50)',
+                border: '1px solid var(--amber-200)',
+                borderRadius: "var(--radius-lg)",
                 padding: '14px 18px',
                 display: 'flex',
                 alignItems: 'flex-start',
-                gap: '12px',
+                gap: "var(--space-5)",
               }}>
-                <span style={{ fontSize: '20px' }}>🔒</span>
+                <span style={{ fontSize: "var(--text-2xl)" }}>🔒</span>
                 <div>
-                  <strong style={{ color: '#92400e', fontSize: '13.5px', display: 'block', marginBottom: '2px' }}>
+                  <strong style={{ color: 'var(--amber-700)', fontSize: "var(--text-base)", display: 'block', marginBottom: '2px' }}>
                     Designated Auditor Evaluation Section
                   </strong>
-                  <p style={{ margin: 0, color: '#b45309', fontSize: '12.5px', lineHeight: 1.4 }}>
+                  <p style={{ margin: 0, color: 'var(--amber-650)', fontSize: "var(--text-base)", lineHeight: 1.4 }}>
                     This section is configured to be filled exclusively by the appointed Auditor during the review audit cycle. 
                     {simulationRole === 'submitter'
                       ? ' You are currently simulating as Submitter (inputs are shown in view/restricted mode).'
@@ -911,36 +911,36 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
               if (!headerFields.length) return null;
               return (
                 <div style={{
-                  background: '#ffffff',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '14px',
+                  background: 'var(--card)',
+                  border: '1px solid var(--border)',
+                  borderRadius: "var(--radius-xl)",
                   padding: '20px 24px',
                   boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '18px', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>
-                    <span style={{ fontSize: '16px' }}>📋</span>
-                    <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 750, color: '#1e293b' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-3)", marginBottom: "var(--space-7)", borderBottom: '1px solid var(--bg-alt)', paddingBottom: "var(--space-4)" }}>
+                    <span style={{ fontSize: "var(--text-lg)" }}>📋</span>
+                    <h3 style={{ margin: 0, fontSize: "var(--text-md)", fontWeight: 750, color: '#1e293b' }}>
                       Section Information & General Fields
                     </h3>
-                    <span style={{ fontSize: '11px', background: '#f1f5f9', color: '#64748b', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}>
+                    <span style={{ fontSize: "var(--text-xs)", background: 'var(--bg-alt)', color: 'var(--muted)', padding: '2px 8px', borderRadius: "var(--radius-lg)", fontWeight: 600 }}>
                       {headerFields.length} Field(s)
                     </span>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '18px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: "var(--space-7)" }}>
                     {headerFields.map((field) => {
                     const key = field.fieldKey || field.idString;
                     const isRequired = field.isRequired;
                     const fieldVal = valuesData[key] || '';
 
                     return (
-                      <div key={field.id || key} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ fontSize: '13px', fontWeight: 650, color: '#334155', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div key={field.id || key} style={{ display: 'flex', flexDirection: 'column', gap: "var(--space-2)" }}>
+                        <label style={{ fontSize: "var(--text-base)", fontWeight: 650, color: '#334155', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <span>
                             {field.label || key}
-                            {isRequired && <span style={{ color: '#ef4444', marginLeft: '4px' }}>*</span>}
+                            {isRequired && <span style={{ color: 'var(--red-500)', marginLeft: "var(--space-1)" }}>*</span>}
                           </span>
-                          <span style={{ fontSize: '10.5px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>
+                          <span style={{ fontSize: "var(--text-2xs)", color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 700 }}>
                             {field.fieldType || 'TEXT'}
                           </span>
                         </label>
@@ -955,12 +955,12 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                             onChange={(e) => setValuesData((prev) => ({ ...prev, [key]: e.target.value }))}
                             style={{
                               width: '100%',
-                              borderRadius: '8px',
-                              border: '1px solid #cbd5e1',
+                              borderRadius: "var(--radius-sm)",
+                              border: '1px solid var(--border-strong)',
                               padding: '10px 12px',
-                              fontSize: '13px',
-                              color: '#0f172a',
-                              background: isSectionLockedInCurrentRole ? '#f8fafc' : '#fff',
+                              fontSize: "var(--text-base)",
+                              color: 'var(--ink)',
+                              background: isSectionLockedInCurrentRole ? 'var(--bg)' : 'var(--card)',
                               resize: 'vertical',
                               outline: 'none',
                               boxSizing: 'border-box',
@@ -974,12 +974,12 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                             style={{
                               width: '100%',
                               height: '40px',
-                              borderRadius: '8px',
-                              border: '1px solid #cbd5e1',
+                              borderRadius: "var(--radius-sm)",
+                              border: '1px solid var(--border-strong)',
                               padding: '0 12px',
-                              fontSize: '13px',
-                              color: '#0f172a',
-                              background: isSectionLockedInCurrentRole ? '#f8fafc' : '#fff',
+                              fontSize: "var(--text-base)",
+                              color: 'var(--ink)',
+                              background: isSectionLockedInCurrentRole ? 'var(--bg)' : 'var(--card)',
                               outline: 'none',
                               boxSizing: 'border-box',
                             }}
@@ -991,21 +991,21 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                           </select>
                         ) : field.fieldType === 'FILE' || field.fieldType === 'ATTACHMENT' ? (
                           <div style={{
-                            border: '1px dashed #cbd5e1',
-                            borderRadius: '8px',
-                            padding: '12px',
-                            background: '#f8fafc',
+                            border: '1px dashed var(--border-strong)',
+                            borderRadius: "var(--radius-sm)",
+                            padding: "var(--space-5)",
+                            background: 'var(--bg)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
                           }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span style={{ fontSize: '18px' }}>📎</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-3)" }}>
+                              <span style={{ fontSize: "var(--text-xl)" }}>📎</span>
                               <div>
-                                <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#334155' }}>
+                                <div style={{ fontSize: "var(--text-base)", fontWeight: 600, color: '#334155' }}>
                                   {fieldVal ? `Attached: ${fieldVal}` : 'Upload Document Proof'}
                                 </div>
-                                <div style={{ fontSize: '11px', color: '#94a3b8' }}>PDF, DOCX, PNG (Simulated)</div>
+                                <div style={{ fontSize: "var(--text-xs)", color: 'var(--muted)' }}>PDF, DOCX, PNG (Simulated)</div>
                               </div>
                             </div>
                             <button
@@ -1017,11 +1017,11 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                               }}
                               style={{
                                 padding: '5px 10px',
-                                borderRadius: '6px',
-                                border: '1px solid #cbd5e1',
-                                background: fieldVal ? '#fee2e2' : '#fff',
-                                color: fieldVal ? '#991b1b' : '#2563eb',
-                                fontSize: '12px',
+                                borderRadius: "var(--radius-sm)",
+                                border: '1px solid var(--border-strong)',
+                                background: fieldVal ? 'var(--red-100)' : 'var(--card)',
+                                color: fieldVal ? 'var(--red-800)' : 'var(--primary)',
+                                fontSize: "var(--text-base)",
                                 fontWeight: 650,
                                 cursor: 'pointer',
                               }}
@@ -1039,12 +1039,12 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                             style={{
                               width: '100%',
                               height: '40px',
-                              borderRadius: '8px',
-                              border: '1px solid #cbd5e1',
+                              borderRadius: "var(--radius-sm)",
+                              border: '1px solid var(--border-strong)',
                               padding: '0 12px',
-                              fontSize: '13px',
-                              color: '#0f172a',
-                              background: isSectionLockedInCurrentRole ? '#f8fafc' : '#fff',
+                              fontSize: "var(--text-base)",
+                              color: 'var(--ink)',
+                              background: isSectionLockedInCurrentRole ? 'var(--bg)' : 'var(--card)',
                               outline: 'none',
                               boxSizing: 'border-box',
                             }}
@@ -1062,8 +1062,8 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
             {(() => {
               if (!currentSection.tables || currentSection.tables.length === 0) {
                 return (
-                  <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '32px', textAlign: 'center', color: '#64748b' }}>
-                    <p style={{ margin: 0, fontSize: '14px' }}>No tables configured in this section.</p>
+                  <div style={{ background: 'var(--card)', borderRadius: "var(--radius-lg)", border: '1px solid var(--border)', padding: "var(--space-10)", textAlign: 'center', color: 'var(--muted)' }}>
+                    <p style={{ margin: 0, fontSize: "var(--text-md)" }}>No tables configured in this section.</p>
                   </div>
                 );
               }
@@ -1080,9 +1080,9 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                   <div
                     key={tbl.id ? `${tbl.id}_${tKey}` : tKey}
                     style={{
-                      background: '#ffffff',
-                      borderRadius: '14px',
-                      border: '1px solid #e2e8f0',
+                      background: 'var(--card)',
+                      borderRadius: "var(--radius-xl)",
+                      border: '1px solid var(--border)',
                       boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
                       overflow: 'hidden',
                     }}
@@ -1090,32 +1090,32 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                     {/* Table Header Strip */}
                     <div style={{
                       padding: '14px 20px',
-                      background: '#f8fafc',
-                      borderBottom: '1px solid #e2e8f0',
+                      background: 'var(--bg)',
+                      borderBottom: '1px solid var(--border)',
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
                       flexWrap: 'wrap',
-                      gap: '10px',
+                      gap: "var(--space-4)",
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ fontSize: '17px' }}>📊</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-4)" }}>
+                        <span style={{ fontSize: "var(--text-lg)" }}>📊</span>
                         <div>
-                          <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: '#1e293b' }}>
+                          <h4 style={{ margin: 0, fontSize: "var(--text-md)", fontWeight: 800, color: '#1e293b' }}>
                             {tbl.title || 'Table'}
                           </h4>
                           {tbl.description && (
-                            <span style={{ fontSize: '12px', color: '#64748b' }}>{tbl.description}</span>
+                            <span style={{ fontSize: "var(--text-base)", color: 'var(--muted)' }}>{tbl.description}</span>
                           )}
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '5px', background: '#f1f5f9', color: '#475569' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-3)" }}>
+                        <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, padding: '3px 8px', borderRadius: "var(--radius-2xs)", background: 'var(--bg-alt)', color: '#475569' }}>
                           {rows.length} {rows.length === 1 ? 'row' : 'rows'}
                         </span>
                         {isRepeatable && (
-                          <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '5px', background: '#dbeafe', color: '#1e40af' }}>
+                          <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, padding: '3px 8px', borderRadius: "var(--radius-2xs)", background: '#dbeafe', color: '#1e40af' }}>
                             Dynamic Rows
                           </span>
                         )}
@@ -1125,11 +1125,11 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                             onClick={() => handleClearTable(tKey)}
                             style={{
                               padding: '4px 8px',
-                              borderRadius: '6px',
-                              border: '1px solid #fecaca',
-                              background: '#fff',
-                              color: '#dc2626',
-                              fontSize: '11.5px',
+                              borderRadius: "var(--radius-sm)",
+                              border: '1px solid var(--red-200)',
+                              background: 'var(--card)',
+                              color: 'var(--red-600)',
+                              fontSize: "var(--text-sm)",
                               fontWeight: 600,
                               cursor: 'pointer',
                             }}
@@ -1143,27 +1143,27 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
 
                     {/* Table Container */}
                     <div style={{ overflowX: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: "var(--text-base)", textAlign: 'left' }}>
                         <thead>
-                          <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>
+                          <tr style={{ background: 'var(--bg)', borderBottom: '2px solid var(--border)', color: '#475569' }}>
                             {columns.map((col, cIdx) => (
                               <th
                                 key={cIdx}
                                 style={{
                                   padding: '12px 14px',
                                   fontWeight: 700,
-                                  borderRight: '1px solid #e2e8f0',
-                                  fontSize: '12.5px',
+                                  borderRight: '1px solid var(--border)',
+                                  fontSize: "var(--text-base)",
                                   whiteSpace: 'nowrap',
                                 }}
                               >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-2)" }}>
                                   <span>{col}</span>
                                 </div>
                               </th>
                             ))}
                             {isRepeatable && !isSectionLockedInCurrentRole && (
-                              <th style={{ width: '65px', padding: '12px 14px', textAlign: 'center', fontWeight: 700, fontSize: '12px' }}>
+                              <th style={{ width: '65px', padding: '12px 14px', textAlign: 'center', fontWeight: 700, fontSize: "var(--text-base)" }}>
                                 Action
                               </th>
                             )}
@@ -1177,12 +1177,12 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                                 colSpan={columns.length + (isRepeatable && !isSectionLockedInCurrentRole ? 1 : 0)}
                                 style={{ textAlign: 'center', padding: '36px 20px', background: '#fafbfc' }}
                               >
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                                  <div style={{ fontSize: '28px', opacity: 0.6 }}>📋</div>
-                                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#64748b' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: "var(--space-3)" }}>
+                                  <div style={{ fontSize: "var(--text-4xl)", opacity: 0.6 }}>📋</div>
+                                  <span style={{ fontSize: "var(--text-md)", fontWeight: 600, color: 'var(--muted)' }}>
                                     No records entered yet
                                   </span>
-                                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                                  <span style={{ fontSize: "var(--text-base)", color: 'var(--muted)' }}>
                                     Click the button below to add your first record in this table.
                                   </span>
                                   {isRepeatable && !isSectionLockedInCurrentRole && (
@@ -1190,14 +1190,14 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                                       type="button"
                                       onClick={() => handleAddRow(tKey, columns)}
                                       style={{
-                                        marginTop: '6px',
+                                        marginTop: "var(--space-2)",
                                         padding: '7px 16px',
-                                        borderRadius: '7px',
+                                        borderRadius: "var(--radius-sm)",
                                         border: '1px solid #93c5fd',
-                                        background: '#eff6ff',
-                                        color: '#1d4ed8',
+                                        background: 'var(--accent-soft)',
+                                        color: 'var(--primary-dark)',
                                         fontWeight: 700,
-                                        fontSize: '12.5px',
+                                        fontSize: "var(--text-base)",
                                         cursor: 'pointer',
                                       }}
                                     >
@@ -1212,8 +1212,8 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                               <tr
                                 key={rIdx}
                                 style={{
-                                  borderBottom: '1px solid #f1f5f9',
-                                  background: rIdx % 2 === 1 ? '#fafcff' : '#ffffff',
+                                  borderBottom: '1px solid var(--bg-alt)',
+                                  background: rIdx % 2 === 1 ? '#fafcff' : 'var(--card)',
                                   transition: 'background 0.1s ease',
                                 }}
                               >
@@ -1222,7 +1222,7 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                                     key={cIdx}
                                     style={{
                                       padding: '8px 10px',
-                                      borderRight: '1px solid #f1f5f9',
+                                      borderRight: '1px solid var(--bg-alt)',
                                       verticalAlign: 'middle',
                                     }}
                                   >
@@ -1245,13 +1245,13 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                                       onClick={() => handleDeleteRow(tKey, rIdx, columns)}
                                       style={{
                                         padding: '4px 8px',
-                                        borderRadius: '6px',
-                                        border: '1px solid #fecaca',
-                                        background: '#fff',
-                                        color: '#dc2626',
+                                        borderRadius: "var(--radius-sm)",
+                                        border: '1px solid var(--red-200)',
+                                        background: 'var(--card)',
+                                        color: 'var(--red-600)',
                                         cursor: 'pointer',
                                         fontWeight: 700,
-                                        fontSize: '12px',
+                                        fontSize: "var(--text-base)",
                                       }}
                                       title="Delete Row"
                                     >
@@ -1271,12 +1271,12 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                       <div style={{
                         padding: '10px 20px',
                         background: '#fafbfc',
-                        borderTop: '1px solid #e2e8f0',
+                        borderTop: '1px solid var(--border)',
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
                       }}>
-                        <span style={{ fontSize: '12px', color: '#64748b' }}>
+                        <span style={{ fontSize: "var(--text-base)", color: 'var(--muted)' }}>
                           {rows.length} {rows.length === 1 ? 'row entered' : 'rows entered'}
                         </span>
                         <button
@@ -1284,16 +1284,16 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                           onClick={() => handleAddRow(tKey, columns)}
                           style={{
                             padding: '7px 16px',
-                            borderRadius: '7px',
+                            borderRadius: "var(--radius-sm)",
                             border: '1px solid #93c5fd',
-                            background: '#eff6ff',
-                            color: '#1d4ed8',
+                            background: 'var(--accent-soft)',
+                            color: 'var(--primary-dark)',
                             fontWeight: 700,
-                            fontSize: '12.5px',
+                            fontSize: "var(--text-base)",
                             cursor: 'pointer',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '6px',
+                            gap: "var(--space-2)",
                           }}
                         >
                           <span>+</span>
@@ -1311,7 +1311,7 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
               );
 
               return (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: "var(--space-9)" }}>
                   {/* 1. Permanent / Unassigned Tables */}
                   {unassignedTables.map((tbl, tIdx) => renderLivePreviewTable(tbl))}
 
@@ -1353,37 +1353,37 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
               if (!reviewFields.length) return null;
               return (
                 <div style={{
-                  marginTop: '24px',
-                  background: '#ffffff',
-                  border: '1px solid #bbf7d0',
-                  borderRadius: '14px',
+                  marginTop: "var(--space-9)",
+                  background: 'var(--card)',
+                  border: '1px solid var(--green-200)',
+                  borderRadius: "var(--radius-xl)",
                   padding: '20px 24px',
                   boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '18px', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>
-                    <span style={{ fontSize: '16px' }}>📝</span>
-                    <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 750, color: '#1e293b' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-3)", marginBottom: "var(--space-7)", borderBottom: '1px solid var(--bg-alt)', paddingBottom: "var(--space-4)" }}>
+                    <span style={{ fontSize: "var(--text-lg)" }}>📝</span>
+                    <h3 style={{ margin: 0, fontSize: "var(--text-md)", fontWeight: 750, color: '#1e293b' }}>
                       Review Remarks & Observations
                     </h3>
-                    <span style={{ fontSize: '11px', background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '12px', fontWeight: 700 }}>
+                    <span style={{ fontSize: "var(--text-xs)", background: 'var(--green-100)', color: 'var(--green-600)', padding: '2px 8px', borderRadius: "var(--radius-lg)", fontWeight: 700 }}>
                       Auditor Review
                     </span>
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: "var(--space-7)" }}>
                     {reviewFields.map((field) => {
                       const key = field.fieldKey || field.idString;
                       const isRequired = field.isRequired;
                       const fieldVal = valuesData[key] || '';
 
                       return (
-                        <div key={field.id || key} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          <label style={{ fontSize: '13px', fontWeight: 650, color: '#334155', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div key={field.id || key} style={{ display: 'flex', flexDirection: 'column', gap: "var(--space-2)" }}>
+                          <label style={{ fontSize: "var(--text-base)", fontWeight: 650, color: '#334155', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <span>
                               {field.label || key}
-                              {isRequired && <span style={{ color: '#ef4444', marginLeft: '4px' }}>*</span>}
+                              {isRequired && <span style={{ color: 'var(--red-500)', marginLeft: "var(--space-1)" }}>*</span>}
                             </span>
-                            <span style={{ fontSize: '10.5px', color: '#15803d', textTransform: 'uppercase', fontWeight: 700 }}>
+                            <span style={{ fontSize: "var(--text-2xs)", color: 'var(--green-600)', textTransform: 'uppercase', fontWeight: 700 }}>
                               {field.fieldType || 'TEXTAREA'}
                             </span>
                           </label>
@@ -1395,12 +1395,12 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                             rows={4}
                             style={{
                               width: '100%',
-                              borderRadius: '8px',
-                              border: '1px solid #cbd5e1',
+                              borderRadius: "var(--radius-sm)",
+                              border: '1px solid var(--border-strong)',
                               padding: '10px 12px',
-                              fontSize: '13px',
-                              color: '#0f172a',
-                              background: isSectionLockedInCurrentRole ? '#f8fafc' : '#fff',
+                              fontSize: "var(--text-base)",
+                              color: 'var(--ink)',
+                              background: isSectionLockedInCurrentRole ? 'var(--bg)' : 'var(--card)',
                               outline: 'none',
                               boxSizing: 'border-box',
                               resize: 'vertical',
@@ -1419,25 +1419,25 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
 
         {/* 5. BOTTOM NAVIGATION CONTROLS */}
         <div style={{
-          marginTop: '32px',
+          marginTop: "var(--space-10)",
           padding: '16px 24px',
-          background: '#ffffff',
-          borderRadius: '14px',
-          border: '1px solid #e2e8f0',
+          background: 'var(--card)',
+          borderRadius: "var(--radius-xl)",
+          border: '1px solid var(--border)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
-          gap: '14px',
+          gap: "var(--space-6)",
           boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
         }}>
           <div>
-            <span style={{ fontSize: '13px', fontWeight: 650, color: '#334155' }}>
+            <span style={{ fontSize: "var(--text-base)", fontWeight: 650, color: '#334155' }}>
               Section {currentSectionIndex + 1} of {sections.length}: <strong>{currentSection?.title}</strong>
             </span>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: "var(--space-4)", alignItems: 'center' }}>
             <button
               type="button"
               disabled={currentSectionIndex === 0}
@@ -1448,12 +1448,12 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
               }}
               style={{
                 padding: '8px 18px',
-                borderRadius: '8px',
-                border: '1px solid #cbd5e1',
-                background: '#ffffff',
+                borderRadius: "var(--radius-sm)",
+                border: '1px solid var(--border-strong)',
+                background: 'var(--card)',
                 color: '#334155',
                 fontWeight: 650,
-                fontSize: '13px',
+                fontSize: "var(--text-base)",
                 cursor: currentSectionIndex === 0 ? 'not-allowed' : 'pointer',
                 opacity: currentSectionIndex === 0 ? 0.5 : 1,
               }}
@@ -1471,12 +1471,12 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                 }}
                 style={{
                   padding: '8px 20px',
-                  borderRadius: '8px',
+                  borderRadius: "var(--radius-sm)",
                   border: 'none',
-                  background: '#2563eb',
-                  color: '#ffffff',
+                  background: 'var(--primary)',
+                  color: 'var(--card)',
                   fontWeight: 700,
-                  fontSize: '13px',
+                  fontSize: "var(--text-base)",
                   cursor: 'pointer',
                   boxShadow: '0 2px 6px rgba(37,99,235,0.25)',
                 }}
@@ -1489,17 +1489,17 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                 onClick={() => setShowSubmitModal(true)}
                 style={{
                   padding: '8px 22px',
-                  borderRadius: '8px',
+                  borderRadius: "var(--radius-sm)",
                   border: 'none',
-                  background: '#059669',
-                  color: '#ffffff',
+                  background: 'var(--green-650)',
+                  color: 'var(--card)',
                   fontWeight: 700,
-                  fontSize: '13px',
+                  fontSize: "var(--text-base)",
                   cursor: 'pointer',
                   boxShadow: '0 2px 6px rgba(5,150,105,0.25)',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '6px',
+                  gap: "var(--space-2)",
                 }}
               >
                 <span>🚀</span>
@@ -1523,11 +1523,11 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '20px',
+          padding: "var(--space-8)",
         }}>
           <div style={{
-            background: '#ffffff',
-            borderRadius: '16px',
+            background: 'var(--card)',
+            borderRadius: "var(--radius-xl)",
             maxWidth: '750px',
             width: '100%',
             maxHeight: '85vh',
@@ -1537,44 +1537,44 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
             overflow: 'hidden',
           }}>
             {/* Modal Header */}
-            <div style={{ padding: '16px 20px', background: '#0f172a', color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ padding: '16px 20px', background: 'var(--ink)', color: 'var(--card)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-3)" }}>
                 <span>📦</span>
-                <strong style={{ fontSize: '15px' }}>Simulator State JSON Payload</strong>
+                <strong style={{ fontSize: "var(--text-md)" }}>Simulator State JSON Payload</strong>
               </div>
               <button
                 type="button"
                 onClick={() => setShowPayloadModal(false)}
-                style={{ background: 'transparent', border: 'none', color: '#94a3b8', fontSize: '18px', cursor: 'pointer' }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--muted)', fontSize: "var(--text-xl)", cursor: 'pointer' }}
               >
                 ✕
               </button>
             </div>
 
             {/* Modal Body */}
-            <div style={{ padding: '20px', overflowY: 'auto', flex: 1, background: '#090d16' }}>
-              <pre style={{ margin: 0, color: '#60a5fa', fontSize: '12px', fontFamily: 'Consolas, Monaco, monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+            <div style={{ padding: "var(--space-8)", overflowY: 'auto', flex: 1, background: '#090d16' }}>
+              <pre style={{ margin: 0, color: '#60a5fa', fontSize: "var(--text-base)", fontFamily: 'Consolas, Monaco, monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                 {JSON.stringify({ valuesData, tablesData }, null, 2)}
               </pre>
             </div>
 
             {/* Modal Footer */}
-            <div style={{ padding: '12px 20px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '12px', color: '#64748b' }}>
+            <div style={{ padding: '12px 20px', background: 'var(--bg)', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: "var(--text-base)", color: 'var(--muted)' }}>
                 {Object.keys(valuesData).length} Field values • {Object.keys(tablesData).length} Table data payloads
               </span>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: "var(--space-3)" }}>
                 <button
                   type="button"
                   onClick={handleCopyPayload}
                   style={{
                     padding: '7px 16px',
-                    borderRadius: '7px',
-                    border: '1px solid #cbd5e1',
-                    background: '#ffffff',
-                    color: copiedPayload ? '#059669' : '#334155',
+                    borderRadius: "var(--radius-sm)",
+                    border: '1px solid var(--border-strong)',
+                    background: 'var(--card)',
+                    color: copiedPayload ? 'var(--green-650)' : '#334155',
                     fontWeight: 700,
-                    fontSize: '12.5px',
+                    fontSize: "var(--text-base)",
                     cursor: 'pointer',
                   }}
                 >
@@ -1585,12 +1585,12 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                   onClick={() => setShowPayloadModal(false)}
                   style={{
                     padding: '7px 16px',
-                    borderRadius: '7px',
+                    borderRadius: "var(--radius-sm)",
                     border: 'none',
-                    background: '#2563eb',
-                    color: '#fff',
+                    background: 'var(--primary)',
+                    color: 'var(--card)',
                     fontWeight: 700,
-                    fontSize: '12.5px',
+                    fontSize: "var(--text-base)",
                     cursor: 'pointer',
                   }}
                 >
@@ -1615,11 +1615,11 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '20px',
+          padding: "var(--space-8)",
         }}>
           <div style={{
-            background: '#ffffff',
-            borderRadius: '16px',
+            background: 'var(--card)',
+            borderRadius: "var(--radius-xl)",
             maxWidth: '600px',
             width: '100%',
             maxHeight: '85vh',
@@ -1628,32 +1628,32 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
             boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
             overflow: 'hidden',
           }}>
-            <div style={{ padding: '24px', textAlign: 'center', background: '#ecfdf5', borderBottom: '1px solid #d1fae5' }}>
-              <div style={{ fontSize: '48px', marginBottom: '10px' }}>🎉</div>
-              <h3 style={{ margin: '0 0 6px', color: '#065f46', fontWeight: 800, fontSize: '20px' }}>
+            <div style={{ padding: "var(--space-9)", textAlign: 'center', background: 'var(--teal-soft)', borderBottom: '1px solid var(--green-150)' }}>
+              <div style={{ fontSize: "var(--text-7xl)", marginBottom: "var(--space-4)" }}>🎉</div>
+              <h3 style={{ margin: '0 0 6px', color: 'var(--green-800)', fontWeight: 800, fontSize: "var(--text-2xl)" }}>
                 Simulated Submission Completed!
               </h3>
-              <p style={{ margin: 0, color: '#047857', fontSize: '13.5px' }}>
+              <p style={{ margin: 0, color: 'var(--green-750)', fontSize: "var(--text-base)" }}>
                 Your form schema structure is verified and fully functional for live deployment.
               </p>
             </div>
 
-            <div style={{ padding: '20px', overflowY: 'auto' }}>
-              <h4 style={{ margin: '0 0 12px', fontSize: '14px', fontWeight: 700, color: '#1e293b' }}>
+            <div style={{ padding: "var(--space-8)", overflowY: 'auto' }}>
+              <h4 style={{ margin: '0 0 12px', fontSize: "var(--text-md)", fontWeight: 700, color: '#1e293b' }}>
                 Simulation Payload Summary:
               </h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: "var(--space-3)" }}>
                 {sections.map((sec, idx) => {
                   const sKey = sec.sectionKey || sec.idString || sec.id;
                   const secTables = sec.tables || [];
                   const filledTablesCount = secTables.filter((t) => (tablesData[t.tableKey || t.idString] || []).length > 0).length;
 
                   return (
-                    <div key={idx} style={{ padding: '10px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>
+                    <div key={idx} style={{ padding: '10px 14px', background: 'var(--bg)', borderRadius: "var(--radius-sm)", border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: "var(--text-base)", fontWeight: 600, color: '#334155' }}>
                         Sec {sec.number || idx + 1}: {sec.title}
                       </span>
-                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#2563eb' }}>
+                      <span style={{ fontSize: "var(--text-base)", fontWeight: 700, color: 'var(--primary)' }}>
                         {filledTablesCount} / {secTables.length} tables populated
                       </span>
                     </div>
@@ -1662,18 +1662,18 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
               </div>
             </div>
 
-            <div style={{ padding: '14px 20px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+            <div style={{ padding: '14px 20px', background: 'var(--bg)', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: "var(--space-4)" }}>
               <button
                 type="button"
                 onClick={() => setShowSubmitModal(false)}
                 style={{
                   padding: '8px 18px',
-                  borderRadius: '8px',
-                  border: '1px solid #cbd5e1',
-                  background: '#fff',
+                  borderRadius: "var(--radius-sm)",
+                  border: '1px solid var(--border-strong)',
+                  background: 'var(--card)',
                   color: '#334155',
                   fontWeight: 650,
-                  fontSize: '13px',
+                  fontSize: "var(--text-base)",
                   cursor: 'pointer',
                 }}
               >
@@ -1687,12 +1687,12 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                 }}
                 style={{
                   padding: '8px 20px',
-                  borderRadius: '8px',
+                  borderRadius: "var(--radius-sm)",
                   border: 'none',
-                  background: '#2563eb',
-                  color: '#fff',
+                  background: 'var(--primary)',
+                  color: 'var(--card)',
                   fontWeight: 700,
-                  fontSize: '13px',
+                  fontSize: "var(--text-base)",
                   cursor: 'pointer',
                 }}
               >

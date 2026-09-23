@@ -496,13 +496,13 @@ export const ExcelTableImportModal = ({
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 1050,
-        padding: '20px',
+        padding: "var(--space-8)",
       }}
     >
       <div
         style={{
-          background: '#fff',
-          borderRadius: '16px',
+          background: 'var(--card)',
+          borderRadius: "var(--radius-xl)",
           width: '100%',
           maxWidth: '1080px',
           maxHeight: '92vh',
@@ -517,32 +517,32 @@ export const ExcelTableImportModal = ({
         <div
           style={{
             padding: '20px 24px',
-            borderBottom: '1px solid #e2e8f0',
+            borderBottom: '1px solid var(--border)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            background: '#f8fafc',
+            background: 'var(--bg)',
           }}
         >
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-3)", marginBottom: "var(--space-1)" }}>
               <span
                 style={{
-                  fontSize: '11px',
+                  fontSize: "var(--text-xs)",
                   fontWeight: 800,
                   padding: '2px 8px',
-                  borderRadius: '6px',
+                  borderRadius: "var(--radius-sm)",
                   background: '#dbeafe',
                   color: '#1e40af',
                 }}
               >
                 Section {section.number || 'A'}
               </span>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
+              <h3 style={{ margin: 0, fontSize: "var(--text-xl)", fontWeight: 800, color: 'var(--ink)' }}>
                 📥 Import Tables from Excel
               </h3>
             </div>
-            <p style={{ margin: 0, fontSize: '12.5px', color: '#64748b' }}>
+            <p style={{ margin: 0, fontSize: "var(--text-base)", color: 'var(--muted)' }}>
               Upload an Excel sheet to automatically create tables with column headers and configure field types.
             </p>
           </div>
@@ -550,12 +550,12 @@ export const ExcelTableImportModal = ({
             type="button"
             style={{
               border: 'none',
-              background: '#f1f5f9',
-              borderRadius: '8px',
+              background: 'var(--bg-alt)',
+              borderRadius: "var(--radius-sm)",
               width: '32px',
               height: '32px',
-              fontSize: '16px',
-              color: '#64748b',
+              fontSize: "var(--text-lg)",
+              color: 'var(--muted)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -568,20 +568,20 @@ export const ExcelTableImportModal = ({
         </div>
 
         {/* Modal Body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: "var(--space-9)" }}>
           {error && (
             <div
               style={{
                 padding: '12px 16px',
-                background: '#fef2f2',
-                border: '1px solid #fecaca',
-                borderRadius: '8px',
-                color: '#b91c1c',
-                fontSize: '13px',
-                marginBottom: '20px',
+                background: 'var(--red-50)',
+                border: '1px solid var(--red-200)',
+                borderRadius: "var(--radius-sm)",
+                color: 'var(--red-700)',
+                fontSize: "var(--text-base)",
+                marginBottom: "var(--space-8)",
                 display: 'flex',
                 alignItems: 'center',
-                gap: '10px',
+                gap: "var(--space-4)",
               }}
             >
               <span>⚠️</span>
@@ -596,14 +596,14 @@ export const ExcelTableImportModal = ({
               justifyContent: 'space-between',
               alignItems: 'center',
               flexWrap: 'wrap',
-              gap: '14px',
-              background: '#f1f5f9',
+              gap: "var(--space-6)",
+              background: 'var(--bg-alt)',
               padding: '16px 20px',
-              borderRadius: '12px',
-              marginBottom: '20px',
+              borderRadius: "var(--radius-lg)",
+              marginBottom: "var(--space-8)",
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-5)", flexWrap: 'wrap' }}>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -615,16 +615,16 @@ export const ExcelTableImportModal = ({
                 type="button"
                 style={{
                   padding: '9px 18px',
-                  borderRadius: '8px',
+                  borderRadius: "var(--radius-sm)",
                   border: 'none',
-                  background: '#2563eb',
-                  color: '#fff',
+                  background: 'var(--primary)',
+                  color: 'var(--card)',
                   fontWeight: 700,
-                  fontSize: '13px',
+                  fontSize: "var(--text-base)",
                   cursor: 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: "var(--space-3)",
                   boxShadow: '0 2px 4px rgba(37,99,235,0.2)',
                 }}
                 onClick={() => fileInputRef.current?.click()}
@@ -632,23 +632,23 @@ export const ExcelTableImportModal = ({
                 📁 {file ? 'Change Excel File' : 'Choose Excel File (.xlsx)'}
               </button>
               {file && (
-                <span style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a' }}>
+                <span style={{ fontSize: "var(--text-base)", fontWeight: 600, color: 'var(--ink)' }}>
                   📄 {file.name} ({(file.size / 1024).toFixed(1)} KB)
                 </span>
               )}
             </div>
 
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: "var(--space-3)", flexWrap: 'wrap' }}>
               <button
                 type="button"
                 style={{
                   padding: '8px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #cbd5e1',
-                  background: '#fff',
+                  borderRadius: "var(--radius-sm)",
+                  border: '1px solid var(--border-strong)',
+                  background: 'var(--card)',
                   color: '#475569',
                   fontWeight: 600,
-                  fontSize: '12.5px',
+                  fontSize: "var(--text-base)",
                   cursor: 'pointer',
                 }}
                 onClick={() => setShowFormatGuide(!showFormatGuide)}
@@ -659,16 +659,16 @@ export const ExcelTableImportModal = ({
                 type="button"
                 style={{
                   padding: '8px 14px',
-                  borderRadius: '8px',
-                  border: '1px solid #86efac',
-                  background: '#f0fdf4',
-                  color: '#15803d',
+                  borderRadius: "var(--radius-sm)",
+                  border: '1px solid var(--green-300)',
+                  background: 'var(--green-50)',
+                  color: 'var(--green-600)',
                   fontWeight: 700,
-                  fontSize: '12.5px',
+                  fontSize: "var(--text-base)",
                   cursor: 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '6px',
+                  gap: "var(--space-2)",
                 }}
                 onClick={handleDownloadSampleTemplate}
                 title="Download a pre-formatted Excel template with sample tables and columns"
@@ -682,76 +682,76 @@ export const ExcelTableImportModal = ({
           {(showFormatGuide || parsedTables.length === 0) && (
             <div
               style={{
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: '12px',
+                background: 'var(--bg)',
+                border: '1px solid var(--border)',
+                borderRadius: "var(--radius-lg)",
                 padding: '18px 20px',
-                marginBottom: '24px',
+                marginBottom: "var(--space-9)",
               }}
             >
-              <h4 style={{ margin: '0 0 12px', fontSize: '14px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h4 style={{ margin: '0 0 12px', fontSize: "var(--text-md)", fontWeight: 800, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: "var(--space-3)" }}>
                 <span>📋 How to Format Your Excel File (Both Formats Supported)</span>
               </h4>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: "var(--space-7)" }}>
                 {/* Format 1 */}
-                <div style={{ background: '#fff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '14px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '11px', fontWeight: 800, padding: '2px 6px', background: '#dbeafe', color: '#1e40af', borderRadius: '4px' }}>
+                <div style={{ background: 'var(--card)', border: '1px solid var(--border-strong)', borderRadius: "var(--radius-sm)", padding: "var(--space-6)" }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-2)", marginBottom: "var(--space-3)" }}>
+                    <span style={{ fontSize: "var(--text-xs)", fontWeight: 800, padding: '2px 6px', background: '#dbeafe', color: '#1e40af', borderRadius: "var(--radius-2xs)" }}>
                       Format A (Your Format)
                     </span>
-                    <strong style={{ fontSize: '12.5px', color: '#0f172a' }}>Single Sheet with Multiple Tables</strong>
+                    <strong style={{ fontSize: "var(--text-base)", color: 'var(--ink)' }}>Single Sheet with Multiple Tables</strong>
                   </div>
-                  <p style={{ margin: '0 0 10px', fontSize: '12px', color: '#64748b' }}>
+                  <p style={{ margin: '0 0 10px', fontSize: "var(--text-base)", color: 'var(--muted)' }}>
                     Put table titles in single rows, followed directly by column headers and separated by blank rows:
                   </p>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11.5px', background: '#f8fafc', border: '1px solid #e2e8f0', fontFamily: 'monospace' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: "var(--text-sm)", background: 'var(--bg)', border: '1px solid var(--border)', fontFamily: 'monospace' }}>
                     <tbody>
                       <tr style={{ background: '#e0f2fe', fontWeight: 'bold' }}>
-                        <td colSpan={4} style={{ padding: '4px 8px', border: '1px solid #cbd5e1' }}>Table header1</td>
+                        <td colSpan={4} style={{ padding: '4px 8px', border: '1px solid var(--border-strong)' }}>Table header1</td>
                       </tr>
-                      <tr style={{ background: '#f1f5f9', fontWeight: 'bold' }}>
-                        <td style={{ padding: '4px 6px', border: '1px solid #cbd5e1' }}>Sr. no</td>
-                        <td style={{ padding: '4px 6px', border: '1px solid #cbd5e1' }}>Name</td>
-                        <td style={{ padding: '4px 6px', border: '1px solid #cbd5e1' }}>Roll no</td>
-                        <td style={{ padding: '4px 6px', border: '1px solid #cbd5e1' }}>Attachment</td>
+                      <tr style={{ background: 'var(--bg-alt)', fontWeight: 'bold' }}>
+                        <td style={{ padding: '4px 6px', border: '1px solid var(--border-strong)' }}>Sr. no</td>
+                        <td style={{ padding: '4px 6px', border: '1px solid var(--border-strong)' }}>Name</td>
+                        <td style={{ padding: '4px 6px', border: '1px solid var(--border-strong)' }}>Roll no</td>
+                        <td style={{ padding: '4px 6px', border: '1px solid var(--border-strong)' }}>Attachment</td>
                       </tr>
                       <tr>
-                        <td colSpan={4} style={{ padding: '4px 8px', color: '#94a3b8', fontStyle: 'italic', border: '1px solid #cbd5e1' }}>[empty row]</td>
+                        <td colSpan={4} style={{ padding: '4px 8px', color: 'var(--muted)', fontStyle: 'italic', border: '1px solid var(--border-strong)' }}>[empty row]</td>
                       </tr>
                       <tr style={{ background: '#e0f2fe', fontWeight: 'bold' }}>
-                        <td colSpan={4} style={{ padding: '4px 8px', border: '1px solid #cbd5e1' }}>Table header2</td>
+                        <td colSpan={4} style={{ padding: '4px 8px', border: '1px solid var(--border-strong)' }}>Table header2</td>
                       </tr>
-                      <tr style={{ background: '#f1f5f9', fontWeight: 'bold' }}>
-                        <td style={{ padding: '4px 6px', border: '1px solid #cbd5e1' }}>Sr.no</td>
-                        <td style={{ padding: '4px 6px', border: '1px solid #cbd5e1' }}>Paper Id</td>
-                        <td style={{ padding: '4px 6px', border: '1px solid #cbd5e1' }}>Writer Name</td>
-                        <td style={{ padding: '4px 6px', border: '1px solid #cbd5e1' }}>Attachment</td>
+                      <tr style={{ background: 'var(--bg-alt)', fontWeight: 'bold' }}>
+                        <td style={{ padding: '4px 6px', border: '1px solid var(--border-strong)' }}>Sr.no</td>
+                        <td style={{ padding: '4px 6px', border: '1px solid var(--border-strong)' }}>Paper Id</td>
+                        <td style={{ padding: '4px 6px', border: '1px solid var(--border-strong)' }}>Writer Name</td>
+                        <td style={{ padding: '4px 6px', border: '1px solid var(--border-strong)' }}>Attachment</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
 
                 {/* Format 2 */}
-                <div style={{ background: '#fff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '14px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '11px', fontWeight: 800, padding: '2px 6px', background: '#fef3c7', color: '#92400e', borderRadius: '4px' }}>
+                <div style={{ background: 'var(--card)', border: '1px solid var(--border-strong)', borderRadius: "var(--radius-sm)", padding: "var(--space-6)" }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-2)", marginBottom: "var(--space-3)" }}>
+                    <span style={{ fontSize: "var(--text-xs)", fontWeight: 800, padding: '2px 6px', background: 'var(--amber-100)', color: 'var(--amber-700)', borderRadius: "var(--radius-2xs)" }}>
                       Format B
                     </span>
-                    <strong style={{ fontSize: '12.5px', color: '#0f172a' }}>Multi-Sheet Workbook (Tabs)</strong>
+                    <strong style={{ fontSize: "var(--text-base)", color: 'var(--ink)' }}>Multi-Sheet Workbook (Tabs)</strong>
                   </div>
-                  <p style={{ margin: '0 0 10px', fontSize: '12px', color: '#64748b' }}>
+                  <p style={{ margin: '0 0 10px', fontSize: "var(--text-base)", color: 'var(--muted)' }}>
                     Each sheet tab is named after the Table (e.g. <em>Research Papers</em>), and Row 1 contains column headers:
                   </p>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11.5px', background: '#f8fafc', border: '1px solid #e2e8f0', fontFamily: 'monospace' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: "var(--text-sm)", background: 'var(--bg)', border: '1px solid var(--border)', fontFamily: 'monospace' }}>
                     <tbody>
-                      <tr style={{ background: '#fef3c7', fontWeight: 'bold' }}>
-                        <td colSpan={3} style={{ padding: '4px 8px', border: '1px solid #cbd5e1' }}>Sheet Tab: "Research Publications"</td>
+                      <tr style={{ background: 'var(--amber-100)', fontWeight: 'bold' }}>
+                        <td colSpan={3} style={{ padding: '4px 8px', border: '1px solid var(--border-strong)' }}>Sheet Tab: "Research Publications"</td>
                       </tr>
-                      <tr style={{ background: '#f1f5f9', fontWeight: 'bold' }}>
-                        <td style={{ padding: '4px 6px', border: '1px solid #cbd5e1' }}>Sr No</td>
-                        <td style={{ padding: '4px 6px', border: '1px solid #cbd5e1' }}>Paper Title</td>
-                        <td style={{ padding: '4px 6px', border: '1px solid #cbd5e1' }}>Upload Proof PDF</td>
+                      <tr style={{ background: 'var(--bg-alt)', fontWeight: 'bold' }}>
+                        <td style={{ padding: '4px 6px', border: '1px solid var(--border-strong)' }}>Sr No</td>
+                        <td style={{ padding: '4px 6px', border: '1px solid var(--border-strong)' }}>Paper Title</td>
+                        <td style={{ padding: '4px 6px', border: '1px solid var(--border-strong)' }}>Upload Proof PDF</td>
                       </tr>
                     </tbody>
                   </table>
@@ -767,10 +767,10 @@ export const ExcelTableImportModal = ({
               <div
                 style={{
                   display: 'flex',
-                  gap: '8px',
-                  borderBottom: '2px solid #e2e8f0',
+                  gap: "var(--space-3)",
+                  borderBottom: '2px solid var(--border)',
                   paddingBottom: '2px',
-                  marginBottom: '20px',
+                  marginBottom: "var(--space-8)",
                   overflowX: 'auto',
                 }}
               >
@@ -782,14 +782,14 @@ export const ExcelTableImportModal = ({
                       padding: '8px 16px',
                       borderRadius: '8px 8px 0 0',
                       border: 'none',
-                      background: activeTableIndex === idx ? '#2563eb' : '#f8fafc',
-                      color: activeTableIndex === idx ? '#fff' : '#475569',
+                      background: activeTableIndex === idx ? 'var(--primary)' : 'var(--bg)',
+                      color: activeTableIndex === idx ? 'var(--card)' : '#475569',
                       fontWeight: 700,
-                      fontSize: '13px',
+                      fontSize: "var(--text-base)",
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '8px',
+                      gap: "var(--space-3)",
                       transition: 'all 0.15s ease',
                       whiteSpace: 'nowrap',
                     }}
@@ -798,11 +798,11 @@ export const ExcelTableImportModal = ({
                     <span>📊 {tbl.title || `Table ${idx + 1}`}</span>
                     <span
                       style={{
-                        fontSize: '10.5px',
+                        fontSize: "var(--text-2xs)",
                         padding: '1px 6px',
-                        borderRadius: '10px',
-                        background: activeTableIndex === idx ? 'rgba(255,255,255,0.25)' : '#e2e8f0',
-                        color: activeTableIndex === idx ? '#fff' : '#334155',
+                        borderRadius: "var(--radius-md)",
+                        background: activeTableIndex === idx ? 'rgba(255,255,255,0.25)' : 'var(--border)',
+                        color: activeTableIndex === idx ? 'var(--card)' : '#334155',
                       }}
                     >
                       {tbl.fields?.length || 0} cols
@@ -815,10 +815,10 @@ export const ExcelTableImportModal = ({
               {activeTable && (
                 <div
                   style={{
-                    background: '#fff',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '12px',
-                    padding: '20px',
+                    background: 'var(--card)',
+                    border: '1px solid var(--border)',
+                    borderRadius: "var(--radius-lg)",
+                    padding: "var(--space-8)",
                     boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
                   }}
                 >
@@ -826,14 +826,14 @@ export const ExcelTableImportModal = ({
                     style={{
                       display: 'grid',
                       gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-                      gap: '16px',
-                      marginBottom: '20px',
-                      paddingBottom: '16px',
-                      borderBottom: '1px solid #e2e8f0',
+                      gap: "var(--space-7)",
+                      marginBottom: "var(--space-8)",
+                      paddingBottom: "var(--space-7)",
+                      borderBottom: '1px solid var(--border)',
                     }}
                   >
                     <div>
-                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                      <label style={{ display: 'block', fontSize: "var(--text-base)", fontWeight: 700, color: '#475569', marginBottom: "var(--space-2)" }}>
                         Table Title:
                       </label>
                       <input
@@ -843,16 +843,16 @@ export const ExcelTableImportModal = ({
                         style={{
                           width: '100%',
                           padding: '8px 12px',
-                          borderRadius: '6px',
-                          border: '1px solid #cbd5e1',
-                          fontSize: '13px',
+                          borderRadius: "var(--radius-sm)",
+                          border: '1px solid var(--border-strong)',
+                          fontSize: "var(--text-base)",
                           fontWeight: 600,
                         }}
                       />
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                      <label style={{ display: 'block', fontSize: "var(--text-base)", fontWeight: 700, color: '#475569', marginBottom: "var(--space-2)" }}>
                         Table Key (JSON Key):
                       </label>
                       <input
@@ -862,21 +862,21 @@ export const ExcelTableImportModal = ({
                         style={{
                           width: '100%',
                           padding: '8px 12px',
-                          borderRadius: '6px',
-                          border: '1px solid #cbd5e1',
-                          fontSize: '13px',
+                          borderRadius: "var(--radius-sm)",
+                          border: '1px solid var(--border-strong)',
+                          fontSize: "var(--text-base)",
                           fontFamily: 'monospace',
                         }}
                       />
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', paddingTop: '22px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-7)", paddingTop: '22px' }}>
                       <label
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: '6px',
-                          fontSize: '12.5px',
+                          gap: "var(--space-2)",
+                          fontSize: "var(--text-base)",
                           fontWeight: 650,
                           color: '#1e293b',
                           cursor: 'pointer',
@@ -896,12 +896,12 @@ export const ExcelTableImportModal = ({
                           type="button"
                           style={{
                             padding: '6px 12px',
-                            borderRadius: '6px',
-                            border: '1px solid #fecaca',
-                            background: '#fff',
-                            color: '#b91c1c',
+                            borderRadius: "var(--radius-sm)",
+                            border: '1px solid var(--red-200)',
+                            background: 'var(--card)',
+                            color: 'var(--red-700)',
                             fontWeight: 600,
-                            fontSize: '12px',
+                            fontSize: "var(--text-base)",
                             cursor: 'pointer',
                           }}
                           onClick={() => handleDeleteTable(activeTableIndex)}
@@ -913,20 +913,20 @@ export const ExcelTableImportModal = ({
                   </div>
 
                   {/* Columns Definition Table */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <h4 style={{ margin: 0, fontSize: '14.5px', fontWeight: 800, color: '#0f172a' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: "var(--space-5)" }}>
+                    <h4 style={{ margin: 0, fontSize: "var(--text-md)", fontWeight: 800, color: 'var(--ink)' }}>
                       ⚙️ Column Field Types & Rules ({activeTable.fields?.length || 0} Columns)
                     </h4>
                     <button
                       type="button"
                       style={{
                         padding: '5px 12px',
-                        borderRadius: '6px',
+                        borderRadius: "var(--radius-sm)",
                         border: '1px solid #93c5fd',
-                        background: '#eff6ff',
-                        color: '#1d4ed8',
+                        background: 'var(--accent-soft)',
+                        color: 'var(--primary-dark)',
                         fontWeight: 700,
-                        fontSize: '12px',
+                        fontSize: "var(--text-base)",
                         cursor: 'pointer',
                       }}
                       onClick={() => handleAddColumn(activeTableIndex)}
@@ -935,11 +935,11 @@ export const ExcelTableImportModal = ({
                     </button>
                   </div>
 
-                  <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                  <div style={{ overflowX: 'auto', border: '1px solid var(--border)', borderRadius: "var(--radius-sm)" }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: "var(--text-base)" }}>
                       <thead>
-                        <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', textAlign: 'left' }}>
-                          <th style={{ padding: '10px 12px', width: '40px', color: '#64748b' }}>#</th>
+                        <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)', textAlign: 'left' }}>
+                          <th style={{ padding: '10px 12px', width: '40px', color: 'var(--muted)' }}>#</th>
                           <th style={{ padding: '10px 12px', width: '28%', color: '#334155', fontWeight: 700 }}>Column Header Label</th>
                           <th style={{ padding: '10px 12px', width: '26%', color: '#334155', fontWeight: 700 }}>Data Field Type</th>
                           <th style={{ padding: '10px 12px', width: '28%', color: '#334155', fontWeight: 700 }}>Options / Notes</th>
@@ -949,8 +949,8 @@ export const ExcelTableImportModal = ({
                       </thead>
                       <tbody>
                         {activeTable.fields?.map((field, fIdx) => (
-                          <tr key={field.id || fIdx} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                            <td style={{ padding: '10px 12px', color: '#94a3b8', fontWeight: 600, fontSize: '12px' }}>
+                          <tr key={field.id || fIdx} style={{ borderBottom: '1px solid var(--bg-alt)' }}>
+                            <td style={{ padding: '10px 12px', color: 'var(--muted)', fontWeight: 600, fontSize: "var(--text-base)" }}>
                               {fIdx + 1}
                             </td>
                             <td style={{ padding: '10px 12px' }}>
@@ -961,13 +961,13 @@ export const ExcelTableImportModal = ({
                                 style={{
                                   width: '100%',
                                   padding: '6px 10px',
-                                  borderRadius: '6px',
-                                  border: '1px solid #cbd5e1',
-                                  fontSize: '12.5px',
+                                  borderRadius: "var(--radius-sm)",
+                                  border: '1px solid var(--border-strong)',
+                                  fontSize: "var(--text-base)",
                                   fontWeight: 600,
                                 }}
                               />
-                              <small style={{ color: '#94a3b8', fontFamily: 'monospace', fontSize: '11px', display: 'block', marginTop: '2px' }}>
+                              <small style={{ color: 'var(--muted)', fontFamily: 'monospace', fontSize: "var(--text-xs)", display: 'block', marginTop: '2px' }}>
                                 key: {field.fieldKey}
                               </small>
                             </td>
@@ -978,7 +978,7 @@ export const ExcelTableImportModal = ({
                                 style={{
                                   width: '100%',
                                   padding: '6px 10px',
-                                  borderRadius: '6px',
+                                  borderRadius: "var(--radius-sm)",
                                   border:
                                     field.fieldType === 'ATTACHMENT'
                                       ? '1.5px solid #60a5fa'
@@ -986,18 +986,18 @@ export const ExcelTableImportModal = ({
                                       ? '1.5px solid #60a5fa'
                                       : field.fieldType === 'NUMBER'
                                       ? '1.5px solid #34d399'
-                                      : '1px solid #cbd5e1',
+                                      : '1px solid var(--border-strong)',
                                   background:
                                     field.fieldType === 'ATTACHMENT'
-                                      ? '#eff6ff'
+                                      ? 'var(--accent-soft)'
                                       : field.fieldType === 'DATE'
                                       ? '#f0f9ff'
                                       : field.fieldType === 'NUMBER'
-                                      ? '#f0fdf4'
-                                      : '#fff',
-                                  fontSize: '12.5px',
+                                      ? 'var(--green-50)'
+                                      : 'var(--card)',
+                                  fontSize: "var(--text-base)",
                                   fontWeight: 650,
-                                  color: '#0f172a',
+                                  color: 'var(--ink)',
                                 }}
                               >
                                 {FIELD_TYPES.map((ft) => (
@@ -1017,30 +1017,30 @@ export const ExcelTableImportModal = ({
                                   style={{
                                     width: '100%',
                                     padding: '6px 10px',
-                                    borderRadius: '6px',
-                                    border: '1px solid #cbd5e1',
-                                    fontSize: '12px',
+                                    borderRadius: "var(--radius-sm)",
+                                    border: '1px solid var(--border-strong)',
+                                    fontSize: "var(--text-base)",
                                   }}
                                   title="Comma-separated dropdown options"
                                 />
                               ) : field.fieldType === 'ATTACHMENT' ? (
-                                <span style={{ fontSize: '11.5px', color: '#2563eb', fontWeight: 600 }}>
+                                <span style={{ fontSize: "var(--text-sm)", color: 'var(--primary)', fontWeight: 600 }}>
                                   📎 File/PDF upload enabled
                                 </span>
                               ) : field.fieldType === 'DATE' ? (
-                                <span style={{ fontSize: '11.5px', color: '#0284c7', fontWeight: 600 }}>
+                                <span style={{ fontSize: "var(--text-sm)", color: '#0284c7', fontWeight: 600 }}>
                                   📅 Date selection widget
                                 </span>
                               ) : field.fieldType === 'NUMBER' ? (
-                                <span style={{ fontSize: '11.5px', color: '#059669', fontWeight: 600 }}>
+                                <span style={{ fontSize: "var(--text-sm)", color: 'var(--green-650)', fontWeight: 600 }}>
                                   🔢 Numeric values & scores
                                 </span>
                               ) : field.fieldType === 'TEXTAREA' ? (
-                                <span style={{ fontSize: '11.5px', color: '#d97706', fontWeight: 600 }}>
+                                <span style={{ fontSize: "var(--text-sm)", color: 'var(--amber-600)', fontWeight: 600 }}>
                                   📝 Multi-line descriptive box
                                 </span>
                               ) : (
-                                <span style={{ fontSize: '11.5px', color: '#94a3b8' }}>Standard text</span>
+                                <span style={{ fontSize: "var(--text-sm)", color: 'var(--muted)' }}>Standard text</span>
                               )}
                             </td>
                             <td style={{ padding: '10px 12px', textAlign: 'center' }}>
@@ -1058,10 +1058,10 @@ export const ExcelTableImportModal = ({
                                 style={{
                                   border: 'none',
                                   background: 'transparent',
-                                  color: '#ef4444',
+                                  color: 'var(--red-500)',
                                   cursor: 'pointer',
-                                  fontSize: '14px',
-                                  padding: '4px',
+                                  fontSize: "var(--text-md)",
+                                  padding: "var(--space-1)",
                                 }}
                                 onClick={() => handleDeleteField(activeTableIndex, fIdx)}
                                 title="Remove Column"
@@ -1080,28 +1080,28 @@ export const ExcelTableImportModal = ({
           ) : (
             <div
               style={{
-                border: '2px dashed #cbd5e1',
-                borderRadius: '12px',
+                border: '2px dashed var(--border-strong)',
+                borderRadius: "var(--radius-lg)",
                 padding: '36px 20px',
                 textAlign: 'center',
                 background: '#fafafa',
               }}
             >
-              <div style={{ fontSize: '36px', marginBottom: '10px' }}>📊</div>
-              <h4 style={{ margin: '0 0 6px', color: '#0f172a', fontWeight: 700 }}>No Excel file loaded yet</h4>
-              <p style={{ margin: '0 0 16px', color: '#64748b', fontSize: '13px' }}>
+              <div style={{ fontSize: "var(--text-5xl)", marginBottom: "var(--space-4)" }}>📊</div>
+              <h4 style={{ margin: '0 0 6px', color: 'var(--ink)', fontWeight: 700 }}>No Excel file loaded yet</h4>
+              <p style={{ margin: '0 0 16px', color: 'var(--muted)', fontSize: "var(--text-base)" }}>
                 Upload your Excel file above or click the button below to download the ready-to-use template.
               </p>
               <button
                 type="button"
                 style={{
                   padding: '8px 18px',
-                  borderRadius: '7px',
-                  border: '1px solid #86efac',
-                  background: '#f0fdf4',
-                  color: '#15803d',
+                  borderRadius: "var(--radius-sm)",
+                  border: '1px solid var(--green-300)',
+                  background: 'var(--green-50)',
+                  color: 'var(--green-600)',
                   fontWeight: 700,
-                  fontSize: '13px',
+                  fontSize: "var(--text-base)",
                   cursor: 'pointer',
                 }}
                 onClick={handleDownloadSampleTemplate}
@@ -1116,8 +1116,8 @@ export const ExcelTableImportModal = ({
         <div
           style={{
             padding: '16px 24px',
-            borderTop: '1px solid #e2e8f0',
-            background: '#f8fafc',
+            borderTop: '1px solid var(--border)',
+            background: 'var(--bg)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
@@ -1125,23 +1125,23 @@ export const ExcelTableImportModal = ({
         >
           <div>
             {parsedTables.length > 0 && (
-              <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>
+              <span style={{ fontSize: "var(--text-base)", fontWeight: 600, color: '#334155' }}>
                 Summary: <strong>{parsedTables.length}</strong> Table(s),{' '}
                 <strong>{parsedTables.reduce((acc, t) => acc + (t.fields?.length || 0), 0)}</strong> Columns ready for import.
               </span>
             )}
           </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: "var(--space-4)" }}>
             <button
               type="button"
               style={{
                 padding: '8px 18px',
-                borderRadius: '8px',
-                border: '1px solid #cbd5e1',
-                background: '#fff',
+                borderRadius: "var(--radius-sm)",
+                border: '1px solid var(--border-strong)',
+                background: 'var(--card)',
                 color: '#334155',
                 fontWeight: 600,
-                fontSize: '13px',
+                fontSize: "var(--text-base)",
                 cursor: 'pointer',
               }}
               onClick={onClose}
@@ -1153,16 +1153,16 @@ export const ExcelTableImportModal = ({
               type="button"
               style={{
                 padding: '8px 22px',
-                borderRadius: '8px',
+                borderRadius: "var(--radius-sm)",
                 border: 'none',
-                background: parsedTables.length === 0 || importing ? '#94a3b8' : '#16a34a',
-                color: '#fff',
+                background: parsedTables.length === 0 || importing ? 'var(--faint)' : 'var(--green-550)',
+                color: 'var(--card)',
                 fontWeight: 700,
-                fontSize: '13px',
+                fontSize: "var(--text-base)",
                 cursor: parsedTables.length === 0 || importing ? 'not-allowed' : 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '8px',
+                gap: "var(--space-3)",
                 boxShadow: parsedTables.length > 0 && !importing ? '0 2px 4px rgba(22,163,74,0.25)' : 'none',
               }}
               onClick={handleExecuteImport}

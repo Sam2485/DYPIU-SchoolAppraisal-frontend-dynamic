@@ -50,15 +50,15 @@ const styles = {
     padding: "14px 16px",
     border: "1px solid #d7dee9",
     borderRadius: 8,
-    background: "#f8fafc",
+    background: "var(--bg)",
     color: "#334155",
     fontSize: 13,
     lineHeight: 1.5,
     cursor: "pointer",
   },
   requiredItem: {
-    borderColor: "#bbf7d0",
-    background: "#f0fdf4",
+    borderColor: "var(--green-200)",
+    background: "var(--green-50)",
   },
   checkbox: {
     width: 16,

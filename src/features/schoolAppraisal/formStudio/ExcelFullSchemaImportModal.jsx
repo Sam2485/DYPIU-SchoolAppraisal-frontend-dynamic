@@ -592,13 +592,13 @@ export const ExcelFullSchemaImportModal = ({
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 1060,
-        padding: '20px',
+        padding: "var(--space-8)",
       }}
     >
       <div
         style={{
-          background: '#fff',
-          borderRadius: '18px',
+          background: 'var(--card)',
+          borderRadius: "var(--radius-xl)",
           width: '100%',
           maxWidth: '1150px',
           maxHeight: '94vh',
@@ -613,33 +613,33 @@ export const ExcelFullSchemaImportModal = ({
         <div
           style={{
             padding: '20px 24px',
-            borderBottom: '1px solid #e2e8f0',
+            borderBottom: '1px solid var(--border)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            background: '#f8fafc',
+            background: 'var(--bg)',
           }}
         >
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-3)", marginBottom: "var(--space-1)" }}>
               <span
                 style={{
-                  fontSize: '11px',
+                  fontSize: "var(--text-xs)",
                   fontWeight: 800,
                   padding: '3px 8px',
-                  borderRadius: '6px',
-                  background: '#fef3c7',
-                  color: '#92400e',
+                  borderRadius: "var(--radius-sm)",
+                  background: 'var(--amber-100)',
+                  color: 'var(--amber-700)',
                   border: '1px solid #fcd34d',
                 }}
               >
                 Entire Form Schema
               </span>
-              <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 800, color: '#0f172a' }}>
+              <h3 style={{ margin: 0, fontSize: "var(--text-xl)", fontWeight: 800, color: 'var(--ink)' }}>
                 📥 Import Entire Form Schema from Excel (Multi-Part)
               </h3>
             </div>
-            <p style={{ margin: 0, fontSize: '12.5px', color: '#64748b' }}>
+            <p style={{ margin: 0, fontSize: "var(--text-base)", color: 'var(--muted)' }}>
               Upload a multi-sheet Excel workbook where <strong>each Sheet = 1 Section / Part</strong>, and each sheet contains its tables and column headers.
             </p>
           </div>
@@ -647,12 +647,12 @@ export const ExcelFullSchemaImportModal = ({
             type="button"
             style={{
               border: 'none',
-              background: '#f1f5f9',
-              borderRadius: '8px',
+              background: 'var(--bg-alt)',
+              borderRadius: "var(--radius-sm)",
               width: '32px',
               height: '32px',
-              fontSize: '16px',
-              color: '#64748b',
+              fontSize: "var(--text-lg)",
+              color: 'var(--muted)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -665,20 +665,20 @@ export const ExcelFullSchemaImportModal = ({
         </div>
 
         {/* Modal Body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: "var(--space-9)" }}>
           {error && (
             <div
               style={{
                 padding: '12px 16px',
-                background: '#fef2f2',
-                border: '1px solid #fecaca',
-                borderRadius: '8px',
-                color: '#b91c1c',
-                fontSize: '13px',
-                marginBottom: '20px',
+                background: 'var(--red-50)',
+                border: '1px solid var(--red-200)',
+                borderRadius: "var(--radius-sm)",
+                color: 'var(--red-700)',
+                fontSize: "var(--text-base)",
+                marginBottom: "var(--space-8)",
                 display: 'flex',
                 alignItems: 'center',
-                gap: '10px',
+                gap: "var(--space-4)",
               }}
             >
               <span>⚠️</span>
@@ -693,14 +693,14 @@ export const ExcelFullSchemaImportModal = ({
               justifyContent: 'space-between',
               alignItems: 'center',
               flexWrap: 'wrap',
-              gap: '14px',
-              background: '#f1f5f9',
+              gap: "var(--space-6)",
+              background: 'var(--bg-alt)',
               padding: '16px 20px',
-              borderRadius: '12px',
-              marginBottom: '20px',
+              borderRadius: "var(--radius-lg)",
+              marginBottom: "var(--space-8)",
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-5)", flexWrap: 'wrap' }}>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -712,16 +712,16 @@ export const ExcelFullSchemaImportModal = ({
                 type="button"
                 style={{
                   padding: '9px 18px',
-                  borderRadius: '8px',
+                  borderRadius: "var(--radius-sm)",
                   border: 'none',
-                  background: '#2563eb',
-                  color: '#fff',
+                  background: 'var(--primary)',
+                  color: 'var(--card)',
                   fontWeight: 700,
-                  fontSize: '13px',
+                  fontSize: "var(--text-base)",
                   cursor: 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: "var(--space-3)",
                   boxShadow: '0 2px 4px rgba(37,99,235,0.25)',
                 }}
                 onClick={() => fileInputRef.current?.click()}
@@ -729,23 +729,23 @@ export const ExcelFullSchemaImportModal = ({
                 📁 {file ? 'Change Workbook' : 'Upload Full Form Excel (.xlsx)'}
               </button>
               {file && (
-                <span style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a' }}>
+                <span style={{ fontSize: "var(--text-base)", fontWeight: 600, color: 'var(--ink)' }}>
                   📄 {file.name} ({(file.size / 1024).toFixed(1)} KB)
                 </span>
               )}
             </div>
 
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: "var(--space-3)", flexWrap: 'wrap' }}>
               <button
                 type="button"
                 style={{
                   padding: '8px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #cbd5e1',
-                  background: '#fff',
+                  borderRadius: "var(--radius-sm)",
+                  border: '1px solid var(--border-strong)',
+                  background: 'var(--card)',
                   color: '#475569',
                   fontWeight: 600,
-                  fontSize: '12.5px',
+                  fontSize: "var(--text-base)",
                   cursor: 'pointer',
                 }}
                 onClick={() => setShowFormatGuide(!showFormatGuide)}
@@ -756,16 +756,16 @@ export const ExcelFullSchemaImportModal = ({
                 type="button"
                 style={{
                   padding: '8px 14px',
-                  borderRadius: '8px',
-                  border: '1px solid #bfdbfe',
-                  background: '#eff6ff',
-                  color: '#1d4ed8',
+                  borderRadius: "var(--radius-sm)",
+                  border: '1px solid var(--accent-border)',
+                  background: 'var(--accent-soft)',
+                  color: 'var(--primary-dark)',
                   fontWeight: 700,
-                  fontSize: '12.5px',
+                  fontSize: "var(--text-base)",
                   cursor: 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '6px',
+                  gap: "var(--space-2)",
                 }}
                 onClick={handleDownloadFullSchemaTemplate}
                 title="Download template with Part A, Part B, Part C sheets and sample tables"
@@ -779,26 +779,26 @@ export const ExcelFullSchemaImportModal = ({
           {(showFormatGuide || parsedSections.length === 0) && (
             <div
               style={{
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: '12px',
+                background: 'var(--bg)',
+                border: '1px solid var(--border)',
+                borderRadius: "var(--radius-lg)",
                 padding: '18px 20px',
-                marginBottom: '24px',
+                marginBottom: "var(--space-9)",
               }}
             >
-              <h4 style={{ margin: '0 0 10px', fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>
+              <h4 style={{ margin: '0 0 10px', fontSize: "var(--text-md)", fontWeight: 800, color: 'var(--ink)' }}>
                 📋 Multi-Part Excel Workbook Structure
               </h4>
-              <p style={{ margin: '0 0 12px', fontSize: '12.5px', color: '#64748b' }}>
+              <p style={{ margin: '0 0 12px', fontSize: "var(--text-base)", color: 'var(--muted)' }}>
                 In this mode, <strong>each sheet in Excel becomes an entire Part / Section</strong> in the appraisal schema. Inside each sheet, you can place all tables belonging to that part:
               </p>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '14px' }}>
-                <div style={{ background: '#fff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '12px' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 800, padding: '2px 6px', background: '#dbeafe', color: '#1e40af', borderRadius: '4px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: "var(--space-6)" }}>
+                <div style={{ background: 'var(--card)', border: '1px solid var(--border-strong)', borderRadius: "var(--radius-sm)", padding: "var(--space-5)" }}>
+                  <span style={{ fontSize: "var(--text-xs)", fontWeight: 800, padding: '2px 6px', background: '#dbeafe', color: '#1e40af', borderRadius: "var(--radius-2xs)" }}>
                     Sheet Tab: "Part A - General Info"
                   </span>
-                  <div style={{ marginTop: '8px', fontSize: '11.5px', fontFamily: 'monospace', color: '#334155' }}>
+                  <div style={{ marginTop: "var(--space-3)", fontSize: "var(--text-sm)", fontFamily: 'monospace', color: '#334155' }}>
                     <div><strong>Row 1:</strong> Part A: General Information</div>
                     <div><strong>Row 2:</strong> 1. Institute Details</div>
                     <div><strong>Row 3:</strong> Sr No | Name | Intake | ...</div>
@@ -808,11 +808,11 @@ export const ExcelFullSchemaImportModal = ({
                   </div>
                 </div>
 
-                <div style={{ background: '#fff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '12px' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 800, padding: '2px 6px', background: '#dcfce7', color: '#15803d', borderRadius: '4px' }}>
+                <div style={{ background: 'var(--card)', border: '1px solid var(--border-strong)', borderRadius: "var(--radius-sm)", padding: "var(--space-5)" }}>
+                  <span style={{ fontSize: "var(--text-xs)", fontWeight: 800, padding: '2px 6px', background: 'var(--green-100)', color: 'var(--green-600)', borderRadius: "var(--radius-2xs)" }}>
                     Sheet Tab: "Part B - Academic"
                   </span>
-                  <div style={{ marginTop: '8px', fontSize: '11.5px', fontFamily: 'monospace', color: '#334155' }}>
+                  <div style={{ marginTop: "var(--space-3)", fontSize: "var(--text-sm)", fontFamily: 'monospace', color: '#334155' }}>
                     <div><strong>Row 1:</strong> Part B: Academic Performance</div>
                     <div><strong>Row 2:</strong> 1. BOS Meetings</div>
                     <div><strong>Row 3:</strong> Sr No | Course | BOS Date | ...</div>
@@ -822,11 +822,11 @@ export const ExcelFullSchemaImportModal = ({
                   </div>
                 </div>
 
-                <div style={{ background: '#fff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '12px' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 800, padding: '2px 6px', background: '#fef3c7', color: '#92400e', borderRadius: '4px' }}>
+                <div style={{ background: 'var(--card)', border: '1px solid var(--border-strong)', borderRadius: "var(--radius-sm)", padding: "var(--space-5)" }}>
+                  <span style={{ fontSize: "var(--text-xs)", fontWeight: 800, padding: '2px 6px', background: 'var(--amber-100)', color: 'var(--amber-700)', borderRadius: "var(--radius-2xs)" }}>
                     Sheet Tab: "Part C - Research"
                   </span>
-                  <div style={{ marginTop: '8px', fontSize: '11.5px', fontFamily: 'monospace', color: '#334155' }}>
+                  <div style={{ marginTop: "var(--space-3)", fontSize: "var(--text-sm)", fontFamily: 'monospace', color: '#334155' }}>
                     <div><strong>Row 1:</strong> Part C: Research & Development</div>
                     <div><strong>Row 2:</strong> 1. Publications</div>
                     <div><strong>Row 3:</strong> Sr No | Title | Journal | Proof</div>
@@ -841,25 +841,25 @@ export const ExcelFullSchemaImportModal = ({
 
           {/* Configurator Layout (Sections & Tables) */}
           {parsedSections.length > 0 ? (
-            <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: "var(--space-8)" }}>
               {/* Left Sidebar: Section List */}
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px', height: 'fit-content' }}>
-                <h4 style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: 800, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: "var(--radius-lg)", padding: "var(--space-6)", height: 'fit-content' }}>
+                <h4 style={{ margin: '0 0 10px', fontSize: "var(--text-base)", fontWeight: 800, color: 'var(--ink)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   📑 Sections / Parts ({parsedSections.length})
                 </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: "var(--space-2)" }}>
                   {parsedSections.map((sec, sIdx) => (
                     <button
                       key={sec.id || sIdx}
                       type="button"
                       style={{
                         padding: '10px 12px',
-                        borderRadius: '8px',
-                        border: activeSectionIndex === sIdx ? '1.5px solid #2563eb' : '1px solid #e2e8f0',
-                        background: activeSectionIndex === sIdx ? '#eff6ff' : '#fff',
-                        color: activeSectionIndex === sIdx ? '#1d4ed8' : '#1e293b',
+                        borderRadius: "var(--radius-sm)",
+                        border: activeSectionIndex === sIdx ? '1.5px solid var(--primary)' : '1px solid var(--border)',
+                        background: activeSectionIndex === sIdx ? 'var(--accent-soft)' : 'var(--card)',
+                        color: activeSectionIndex === sIdx ? 'var(--primary-dark)' : '#1e293b',
                         fontWeight: 700,
-                        fontSize: '12.5px',
+                        fontSize: "var(--text-base)",
                         textAlign: 'left',
                         cursor: 'pointer',
                         display: 'flex',
@@ -876,11 +876,11 @@ export const ExcelFullSchemaImportModal = ({
                       </span>
                       <span
                         style={{
-                          fontSize: '10.5px',
+                          fontSize: "var(--text-2xs)",
                           padding: '2px 6px',
-                          borderRadius: '10px',
-                          background: activeSectionIndex === sIdx ? '#bfdbfe' : '#f1f5f9',
-                          color: activeSectionIndex === sIdx ? '#312e81' : '#64748b',
+                          borderRadius: "var(--radius-md)",
+                          background: activeSectionIndex === sIdx ? 'var(--accent-border)' : 'var(--bg-alt)',
+                          color: activeSectionIndex === sIdx ? '#312e81' : 'var(--muted)',
                           fontWeight: 700,
                         }}
                       >
@@ -895,28 +895,28 @@ export const ExcelFullSchemaImportModal = ({
               {activeSection && (
                 <div>
                   {/* Section Settings Header */}
-                  <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', alignItems: 'center' }}>
+                  <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: "var(--radius-lg)", padding: "var(--space-7)", marginBottom: "var(--space-7)" }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: "var(--space-5)", alignItems: 'center' }}>
                       <div>
-                        <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                        <label style={{ display: 'block', fontSize: "var(--text-sm)", fontWeight: 700, color: '#475569', marginBottom: "var(--space-1)" }}>
                           Section Title:
                         </label>
                         <input
                           type="text"
                           value={activeSection.title}
                           onChange={(e) => handleUpdateSectionTitle(activeSectionIndex, e.target.value)}
-                          style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', fontWeight: 600 }}
+                          style={{ width: '100%', padding: '6px 10px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', fontSize: "var(--text-base)", fontWeight: 600 }}
                         />
                       </div>
 
                       <div>
-                        <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                        <label style={{ display: 'block', fontSize: "var(--text-sm)", fontWeight: 700, color: '#475569', marginBottom: "var(--space-1)" }}>
                           Assigned Owner Role:
                         </label>
                         <select
                           value={activeSection.ownerRole}
                           onChange={(e) => handleUpdateSectionOwner(activeSectionIndex, e.target.value)}
-                          style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12.5px', fontWeight: 600 }}
+                          style={{ width: '100%', padding: '6px 10px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', fontSize: "var(--text-base)", fontWeight: 600 }}
                         >
                           {isAdministrative ? (
                             universityPosts.map((p) => (
@@ -933,11 +933,11 @@ export const ExcelFullSchemaImportModal = ({
                         </select>
                       </div>
 
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '18px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: "var(--space-7)" }}>
                         {parsedSections.length > 1 && (
                           <button
                             type="button"
-                            style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #fecaca', background: '#fff', color: '#b91c1c', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+                            style={{ padding: '6px 12px', borderRadius: "var(--radius-sm)", border: '1px solid var(--red-200)', background: 'var(--card)', color: 'var(--red-700)', fontSize: "var(--text-base)", fontWeight: 600, cursor: 'pointer' }}
                             onClick={() => handleDeleteSection(activeSectionIndex)}
                           >
                             🗑️ Delete Section
@@ -948,7 +948,7 @@ export const ExcelFullSchemaImportModal = ({
                   </div>
 
                   {/* Table Selector Tabs for Active Section */}
-                  <div style={{ display: 'flex', gap: '8px', borderBottom: '2px solid #e2e8f0', paddingBottom: '2px', marginBottom: '16px', overflowX: 'auto' }}>
+                  <div style={{ display: 'flex', gap: "var(--space-3)", borderBottom: '2px solid var(--border)', paddingBottom: '2px', marginBottom: "var(--space-7)", overflowX: 'auto' }}>
                     {activeSection.tables.map((tbl, tIdx) => (
                       <button
                         key={tbl.id || tIdx}
@@ -957,20 +957,20 @@ export const ExcelFullSchemaImportModal = ({
                           padding: '7px 14px',
                           borderRadius: '8px 8px 0 0',
                           border: 'none',
-                          background: activeTableIndex === tIdx ? '#2563eb' : '#f8fafc',
-                          color: activeTableIndex === tIdx ? '#fff' : '#475569',
+                          background: activeTableIndex === tIdx ? 'var(--primary)' : 'var(--bg)',
+                          color: activeTableIndex === tIdx ? 'var(--card)' : '#475569',
                           fontWeight: 700,
-                          fontSize: '12.5px',
+                          fontSize: "var(--text-base)",
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '6px',
+                          gap: "var(--space-2)",
                           whiteSpace: 'nowrap',
                         }}
                         onClick={() => setActiveTableIndex(tIdx)}
                       >
                         <span>📊 {tbl.title || `Table ${tIdx + 1}`}</span>
-                        <span style={{ fontSize: '10px', padding: '1px 5px', borderRadius: '8px', background: activeTableIndex === tIdx ? 'rgba(255,255,255,0.25)' : '#e2e8f0' }}>
+                        <span style={{ fontSize: "var(--text-2xs)", padding: '1px 5px', borderRadius: "var(--radius-sm)", background: activeTableIndex === tIdx ? 'rgba(255,255,255,0.25)' : 'var(--border)' }}>
                           {tbl.fields?.length || 0}
                         </span>
                       </button>
@@ -979,16 +979,16 @@ export const ExcelFullSchemaImportModal = ({
 
                   {/* Active Table Columns Grid */}
                   {activeTable && (
-                    <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: "var(--radius-lg)", padding: "var(--space-7)" }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: "var(--space-5)", flexWrap: 'wrap', gap: "var(--space-4)" }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-4)" }}>
                           <input
                             type="text"
                             value={activeTable.title}
                             onChange={(e) => handleUpdateTableTitle(activeTableIndex, e.target.value)}
-                            style={{ padding: '5px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', fontWeight: 700 }}
+                            style={{ padding: '5px 10px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', fontSize: "var(--text-base)", fontWeight: 700 }}
                           />
-                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: '#475569', cursor: 'pointer' }}>
+                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: "var(--space-2)", fontSize: "var(--text-base)", color: '#475569', cursor: 'pointer' }}>
                             <input
                               type="checkbox"
                               checked={activeTable.isRepeatable}
@@ -998,10 +998,10 @@ export const ExcelFullSchemaImportModal = ({
                           </label>
                         </div>
 
-                        <div style={{ display: 'flex', gap: '6px' }}>
+                        <div style={{ display: 'flex', gap: "var(--space-2)" }}>
                           <button
                             type="button"
-                            style={{ padding: '5px 11px', borderRadius: '6px', border: '1px solid #93c5fd', background: '#eff6ff', color: '#1d4ed8', fontWeight: 700, fontSize: '12px', cursor: 'pointer' }}
+                            style={{ padding: '5px 11px', borderRadius: "var(--radius-sm)", border: '1px solid #93c5fd', background: 'var(--accent-soft)', color: 'var(--primary-dark)', fontWeight: 700, fontSize: "var(--text-base)", cursor: 'pointer' }}
                             onClick={handleAddColumn}
                           >
                             + Add Column
@@ -1009,7 +1009,7 @@ export const ExcelFullSchemaImportModal = ({
                           {activeSection.tables.length > 1 && (
                             <button
                               type="button"
-                              style={{ padding: '5px 10px', borderRadius: '6px', border: '1px solid #fecaca', background: '#fff', color: '#b91c1c', fontSize: '12px', cursor: 'pointer' }}
+                              style={{ padding: '5px 10px', borderRadius: "var(--radius-sm)", border: '1px solid var(--red-200)', background: 'var(--card)', color: 'var(--red-700)', fontSize: "var(--text-base)", cursor: 'pointer' }}
                               onClick={() => handleDeleteTable(activeTableIndex)}
                             >
                               🗑️
@@ -1018,11 +1018,11 @@ export const ExcelFullSchemaImportModal = ({
                         </div>
                       </div>
 
-                      <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px' }}>
+                      <div style={{ overflowX: 'auto', border: '1px solid var(--border)', borderRadius: "var(--radius-sm)" }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: "var(--text-base)" }}>
                           <thead>
-                            <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', textAlign: 'left' }}>
-                              <th style={{ padding: '8px 10px', width: '35px', color: '#64748b' }}>#</th>
+                            <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)', textAlign: 'left' }}>
+                              <th style={{ padding: '8px 10px', width: '35px', color: 'var(--muted)' }}>#</th>
                               <th style={{ padding: '8px 10px', width: '30%', color: '#334155', fontWeight: 700 }}>Column Label</th>
                               <th style={{ padding: '8px 10px', width: '28%', color: '#334155', fontWeight: 700 }}>Field Type</th>
                               <th style={{ padding: '8px 10px', width: '26%', color: '#334155', fontWeight: 700 }}>Options / Notes</th>
@@ -1032,21 +1032,21 @@ export const ExcelFullSchemaImportModal = ({
                           </thead>
                           <tbody>
                             {activeTable.fields?.map((field, fIdx) => (
-                              <tr key={field.id || fIdx} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                <td style={{ padding: '8px 10px', color: '#94a3b8', fontWeight: 600 }}>{fIdx + 1}</td>
+                              <tr key={field.id || fIdx} style={{ borderBottom: '1px solid var(--bg-alt)' }}>
+                                <td style={{ padding: '8px 10px', color: 'var(--muted)', fontWeight: 600 }}>{fIdx + 1}</td>
                                 <td style={{ padding: '8px 10px' }}>
                                   <input
                                     type="text"
                                     value={field.label}
                                     onChange={(e) => handleUpdateField(fIdx, 'label', e.target.value)}
-                                    style={{ width: '100%', padding: '5px 8px', borderRadius: '5px', border: '1px solid #cbd5e1', fontSize: '12px', fontWeight: 600 }}
+                                    style={{ width: '100%', padding: '5px 8px', borderRadius: "var(--radius-2xs)", border: '1px solid var(--border-strong)', fontSize: "var(--text-base)", fontWeight: 600 }}
                                   />
                                 </td>
                                 <td style={{ padding: '8px 10px' }}>
                                   <select
                                     value={field.fieldType}
                                     onChange={(e) => handleUpdateField(fIdx, 'fieldType', e.target.value)}
-                                    style={{ width: '100%', padding: '5px 8px', borderRadius: '5px', border: '1px solid #cbd5e1', fontSize: '12px', fontWeight: 650 }}
+                                    style={{ width: '100%', padding: '5px 8px', borderRadius: "var(--radius-2xs)", border: '1px solid var(--border-strong)', fontSize: "var(--text-base)", fontWeight: 650 }}
                                   >
                                     {FIELD_TYPES.map((ft) => (
                                       <option key={ft.value} value={ft.value}>
@@ -1062,10 +1062,10 @@ export const ExcelFullSchemaImportModal = ({
                                       placeholder="Options (comma separated)"
                                       value={field.optionsString || ''}
                                       onChange={(e) => handleUpdateField(fIdx, 'optionsString', e.target.value)}
-                                      style={{ width: '100%', padding: '5px 8px', borderRadius: '5px', border: '1px solid #cbd5e1', fontSize: '11.5px' }}
+                                      style={{ width: '100%', padding: '5px 8px', borderRadius: "var(--radius-2xs)", border: '1px solid var(--border-strong)', fontSize: "var(--text-sm)" }}
                                     />
                                   ) : (
-                                    <span style={{ fontSize: '11px', color: '#64748b' }}>{field.fieldType}</span>
+                                    <span style={{ fontSize: "var(--text-xs)", color: 'var(--muted)' }}>{field.fieldType}</span>
                                   )}
                                 </td>
                                 <td style={{ padding: '8px 10px', textAlign: 'center' }}>
@@ -1079,7 +1079,7 @@ export const ExcelFullSchemaImportModal = ({
                                 <td style={{ padding: '8px 10px', textAlign: 'center' }}>
                                   <button
                                     type="button"
-                                    style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer' }}
+                                    style={{ border: 'none', background: 'transparent', color: 'var(--red-500)', cursor: 'pointer' }}
                                     onClick={() => handleDeleteField(fIdx)}
                                   >
                                     ✕
@@ -1098,28 +1098,28 @@ export const ExcelFullSchemaImportModal = ({
           ) : (
             <div
               style={{
-                border: '2px dashed #cbd5e1',
-                borderRadius: '12px',
+                border: '2px dashed var(--border-strong)',
+                borderRadius: "var(--radius-lg)",
                 padding: '40px 20px',
                 textAlign: 'center',
                 background: '#fafafa',
               }}
             >
-              <div style={{ fontSize: '36px', marginBottom: '10px' }}>📑</div>
-              <h4 style={{ margin: '0 0 6px', color: '#0f172a', fontWeight: 700 }}>No Full Schema Workbook Loaded</h4>
-              <p style={{ margin: '0 0 16px', color: '#64748b', fontSize: '13px' }}>
+              <div style={{ fontSize: "var(--text-5xl)", marginBottom: "var(--space-4)" }}>📑</div>
+              <h4 style={{ margin: '0 0 6px', color: 'var(--ink)', fontWeight: 700 }}>No Full Schema Workbook Loaded</h4>
+              <p style={{ margin: '0 0 16px', color: 'var(--muted)', fontSize: "var(--text-base)" }}>
                 Upload an Excel file with multiple sheet tabs (Part A, Part B, etc.) or download the multi-part template below.
               </p>
               <button
                 type="button"
                 style={{
                   padding: '8px 18px',
-                  borderRadius: '7px',
-                  border: '1px solid #bfdbfe',
-                  background: '#eff6ff',
-                  color: '#1d4ed8',
+                  borderRadius: "var(--radius-sm)",
+                  border: '1px solid var(--accent-border)',
+                  background: 'var(--accent-soft)',
+                  color: 'var(--primary-dark)',
                   fontWeight: 700,
-                  fontSize: '13px',
+                  fontSize: "var(--text-base)",
                   cursor: 'pointer',
                 }}
                 onClick={handleDownloadFullSchemaTemplate}
@@ -1134,8 +1134,8 @@ export const ExcelFullSchemaImportModal = ({
         <div
           style={{
             padding: '16px 24px',
-            borderTop: '1px solid #e2e8f0',
-            background: '#f8fafc',
+            borderTop: '1px solid var(--border)',
+            background: 'var(--bg)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
@@ -1143,22 +1143,22 @@ export const ExcelFullSchemaImportModal = ({
         >
           <div>
             {parsedSections.length > 0 && (
-              <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>
+              <span style={{ fontSize: "var(--text-base)", fontWeight: 600, color: '#334155' }}>
                 Summary: <strong>{parsedSections.length}</strong> Section(s), <strong>{totalTables}</strong> Tables, <strong>{totalColumns}</strong> Columns.
               </span>
             )}
           </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: "var(--space-4)" }}>
             <button
               type="button"
               style={{
                 padding: '8px 18px',
-                borderRadius: '8px',
-                border: '1px solid #cbd5e1',
-                background: '#fff',
+                borderRadius: "var(--radius-sm)",
+                border: '1px solid var(--border-strong)',
+                background: 'var(--card)',
                 color: '#334155',
                 fontWeight: 600,
-                fontSize: '13px',
+                fontSize: "var(--text-base)",
                 cursor: 'pointer',
               }}
               onClick={onClose}
@@ -1170,16 +1170,16 @@ export const ExcelFullSchemaImportModal = ({
               type="button"
               style={{
                 padding: '8px 22px',
-                borderRadius: '8px',
+                borderRadius: "var(--radius-sm)",
                 border: 'none',
-                background: parsedSections.length === 0 || importing ? '#94a3b8' : '#2563eb',
-                color: '#fff',
+                background: parsedSections.length === 0 || importing ? 'var(--faint)' : 'var(--primary)',
+                color: 'var(--card)',
                 fontWeight: 700,
-                fontSize: '13px',
+                fontSize: "var(--text-base)",
                 cursor: parsedSections.length === 0 || importing ? 'not-allowed' : 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '8px',
+                gap: "var(--space-3)",
                 boxShadow: parsedSections.length > 0 && !importing ? '0 2px 4px rgba(37,99,235,0.25)' : 'none',
               }}
               onClick={handleExecuteImport}

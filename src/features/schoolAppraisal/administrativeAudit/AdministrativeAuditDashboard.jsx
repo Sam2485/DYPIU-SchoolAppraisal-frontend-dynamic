@@ -1005,37 +1005,37 @@ export default function AdministrativeAuditDashboard() {
           {schemaLoading ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
               <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}></div>
-              <p style={{ marginTop: '16px', color: '#64748b', fontWeight: 600 }}>Loading Administrative Appraisal Form...</p>
+              <p style={{ marginTop: "var(--space-7)", color: 'var(--muted)', fontWeight: 600 }}>Loading Administrative Appraisal Form...</p>
             </div>
           ) : !dynamicSchema || !dynamicSchema.sections || dynamicSchema.sections.length === 0 ? (
             <div style={{ padding: "40px 24px", maxWidth: "820px", margin: "40px auto" }}>
               <div style={{
-                background: "#fff",
-                border: "1px solid #e2e8f0",
-                borderRadius: "16px",
+                background: "var(--card)",
+                border: "1px solid var(--border)",
+                borderRadius: "var(--radius-xl)",
                 padding: "48px 36px",
                 textAlign: "center",
                 boxShadow: "0 4px 24px rgba(0,0,0,0.06)"
               }}>
-                <div style={{ fontSize: "56px", marginBottom: "16px" }}>📋</div>
-                <h2 style={{ fontSize: "22px", fontWeight: "800", color: "#0f172a", marginBottom: "8px" }}>
+                <div style={{ fontSize: "var(--text-8xl)", marginBottom: "var(--space-7)" }}>📋</div>
+                <h2 style={{ fontSize: "var(--text-3xl)", fontWeight: "800", color: "var(--ink)", marginBottom: "var(--space-3)" }}>
                   No Active Administrative Appraisal Form Published
                 </h2>
-                <p style={{ color: "#64748b", fontSize: "15px", lineHeight: "1.6", maxWidth: "580px", margin: "0 auto 24px" }}>
+                <p style={{ color: "var(--muted)", fontSize: "var(--text-md)", lineHeight: "1.6", maxWidth: "580px", margin: "0 auto 24px" }}>
                   IQAC has not yet published an administrative appraisal form for <strong>{profile.designation || profile.post || "your administrative post"}</strong> for Academic Year <strong>{academicYear}</strong>.
                 </p>
                 <div style={{
-                  background: "#f0fdf4",
-                  border: "1px solid #bbf7d0",
-                  borderRadius: "10px",
+                  background: "var(--green-50)",
+                  border: "1px solid var(--green-200)",
+                  borderRadius: "var(--radius-md)",
                   padding: "16px 20px",
                   textAlign: "left",
-                  color: "#166534",
-                  fontSize: "14px",
+                  color: "var(--green-700)",
+                  fontSize: "var(--text-md)",
                   display: "inline-block"
                 }}>
                   <strong>💡 What happens next?</strong>
-                  <ul style={{ margin: "8px 0 0 0", paddingLeft: "20px" }}>
+                  <ul style={{ margin: "8px 0 0 0", paddingLeft: "var(--space-8)" }}>
                     <li>IQAC creates and designs the administrative appraisal modules and tables in <strong>Appraisal Form Studio</strong>.</li>
                     <li>Once IQAC clicks <strong>🚀 Publish Version</strong>, your form will instantly become available here for data entry and submission.</li>
                   </ul>
@@ -1072,20 +1072,20 @@ export default function AdministrativeAuditDashboard() {
 
           {isHistoricalYear && (
             <div style={{
-              backgroundColor: "#eff6ff",
-              border: "1px solid #bfdbfe",
+              backgroundColor: "var(--accent-soft)",
+              border: "1px solid var(--accent-border)",
               color: "#1e40af",
               padding: "12px 16px",
-              borderRadius: "8px",
-              marginTop: "16px",
-              marginBottom: "16px",
-              fontSize: "14px",
+              borderRadius: "var(--radius-sm)",
+              marginTop: "var(--space-7)",
+              marginBottom: "var(--space-7)",
+              fontSize: "var(--text-md)",
               fontWeight: 600,
               display: "flex",
               alignItems: "center",
-              gap: "8px",
+              gap: "var(--space-3)",
             }}>
-              <span style={{ fontSize: "16px" }}>ℹ️</span>
+              <span style={{ fontSize: "var(--text-lg)" }}>ℹ️</span>
               <span>Viewing Historical Administrative Audit Record for Academic Year <strong>{academicYear}</strong>. Previous academic year records are read-only.</span>
             </div>
           )}
@@ -1104,7 +1104,7 @@ export default function AdministrativeAuditDashboard() {
                 {activeModule?.note && <p style={styles.moduleNote}>{activeModule.note}</p>}
               </div>
               {activeModuleId !== "submission-status" && (
-                <span style={activeModule?.isAuditorSection ? { fontSize: "11px", fontWeight: 700, padding: "4px 10px", borderRadius: "6px", background: "#fef3c7", color: "#92400e", border: "1px solid #fcd34d" } : (canWorkOnOwnedModule ? styles.badge : styles.readOnlyBadge)}>
+                <span style={activeModule?.isAuditorSection ? { fontSize: "var(--text-xs)", fontWeight: 700, padding: "4px 10px", borderRadius: "var(--radius-sm)", background: "var(--amber-100)", color: "var(--amber-700)", border: "1px solid #fcd34d" } : (canWorkOnOwnedModule ? styles.badge : styles.readOnlyBadge)}>
                   {activeModule?.isAuditorSection ? "🔒 Auditor Section" : (canWorkOnOwnedModule ? "Editable" : "Read only")}
                 </span>
               )}
@@ -1329,14 +1329,14 @@ function PrintStyles() {
         }
         .admin-audit-shell {
           display: block !important;
-          background: #fff !important;
+          background: var(--card) !important;
         }
         .admin-audit-main {
           padding: 0 !important;
           overflow: visible !important;
         }
         body {
-          background: #fff !important;
+          background: var(--card) !important;
         }
       }
     `}</style>
@@ -1564,7 +1564,7 @@ const styles = {
     minHeight: "100vh",
     display: "flex",
     background: "#f5f7fb",
-    color: "#0f172a",
+    color: "var(--ink)",
     fontFamily: "Inter, 'Segoe UI', sans-serif",
   },
   sidebar: {
@@ -1575,12 +1575,12 @@ const styles = {
     flexShrink: 0,
     boxSizing: "border-box",
     overflow: "hidden",
-    background: "#0f172a",
+    background: "var(--ink)",
     display: "flex",
     flexDirection: "column",
     padding: "22px 16px",
     gap: 12,
-    color: "#e2e8f0",
+    color: "var(--border)",
     borderRight: "1px solid rgba(255,255,255,0.06)",
     boxShadow: "2px 0 16px rgba(15,23,42,0.14)",
   },
@@ -1593,32 +1593,32 @@ const styles = {
     width: 42,
     height: 42,
     borderRadius: 12,
-    background: "linear-gradient(135deg,#3b82f6,#2563eb)",
+    background: "linear-gradient(135deg,#3b82f6,var(--primary))",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    color: "#fff",
+    color: "var(--card)",
     fontWeight: 900,
     fontSize: 14,
   },
   brandTitle: {
-    color: "#f8fafc",
+    color: "var(--bg)",
     fontWeight: 900,
     fontSize: 14,
   },
   brandSub: {
-    color: "#94a3b8",
+    color: "var(--muted)",
     fontSize: 14,
     marginTop: 2,
   },
   roleCard: {
-    background: "#1d4ed8",
+    background: "var(--primary-dark)",
     borderRadius: 12,
-    padding: "12px",
-    color: "#bfdbfe",
+    padding: "var(--space-5)",
+    color: "var(--accent-border)",
   },
   roleTitle: {
-    color: "#fff",
+    color: "var(--card)",
     fontWeight: 900,
     fontSize: 14,
   },
@@ -1628,7 +1628,7 @@ const styles = {
     marginTop: 3,
   },
   roleYear: {
-    color: "#bfdbfe",
+    color: "var(--accent-border)",
     fontSize: 14,
     marginTop: 7,
     fontWeight: 900,
@@ -1636,11 +1636,11 @@ const styles = {
   navCard: {
     background: "#1e293b",
     borderRadius: 10,
-    padding: "12px",
+    padding: "var(--space-5)",
   },
   navLabel: {
     display: "block",
-    color: "#94a3b8",
+    color: "var(--muted)",
     fontWeight: 900,
     fontSize: 14,
     textTransform: "uppercase",
@@ -1651,8 +1651,8 @@ const styles = {
     width: "100%",
     border: "1px solid #334155",
     borderRadius: 8,
-    background: "#0f172a",
-    color: "#e2e8f0",
+    background: "var(--ink)",
+    color: "var(--border)",
     padding: "9px 10px",
     fontSize: 14,
     fontWeight: 800,
@@ -1662,11 +1662,11 @@ const styles = {
     margin: "8px 0",
     padding: "10px 12px",
     background: "rgba(37,99,235,0.15)",
-    border: "1px solid #2563eb",
+    border: "1px solid var(--primary)",
     borderRadius: 8,
   },
   queryLabel: {
-    color: "#94a3b8",
+    color: "var(--muted)",
     fontWeight: 700,
     fontSize: 14,
     textTransform: "uppercase",
@@ -1699,8 +1699,8 @@ const styles = {
     width: 34,
     height: 34,
     borderRadius: 10,
-    background: "#2563eb",
-    color: "#fff",
+    background: "var(--primary)",
+    color: "var(--card)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1712,13 +1712,13 @@ const styles = {
     minWidth: 0,
   },
   profileName: {
-    color: "#e2e8f0",
+    color: "var(--border)",
     fontSize: 14,
     fontWeight: 900,
     overflowWrap: "anywhere",
   },
   profileMeta: {
-    color: "#64748b",
+    color: "var(--muted)",
     fontSize: 14,
     marginTop: 2,
     overflowWrap: "anywhere",
@@ -1728,7 +1728,7 @@ const styles = {
     border: "1px solid #374151",
     borderRadius: 8,
     background: "transparent",
-    color: "#f87171",
+    color: "var(--red-400)",
     padding: "9px 11px",
     cursor: "pointer",
     fontWeight: 900,
@@ -1746,9 +1746,9 @@ const styles = {
     alignItems: "flex-start",
     gap: 18,
     padding: "24px 26px",
-    border: "1px solid #e2e8f0",
+    border: "1px solid var(--border)",
     borderRadius: 8,
-    background: "#fff",
+    background: "var(--card)",
     boxShadow: "none",
   },
   headerContent: {
@@ -1765,7 +1765,7 @@ const styles = {
   },
   kicker: {
     margin: "0 0 8px",
-    color: "#1d4ed8",
+    color: "var(--primary-dark)",
     fontSize: 11,
     fontWeight: 750,
     textTransform: "uppercase",
@@ -1773,7 +1773,7 @@ const styles = {
   },
   title: {
     margin: "0 0 8px",
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 22,
     fontWeight: 700,
     letterSpacing: "-.025em",
@@ -1781,7 +1781,7 @@ const styles = {
   },
   meta: {
     margin: "3px 0",
-    color: "#64748b",
+    color: "var(--muted)",
     fontSize: 12.5,
   },
   year: {
@@ -1792,7 +1792,7 @@ const styles = {
   },
   cycleLabel: {
     margin: "7px 0 0",
-    color: "#1d4ed8",
+    color: "var(--primary-dark)",
     fontSize: 11,
     fontWeight: 800,
     textTransform: "uppercase",
@@ -1820,17 +1820,17 @@ const styles = {
   primaryButton: {
     border: "none",
     borderRadius: 8,
-    background: "#2563eb",
-    color: "#fff",
+    background: "var(--primary)",
+    color: "var(--card)",
     padding: "11px 14px",
     fontSize: 14,
     fontWeight: 900,
     cursor: "pointer",
   },
   secondaryButton: {
-    border: "1px solid #cbd5e1",
+    border: "1px solid var(--border-strong)",
     borderRadius: 8,
-    background: "#fff",
+    background: "var(--card)",
     color: "#334155",
     padding: "11px 14px",
     fontSize: 14,
@@ -1838,9 +1838,9 @@ const styles = {
     cursor: "pointer",
   },
   modulePanel: {
-    border: "1px solid #e2e8f0",
+    border: "1px solid var(--border)",
     borderRadius: 16,
-    background: "#fff",
+    background: "var(--card)",
     padding: 24,
     marginTop: 16,
     boxShadow: "0 12px 35px rgba(15,23,42,0.045)",
@@ -1856,7 +1856,7 @@ const styles = {
   },
   moduleTitle: {
     margin: 0,
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 17,
     fontWeight: 700,
     letterSpacing: "-.015em",
@@ -1869,8 +1869,8 @@ const styles = {
   },
   badge: {
     borderRadius: 999,
-    background: "#dcfce7",
-    color: "#166534",
+    background: "var(--green-100)",
+    color: "var(--green-700)",
     padding: "5px 9px",
     fontSize: 9.5,
     fontWeight: 700,
@@ -1879,7 +1879,7 @@ const styles = {
   },
   readOnlyBadge: {
     borderRadius: 999,
-    background: "#f1f5f9",
+    background: "var(--bg-alt)",
     color: "#475569",
     padding: "5px 9px",
     fontSize: 9.5,
@@ -1889,11 +1889,11 @@ const styles = {
   },
   ownershipNotice: {
     marginBottom: 16,
-    border: "1px solid #fde68a",
+    border: "1px solid var(--amber-200)",
     borderRadius: 7,
     padding: "10px 12px",
-    color: "#92400e",
-    background: "#fffbeb",
+    color: "var(--amber-700)",
+    background: "var(--amber-50)",
     fontSize: 12,
     fontWeight: 650,
   },
@@ -1905,14 +1905,14 @@ const styles = {
   },
   sectionText: {
     margin: "0 0 16px",
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 14,
     fontWeight: 800,
   },
   subsectionHeading: {
     gridColumn: "1 / -1",
     margin: "4px 0 0",
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 15,
     fontWeight: 700,
   },
@@ -1967,7 +1967,7 @@ const styles = {
     padding: 10,
     border: "1px solid #dbe3ef",
     borderRadius: 8,
-    background: "#fff",
+    background: "var(--card)",
   },
   attachmentName: {
     minWidth: 0,
@@ -1982,20 +1982,20 @@ const styles = {
     gap: 8,
   },
   attachmentOpen: {
-    border: "1px solid #bfdbfe",
+    border: "1px solid var(--accent-border)",
     borderRadius: 6,
-    color: "#1d4ed8",
-    background: "#eff6ff",
+    color: "var(--primary-dark)",
+    background: "var(--accent-soft)",
     padding: "5px 9px",
     fontSize: 11,
     fontWeight: 750,
     textDecoration: "none",
   },
   attachmentRemove: {
-    border: "1px solid #fecaca",
+    border: "1px solid var(--red-200)",
     borderRadius: 6,
-    color: "#b91c1c",
-    background: "#fff",
+    color: "var(--red-700)",
+    background: "var(--card)",
     padding: "5px 9px",
     fontSize: 11,
     fontWeight: 750,
@@ -2003,7 +2003,7 @@ const styles = {
   },
   attachmentEmpty: {
     flex: "1 1 240px",
-    color: "#64748b",
+    color: "var(--muted)",
     fontSize: 12,
     padding: "8px 0",
   },
@@ -2011,10 +2011,10 @@ const styles = {
     position: "relative",
     overflow: "hidden",
     flex: "0 0 auto",
-    border: "1px solid #bfdbfe",
+    border: "1px solid var(--accent-border)",
     borderRadius: 7,
-    color: "#1d4ed8",
-    background: "#eff6ff",
+    color: "var(--primary-dark)",
+    background: "var(--accent-soft)",
     padding: "8px 12px",
     fontSize: 12,
     fontWeight: 750,
@@ -2029,10 +2029,10 @@ const styles = {
     cursor: "pointer",
   },
   attachmentFieldError: {
-    border: "1px solid #fecaca",
+    border: "1px solid var(--red-200)",
     borderRadius: 8,
-    background: "#fef2f2",
-    color: "#991b1b",
+    background: "var(--red-50)",
+    color: "var(--red-800)",
     padding: "9px 10px",
     fontSize: 12,
     fontWeight: 700,
@@ -2043,7 +2043,7 @@ const styles = {
     border: "1px solid #d7dee9",
     borderRadius: 8,
     padding: "10px 12px",
-    color: "#0f172a",
+    color: "var(--ink)",
     background: "#fbfcfe",
     outline: "none",
   },
@@ -2054,7 +2054,7 @@ const styles = {
     border: "1px solid #d7dee9",
     borderRadius: 8,
     padding: "10px 12px",
-    color: "#0f172a",
+    color: "var(--ink)",
     background: "#fbfcfe",
     outline: "none",
   },
@@ -2076,19 +2076,19 @@ const styles = {
     marginTop: 28,
   },
   submitStatus: {
-    border: "1px solid #bbf7d0",
+    border: "1px solid var(--green-200)",
     borderRadius: 8,
-    background: "#f0fdf4",
-    color: "#166534",
+    background: "var(--green-50)",
+    color: "var(--green-700)",
     padding: "10px 12px",
     fontSize: 14,
     fontWeight: 800,
   },
   submitStatusError: {
-    border: "1px solid #fecaca",
+    border: "1px solid var(--red-200)",
     borderRadius: 8,
-    background: "#fef2f2",
-    color: "#991b1b",
+    background: "var(--red-50)",
+    color: "var(--red-800)",
     padding: "10px 12px",
     fontSize: 14,
     fontWeight: 800,
@@ -2103,19 +2103,19 @@ const styles = {
   },
   modal: {
     width: "min(380px, 92vw)",
-    background: "#fff",
+    background: "var(--card)",
     borderRadius: 12,
     padding: "26px 28px",
     boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
   },
   modalTitle: {
-    color: "#0f172a",
+    color: "var(--ink)",
     fontWeight: 900,
     fontSize: 18,
     marginBottom: 8,
   },
   modalText: {
-    color: "#64748b",
+    color: "var(--muted)",
     fontSize: 14,
     lineHeight: 1.6,
     marginBottom: 18,
@@ -2128,7 +2128,7 @@ const styles = {
     flex: 1,
     border: "none",
     borderRadius: 8,
-    background: "#f1f5f9",
+    background: "var(--bg-alt)",
     color: "#475569",
     padding: 10,
     fontWeight: 900,
@@ -2138,8 +2138,8 @@ const styles = {
     flex: 1,
     border: "none",
     borderRadius: 8,
-    background: "#dc2626",
-    color: "#fff",
+    background: "var(--red-600)",
+    color: "var(--card)",
     padding: 10,
     fontWeight: 900,
     cursor: "pointer",
@@ -2310,7 +2310,7 @@ const statusStyles = {
   },
   title: {
     margin: "0 0 10px",
-    color: "#0f172a",
+    color: "var(--ink)",
     fontSize: 18,
     fontWeight: 700
   },
@@ -2321,38 +2321,38 @@ const statusStyles = {
     marginBottom: 20
   },
   error: {
-    border: "1px solid #fecaca",
+    border: "1px solid var(--red-200)",
     borderRadius: 8,
-    background: "#fef2f2",
-    color: "#991b1b",
+    background: "var(--red-50)",
+    color: "var(--red-800)",
     padding: "10px 14px",
     fontSize: 13.5,
     fontWeight: 650,
     marginBottom: 16
   },
   success: {
-    border: "1px solid #bbf7d0",
+    border: "1px solid var(--green-200)",
     borderRadius: 8,
-    background: "#f0fdf4",
-    color: "#166534",
+    background: "var(--green-50)",
+    color: "var(--green-700)",
     padding: "10px 14px",
     fontSize: 13.5,
     fontWeight: 650,
     marginBottom: 16
   },
   table: {
-    border: "1px solid #e2e8f0",
+    border: "1px solid var(--border)",
     borderRadius: 12,
     overflow: "hidden",
-    background: "#fff"
+    background: "var(--card)"
   },
   confirmationWrap: {
     marginBottom: 18
   },
   tableHeader: {
     display: "flex",
-    background: "#f8fafc",
-    borderBottom: "1px solid #e2e8f0",
+    background: "var(--bg)",
+    borderBottom: "1px solid var(--border)",
     padding: "12px 16px",
     fontWeight: 700,
     fontSize: 13,
@@ -2361,10 +2361,10 @@ const statusStyles = {
   tableRow: {
     display: "flex",
     alignItems: "center",
-    borderBottom: "1px solid #f1f5f9",
+    borderBottom: "1px solid var(--bg-alt)",
     padding: "16.5px 16px",
     fontSize: 14,
-    color: "#0f172a"
+    color: "var(--ink)"
   },
   colRole: {
     flex: "1.2",
@@ -2386,8 +2386,8 @@ const statusStyles = {
   badgeSubmitted: {
     display: "inline-block",
     borderRadius: 6,
-    background: "#dcfce7",
-    color: "#166534",
+    background: "var(--green-100)",
+    color: "var(--green-700)",
     padding: "4px 8px",
     fontSize: 11,
     fontWeight: 700
@@ -2395,8 +2395,8 @@ const statusStyles = {
   badgePending: {
     display: "inline-block",
     borderRadius: 6,
-    background: "#fef3c7",
-    color: "#d97706",
+    background: "var(--amber-100)",
+    color: "var(--amber-600)",
     padding: "4px 8px",
     fontSize: 11,
     fontWeight: 700
@@ -2409,18 +2409,18 @@ const statusStyles = {
     color: "#334155"
   },
   timestamp: {
-    color: "#64748b",
+    color: "var(--muted)",
     fontSize: 11.5
   },
   pendingText: {
-    color: "#94a3b8",
+    color: "var(--muted)",
     fontSize: 12.5,
     fontStyle: "italic"
   },
   submitBtn: {
-    background: "#2563eb",
+    background: "var(--primary)",
     border: "none",
-    color: "#fff",
+    color: "var(--card)",
     borderRadius: 6,
     padding: "8px 12px",
     fontSize: 12.5,
@@ -2429,9 +2429,9 @@ const statusStyles = {
     transition: "background 0.2s"
   },
   disabledBtn: {
-    background: "#f1f5f9",
-    border: "1px solid #cbd5e1",
-    color: "#94a3b8",
+    background: "var(--bg-alt)",
+    border: "1px solid var(--border-strong)",
+    color: "var(--muted)",
     borderRadius: 6,
     padding: "8px 12px",
     fontSize: 12.5,
