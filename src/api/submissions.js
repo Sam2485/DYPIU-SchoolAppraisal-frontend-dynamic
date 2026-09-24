@@ -576,7 +576,13 @@ export const createNextAuditCycle = (id, payload = {}) =>
     ...payload,
   });
 export const fetchAuditCycles = () => apiClient.get("/api/audit-cycles");
-export const fetchCurrentAuditCycle = () => apiClient.get("/api/audit-cycles/current");
+export const fetchCurrentAuditCycle = ({ auditType, onlyWithData } = {}) =>
+  apiClient.get("/api/audit-cycles/current", {
+    params: {
+      ...(auditType ? { auditType } : {}),
+      ...(onlyWithData != null ? { onlyWithData } : {}),
+    },
+  });
 export const startNextAcademicYear = (payload) =>
   apiClient.post("/api/audit-cycles/start-next", payload);
 

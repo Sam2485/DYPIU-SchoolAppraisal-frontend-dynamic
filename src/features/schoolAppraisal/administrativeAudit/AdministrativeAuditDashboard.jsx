@@ -63,19 +63,6 @@ const draftBelongsToAcademicYear = (draft = {}, academicYear = "") => {
   const draftYear = compactAcademicYear(draft.auditCycle || draft.cycleId || "");
   return !draft.exists || !expectedYear || !draftYear || draftYear === expectedYear;
 };
-// draft.exists / draft.status can be truthy even for a year nobody has touched, if the
-// backend pre-provisions a blank row per cycle — so "does this year have real content"
-// is judged from actual saved values/tables/attachments instead of just record presence.
-const draftHasSubmittedData = (draft = {}) => {
-  const hasValues = Object.values(draft.values || {}).some(
-    (value) => value !== null && value !== undefined && String(value).trim() !== ""
-  );
-  const hasTables = Object.values(draft.tables || {}).some(
-    (rows) => Array.isArray(rows) && rows.length > 0
-  );
-  const hasAttachments = Array.isArray(draft.attachments) && draft.attachments.length > 0;
-  return Boolean(draft.id) || hasValues || hasTables || hasAttachments;
-};
 const isLockedContributionStatus = (status = "") => ["approved", "submitted", "auditor-completed"].includes(String(status).toLowerCase().replaceAll("_", "-"));
 const editableContributionStatuses = new Set([
   "pending",
@@ -250,31 +237,19 @@ export default function AdministrativeAuditDashboard() {
     let isActive = true;
     const loadCycles = async () => {
       try {
-        const { data } = await fetchCurrentAuditCycle();
+        // onlyWithData asks the backend to pre-filter to years that actually have real
+        // content for this post (plus the active year) — see hasDataForYear/hasRealContent
+        // in SubmissionService. Avoids probing each year via fetchMyDraft ourselves, which
+        // for administrative (a "shared" draft) would getOrCreate a scaffold row per year
+        // just by checking it.
+        const { data } = await fetchCurrentAuditCycle({ auditType: "administrative", onlyWithData: true });
         if (!isActive) return;
         const activeLabel = data.activeYear || "";
         const formattedActive = activeLabel ? compactAcademicYear(activeLabel) : "";
         setActiveAcademicYear(formattedActive);
 
         const rawYears = data.availableYears || (activeLabel ? [activeLabel] : []);
-        const formatted = Array.from(new Set(rawYears.map(compactAcademicYear))).filter(Boolean).sort();
-
-        // A cycle can exist system-wide (e.g. IQAC started the year) without this
-        // administrative post ever having filled anything in it — skip those empty
-        // years from the picker rather than showing a year with nothing behind it.
-        const candidateYears = formatted.filter((year) => year !== formattedActive);
-        const existenceChecks = await Promise.all(
-          candidateYears.map((year) =>
-            fetchMyDraft("administrative", year)
-              .then(({ data: draftData }) => draftHasSubmittedData(normalizeDraft(draftData)))
-              .catch(() => false)
-          )
-        );
-        const yearsWithData = candidateYears.filter((_, index) => existenceChecks[index]);
-        const visibleYears = Array.from(
-          new Set([...(formattedActive ? [formattedActive] : []), ...yearsWithData])
-        ).sort();
-        if (!isActive) return;
+        const visibleYears = Array.from(new Set(rawYears.map(compactAcademicYear))).filter(Boolean).sort();
         setAvailableYears(visibleYears);
 
         const stored = sessionStorage.getItem("academicYear");
