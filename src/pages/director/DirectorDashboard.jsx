@@ -7,7 +7,7 @@ import { scrollPageToTop } from "../../utils/scrollToTop";
 import { fetchCurrentAuditCycle, fetchMyDraft, normalizeDraft } from "../../api/submissions";
 import { fetchCurrentUser } from "../../api/users";
 import { clearAuthState } from "../../api/client";
-import { fetchActiveSchema, fetchUniversityBranding } from "../../api/config";
+import { fetchActiveSchema, fetchSchemaByVersion, fetchUniversityBranding } from "../../api/config";
 
 const compactYear = (str = "") => {
   const match = String(str).match(/(\d{4})\D+(\d{2,4})/);
@@ -122,14 +122,31 @@ export default function DirectorDashboard() {
     };
   }, []);
 
-  // Fetch Dynamic Active Schema for School
+  // Fetch the school's schema. For the live academic year this must always be the currently
+  // active/published schema, so newly published fields show up right away. But for a historical
+  // year being viewed read-only, using "active" here means editing the schema today silently
+  // rewrites how every past year's data is rendered — instead, pin to the exact schema version
+  // that was active when that year's submission was created (submission.schemaVersionId).
   useEffect(() => {
     let isActive = true;
     const loadDynamicSchema = async () => {
       setSchemaLoading(true);
       try {
         const userSchool = sessionStorage.getItem("userSchool") || sessionStorage.getItem("school") || "";
-        const dynamicSchema = await fetchActiveSchema("academic", userSchool);
+        const isViewingHistoricalYear = Boolean(
+          activeAcademicYear && academicYear && compactYear(academicYear) !== compactYear(activeAcademicYear)
+        );
+
+        let dynamicSchema = null;
+        if (isViewingHistoricalYear) {
+          const { data: historicalDraft } = await fetchMyDraft("academic", academicYear);
+          const pinnedVersionId = normalizeDraft(historicalDraft).schemaVersionId;
+          dynamicSchema = pinnedVersionId
+            ? await fetchSchemaByVersion(pinnedVersionId)
+            : await fetchActiveSchema("academic", userSchool);
+        } else {
+          dynamicSchema = await fetchActiveSchema("academic", userSchool);
+        }
         if (!isActive) return;
 
         if (dynamicSchema && Array.isArray(dynamicSchema.sections) && dynamicSchema.sections.length > 0) {
@@ -163,7 +180,7 @@ export default function DirectorDashboard() {
     return () => {
       isActive = false;
     };
-  }, [academicYear]);
+  }, [academicYear, activeAcademicYear]);
 
   useEffect(() => {
     let isActive = true;

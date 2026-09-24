@@ -19,7 +19,7 @@ import SubmitConfirmModal from "../components/SubmitConfirmModal";
 import { AuditorSectionReviewPanel, buildAuditorSectionReview, isAuditorSection } from "../components/AuditSection";
 import { getAttachmentUrl } from "../../../utils/attachment";
 import { scrollPageToTop } from "../../../utils/scrollToTop";
-import { fetchActiveSchema, fetchUniversityBranding } from "../../../api/config";
+import { fetchActiveSchema, fetchSchemaByVersion, fetchUniversityBranding } from "../../../api/config";
 
 const snapshotPayload = (entry = {}) => entry.submission || entry.snapshot || entry.data || entry;
 const responseList = (payload) => {
@@ -370,13 +370,31 @@ export default function AdministrativeAuditDashboard() {
     };
   }, []);
 
+  // Fetch the post's schema. For the live academic year this must always be the currently
+  // active/published schema, so newly published fields show up right away. But for a historical
+  // year being viewed read-only, using "active" here means editing the schema today silently
+  // rewrites how every past year's data is rendered — instead, pin to the exact schema version
+  // that was active when that year's submission was created (submission.schemaVersionId).
   useEffect(() => {
     let isActive = true;
     const loadDynamicAdminSchema = async () => {
       setSchemaLoading(true);
       try {
         const userPost = sessionStorage.getItem("post") || sessionStorage.getItem("designation") || "";
-        const schema = await fetchActiveSchema("administrative", userPost);
+        const isViewingHistoricalYear = Boolean(
+          activeAcademicYear && academicYear && compactAcademicYear(academicYear) !== compactAcademicYear(activeAcademicYear)
+        );
+
+        let schema = null;
+        if (isViewingHistoricalYear) {
+          const { data: historicalDraft } = await fetchMyDraft("administrative", academicYear);
+          const pinnedVersionId = normalizeDraft(historicalDraft).schemaVersionId;
+          schema = pinnedVersionId
+            ? await fetchSchemaByVersion(pinnedVersionId)
+            : await fetchActiveSchema("administrative", userPost);
+        } else {
+          schema = await fetchActiveSchema("administrative", userPost);
+        }
         if (!isActive) return;
         if (schema && Array.isArray(schema.sections) && schema.sections.length > 0) {
           setDynamicSchema(schema);
@@ -393,7 +411,7 @@ export default function AdministrativeAuditDashboard() {
     return () => {
       isActive = false;
     };
-  }, [academicYear]);
+  }, [academicYear, activeAcademicYear]);
 
   // sessionStorage never carries the avatar, and profileOverrides only lives for the rest of
   // this session after a save in UserProfileModal — without this fetch, the sidebar avatar
