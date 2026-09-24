@@ -54,14 +54,76 @@ const statusRoleForPost = (post) => {
   };
 };
 const titleCase = (value = "") => String(value).replaceAll("-", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
-const compactAcademicYear = (value = "") => String(value || "")
-  .replace(/\s+/g, "")
-  .replace(/[–—]/g, "-")
-  .replace(/(\d{4})-(\d{2})(?!\d)/, (_, start, end) => `${start}-20${end}`);
+const compactAcademicYear = (value = "") => {
+  if (!value) return "";
+  const match = String(value).match(/(\d{4})\D+(\d{2,4})/);
+  if (!match) return String(value).trim();
+  const start = match[1];
+  const end = match[2].slice(-2);
+  return `${start}-${end}`;
+};
 const draftBelongsToAcademicYear = (draft = {}, academicYear = "") => {
   const expectedYear = compactAcademicYear(academicYear);
-  const draftYear = compactAcademicYear(draft.auditCycle || draft.cycleId || "");
+  const draftYear = compactAcademicYear(draft.auditCycle || draft.cycleId || draft.academicYear || "");
   return !draft.exists || !expectedYear || !draftYear || draftYear === expectedYear;
+};
+// Check if a draft/submission has real submitted or filled content, matching IQAC reports dropdown behavior
+const draftHasSubmittedData = (draft = {}) => {
+  if (!draft) return false;
+  if (draft.hasData === false) return false;
+
+  const isSubmittedOrApproved = Boolean(draft.isSubmitted) || [
+    "submitted",
+    "under-review",
+    "auditor-completed",
+    "external-auditor-completed",
+    "approved",
+    "final",
+    "completed",
+  ].includes(String(draft.status || draft.overallStatus || "").toLowerCase().replaceAll("_", "-"));
+
+  if (isSubmittedOrApproved) return true;
+
+  const hasValues = Object.entries(draft.values || {}).some(([key, value]) => {
+    if (
+      key === "__administrativeSubmissionStatus" ||
+      key === "administrativeProgress" ||
+      key === "administrativeApprovals" ||
+      key === "__auditSignOff" ||
+      key === "auditorSignOff"
+    ) {
+      return false;
+    }
+    if (value === null || value === undefined) return false;
+    if (typeof value === "object") {
+      return Array.isArray(value) ? value.length > 0 : Object.keys(value).length > 0;
+    }
+    return String(value).trim() !== "";
+  });
+
+  const hasTables = Object.values(draft.tables || {}).some((rows) => {
+    if (!Array.isArray(rows) || rows.length === 0) return false;
+    return rows.some((row) => {
+      if (!row || typeof row !== "object") return false;
+      return Object.entries(row).some(([col, val]) => {
+        const colLower = col.toLowerCase();
+        if (
+          colLower.includes("srno") ||
+          colLower.includes("sr_no") ||
+          colLower.includes("serial") ||
+          colLower.includes("slno") ||
+          colLower === "id"
+        ) {
+          return false;
+        }
+        return val !== null && val !== undefined && String(val).trim() !== "";
+      });
+    });
+  });
+
+  const hasAttachments = Array.isArray(draft.attachments) && draft.attachments.length > 0;
+
+  return hasValues || hasTables || hasAttachments;
 };
 const isLockedContributionStatus = (status = "") => ["approved", "submitted", "auditor-completed"].includes(String(status).toLowerCase().replaceAll("_", "-"));
 const editableContributionStatuses = new Set([
@@ -249,11 +311,33 @@ export default function AdministrativeAuditDashboard() {
         setActiveAcademicYear(formattedActive);
 
         const rawYears = data.availableYears || (activeLabel ? [activeLabel] : []);
-        const visibleYears = Array.from(new Set(rawYears.map(compactAcademicYear))).filter(Boolean).sort();
+        const formatted = Array.from(new Set(rawYears.map(compactAcademicYear))).filter(Boolean).sort();
+
+        // onlyWithData should already have pre-filtered this list server-side, but a
+        // per-post probe is kept as a safety net in case that filtering doesn't apply
+        // (e.g. auth/session lookup fails on the backend). Note: for administrative,
+        // fetchMyDraft uses a shared "get or create" draft, so probing a year that was
+        // never touched will persist an empty scaffold row for it as a side effect —
+        // harmless for this check (the scaffold correctly reads as "no real data"), but
+        // worth knowing if the DB ever needs cleaning up.
+        const candidateYears = formatted.filter((year) => year !== formattedActive);
+        const existenceChecks = await Promise.all(
+          candidateYears.map((year) =>
+            fetchMyDraft("administrative", year)
+              .then(({ data: draftData }) => draftHasSubmittedData(normalizeDraft(draftData)))
+              .catch(() => false)
+          )
+        );
+        const yearsWithData = candidateYears.filter((_, index) => existenceChecks[index]);
+        const visibleYears = Array.from(
+          new Set([...(formattedActive ? [formattedActive] : []), ...yearsWithData])
+        ).sort((a, b) => Number(b.slice(0, 4)) - Number(a.slice(0, 4)));
+        if (!isActive) return;
         setAvailableYears(visibleYears);
 
         const stored = sessionStorage.getItem("academicYear");
-        const selected = stored ? compactAcademicYear(stored) : formattedActive;
+        const candidateSelected = stored ? compactAcademicYear(stored) : formattedActive;
+        const selected = visibleYears.includes(candidateSelected) ? candidateSelected : formattedActive;
         setAcademicYear(selected);
         if (selected) sessionStorage.setItem("academicYear", selected);
       } catch {

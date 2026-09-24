@@ -4,7 +4,7 @@ import AuditForm from "../../features/schoolAppraisal/components/AuditForm";
 import AppSidebar from "../../features/schoolAppraisal/components/AppSidebar";
 import UserProfileModal from "../../features/schoolAppraisal/components/UserProfileModal";
 import { scrollPageToTop } from "../../utils/scrollToTop";
-import { fetchCurrentAuditCycle } from "../../api/submissions";
+import { fetchCurrentAuditCycle, fetchMyDraft, normalizeDraft } from "../../api/submissions";
 import { fetchCurrentUser } from "../../api/users";
 import { clearAuthState } from "../../api/client";
 import { fetchActiveSchema, fetchUniversityBranding } from "../../api/config";
@@ -16,6 +16,64 @@ const compactYear = (str = "") => {
   const end = match[2].slice(-2);
   return `${start}-${end}`;
 };
+// Check if a draft/submission has real submitted or filled content, matching IQAC reports dropdown behavior
+const draftHasSubmittedData = (draft = {}) => {
+  if (!draft) return false;
+  if (draft.hasData === false) return false;
+
+  const isSubmittedOrApproved = Boolean(draft.isSubmitted) || [
+    "submitted",
+    "under-review",
+    "auditor-completed",
+    "external-auditor-completed",
+    "approved",
+    "final",
+    "completed",
+  ].includes(String(draft.status || draft.overallStatus || "").toLowerCase().replaceAll("_", "-"));
+
+  if (isSubmittedOrApproved) return true;
+
+  const hasValues = Object.entries(draft.values || {}).some(([key, value]) => {
+    if (
+      key === "__auditSignOff" ||
+      key === "auditorSignOff" ||
+      key === "administrativeProgress" ||
+      key === "administrativeApprovals"
+    ) {
+      return false;
+    }
+    if (value === null || value === undefined) return false;
+    if (typeof value === "object") {
+      return Array.isArray(value) ? value.length > 0 : Object.keys(value).length > 0;
+    }
+    return String(value).trim() !== "";
+  });
+
+  const hasTables = Object.values(draft.tables || {}).some((rows) => {
+    if (!Array.isArray(rows) || rows.length === 0) return false;
+    return rows.some((row) => {
+      if (!row || typeof row !== "object") return false;
+      return Object.entries(row).some(([col, val]) => {
+        const colLower = col.toLowerCase();
+        if (
+          colLower.includes("srno") ||
+          colLower.includes("sr_no") ||
+          colLower.includes("serial") ||
+          colLower.includes("slno") ||
+          colLower === "id"
+        ) {
+          return false;
+        }
+        return val !== null && val !== undefined && String(val).trim() !== "";
+      });
+    });
+  });
+
+  const hasAttachments = Array.isArray(draft.attachments) && draft.attachments.length > 0;
+
+  return hasValues || hasTables || hasAttachments;
+};
+
 export default function DirectorDashboard() {
   const navigate = useNavigate();
   const [academicYear, setAcademicYear] = useState(
@@ -121,13 +179,32 @@ export default function DirectorDashboard() {
         setActiveAcademicYear(activeFormatted);
 
         const rawYears = data.availableYears || [activeLabel];
-        const visibleYears = Array.from(new Set(rawYears.map(compactYear))).filter(Boolean).sort();
+        const formatted = Array.from(new Set(rawYears.map(compactYear))).filter(Boolean).sort();
+
+        // onlyWithData should already have pre-filtered this list server-side, but a
+        // director-scoped probe is kept as a safety net in case that filtering doesn't
+        // apply (e.g. auth/session lookup fails on the backend) — it's cheap since the
+        // list is usually already short by this point.
+        const candidateYears = formatted.filter((year) => year !== activeFormatted);
+        const existenceChecks = await Promise.all(
+          candidateYears.map((year) =>
+            fetchMyDraft("academic", year)
+              .then(({ data: draftData }) => draftHasSubmittedData(normalizeDraft(draftData)))
+              .catch(() => false)
+          )
+        );
+        const yearsWithData = candidateYears.filter((_, index) => existenceChecks[index]);
+        const visibleYears = Array.from(
+          new Set([...(activeFormatted ? [activeFormatted] : []), ...yearsWithData])
+        ).sort((a, b) => Number(b.slice(0, 4)) - Number(a.slice(0, 4)));
+        if (!isActive) return;
         setAvailableYears(visibleYears);
 
         const stored = sessionStorage.getItem("academicYear");
-        const selected = stored ? compactYear(stored) : activeFormatted;
+        const candidateSelected = stored ? compactYear(stored) : activeFormatted;
+        const selected = visibleYears.includes(candidateSelected) ? candidateSelected : activeFormatted;
         setAcademicYear(selected);
-        sessionStorage.setItem("academicYear", selected);
+        if (selected) sessionStorage.setItem("academicYear", selected);
       } catch {
         // Fallback to initial
       }
