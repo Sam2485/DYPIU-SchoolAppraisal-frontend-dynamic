@@ -2273,7 +2273,6 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
     normalizeAcademicYear(sessionStorage.getItem("academicYear") || ""),
   );
   const [activeAcademicYear, setActiveAcademicYear] = useState("");
-  const [availableYears, setAvailableYears] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [universityInfo, setUniversityInfo] = useState(null);
 
@@ -2335,9 +2334,6 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
         const activeLabel = data.activeYear || "";
         const formattedActive = activeLabel ? compactAcademicYear(activeLabel) : "";
         setActiveAcademicYear(formattedActive);
-        const rawYears = data.availableYears || (activeLabel ? [activeLabel] : []);
-        const formattedYears = Array.from(new Set(rawYears.map(compactAcademicYear))).filter(Boolean).sort();
-        setAvailableYears(formattedYears);
 
         const stored = sessionStorage.getItem("academicYear");
         const selected = isIqacDashboard || !stored ? formattedActive : compactAcademicYear(stored);
@@ -2388,6 +2384,19 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
 
   const allSubmissions = useMemo(() => [...submissions.academic, ...submissions.administrative], [submissions]);
   const metrics = useMemo(() => buildMetrics(allSubmissions), [allSubmissions]);
+  // Only offer years that actually have submission data visible to this user (plus the live
+  // active year), rather than every cycle IQAC has ever started — a cycle can exist system-wide
+  // with nothing filed in it yet. allSubmissions is already scoped to what this role can see, so
+  // this naturally narrows correctly for auditors/VC too, not just IQAC.
+  const availableYears = useMemo(() => {
+    const years = new Set();
+    if (activeAcademicYear) years.add(activeAcademicYear);
+    allSubmissions.forEach((submission) => {
+      const year = compactAcademicYear(submission.auditCycle || submission.academicYear || "");
+      if (year) years.add(year);
+    });
+    return [...years].sort();
+  }, [activeAcademicYear, allSubmissions]);
 
   useEffect(() => {
     let isActive = true;
@@ -3633,7 +3642,6 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
               administrativeSubmissions={submissions.administrative}
               loading={loadingSubmissions}
               academicYear={academicYear}
-              availableYears={availableYears}
             />
           ) : visibleActiveView === "overview" ? (
             <OverviewPanel
@@ -4951,7 +4959,6 @@ function AcademicAdministrativeSubmissionsPanel({
   administrativeSubmissions = [],
   loading = false,
   academicYear,
-  availableYears: cycleAvailableYears = [],
 }) {
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -4984,12 +4991,14 @@ function AcademicAdministrativeSubmissionsPanel({
   // before any coverage function sees them fixes both at the source.
   const currentYear = compactAcademicYear(academicYear || "");
   const availableYears = useMemo(() => {
-    const years = new Set(cycleAvailableYears.map(compactAcademicYear));
+    // Only offer years that actually have submission data (plus the live active year),
+    // rather than every cycle IQAC has ever started — matches the Reports panel's behavior.
+    const years = new Set();
     if (currentYear) years.add(currentYear);
     academicSubmissions.forEach((submission) => years.add(compactAcademicYear(submission.auditCycle || currentYear)));
     administrativeSubmissions.forEach((submission) => years.add(compactAcademicYear(submission.auditCycle || currentYear)));
     return [...years].filter(Boolean).sort((first, second) => Number(second.slice(0, 4)) - Number(first.slice(0, 4)));
-  }, [cycleAvailableYears, currentYear, academicSubmissions, administrativeSubmissions]);
+  }, [currentYear, academicSubmissions, administrativeSubmissions]);
   const [selectedYear, setSelectedYear] = useState(currentYear);
   // The active academic year only ever changes when IQAC starts a new one (there's no other
   // way to get here mid-session) — when that happens, snap the dropdown to the new year so the

@@ -169,7 +169,10 @@ export default function DirectorDashboard() {
     let isActive = true;
     const loadCycles = async () => {
       try {
-        const { data } = await fetchCurrentAuditCycle();
+        // onlyWithData asks the backend to pre-filter to years that actually have real
+        // content for this director's school (plus the active year) — see hasDataForYear/
+        // hasRealContent in SubmissionService.
+        const { data } = await fetchCurrentAuditCycle({ auditType: "academic", onlyWithData: true });
         if (!isActive) return;
         const activeLabel = data.activeYear || data.academicYear || "";
         const activeFormatted = compactYear(activeLabel);
@@ -178,9 +181,10 @@ export default function DirectorDashboard() {
         const rawYears = data.availableYears || [activeLabel];
         const formatted = Array.from(new Set(rawYears.map(compactYear))).filter(Boolean).sort();
 
-        // A cycle can exist system-wide (e.g. IQAC started the year) without this
-        // director ever having filled anything in it — skip those empty years from
-        // the picker rather than showing a year with nothing behind it.
+        // onlyWithData should already have pre-filtered this list server-side, but a
+        // director-scoped probe is kept as a safety net in case that filtering doesn't
+        // apply (e.g. auth/session lookup fails on the backend) — it's cheap since the
+        // list is usually already short by this point.
         const candidateYears = formatted.filter((year) => year !== activeFormatted);
         const existenceChecks = await Promise.all(
           candidateYears.map((year) =>

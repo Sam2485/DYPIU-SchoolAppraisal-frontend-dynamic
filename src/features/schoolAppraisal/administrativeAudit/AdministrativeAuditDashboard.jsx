@@ -299,7 +299,12 @@ export default function AdministrativeAuditDashboard() {
     let isActive = true;
     const loadCycles = async () => {
       try {
-        const { data } = await fetchCurrentAuditCycle();
+        // onlyWithData asks the backend to pre-filter to years that actually have real
+        // content for this post (plus the active year) — see hasDataForYear/hasRealContent
+        // in SubmissionService. Avoids probing each year via fetchMyDraft ourselves, which
+        // for administrative (a "shared" draft) would getOrCreate a scaffold row per year
+        // just by checking it.
+        const { data } = await fetchCurrentAuditCycle({ auditType: "administrative", onlyWithData: true });
         if (!isActive) return;
         const activeLabel = data.activeYear || "";
         const formattedActive = activeLabel ? compactAcademicYear(activeLabel) : "";
@@ -308,9 +313,13 @@ export default function AdministrativeAuditDashboard() {
         const rawYears = data.availableYears || (activeLabel ? [activeLabel] : []);
         const formatted = Array.from(new Set(rawYears.map(compactAcademicYear))).filter(Boolean).sort();
 
-        // A cycle can exist system-wide (e.g. IQAC started the year) without this
-        // administrative post ever having filled anything in it — skip those empty
-        // years from the picker rather than showing a year with nothing behind it.
+        // onlyWithData should already have pre-filtered this list server-side, but a
+        // per-post probe is kept as a safety net in case that filtering doesn't apply
+        // (e.g. auth/session lookup fails on the backend). Note: for administrative,
+        // fetchMyDraft uses a shared "get or create" draft, so probing a year that was
+        // never touched will persist an empty scaffold row for it as a side effect —
+        // harmless for this check (the scaffold correctly reads as "no real data"), but
+        // worth knowing if the DB ever needs cleaning up.
         const candidateYears = formatted.filter((year) => year !== formattedActive);
         const existenceChecks = await Promise.all(
           candidateYears.map((year) =>
