@@ -260,6 +260,7 @@ export const normalizeDraft = (payload = {}, fallbackValues = {}, fallbackTables
     id: draft.id || draft.submissionId || null,
     universityId: draft.universityId ?? null,
     universityCode: draft.universityCode ?? null,
+    schemaVersionId: draft.schemaVersionId ?? null,
     cycleId: draft.cycleId || draft.auditCycleId || draft.currentCycleId || draft.academicYear || null,
     cycleType,
     reportCategory,
