@@ -6007,6 +6007,12 @@ function FullFormReview({
 
   useEffect(() => {
     let isSubscribed = true;
+    // This component instance is reused when the reviewer switches between submissions (e.g. an
+    // auditor assigned to several schools), so resolvedSchema must be reset synchronously here —
+    // otherwise the previous submission's schema (and any field values that happen to share the
+    // same key) stays on screen for the entire async gap before the new one resolves, or
+    // permanently if that fetch ever comes back empty.
+    setResolvedSchema(submission.schema ? normalizeDynamicSchema(submission.schema) : null);
     const loadSchema = async () => {
       try {
         const dynamicSchema = await resolveSubmissionSchema(submission);
