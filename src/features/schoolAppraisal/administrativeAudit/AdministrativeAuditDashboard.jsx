@@ -106,13 +106,16 @@ const draftHasSubmittedData = (draft = {}) => {
     return rows.some((row) => {
       if (!row || typeof row !== "object") return false;
       return Object.entries(row).some(([col, val]) => {
-        const colLower = col.toLowerCase();
+        // Scaffold-seeded rows use the literal column name "Sr No" (with a space) — stripping
+        // spaces/underscores/periods before matching so that survives normalization here too,
+        // instead of only matching the no-space "srno" variant.
+        const colKey = col.toLowerCase().replace(/[\s._-]/g, "");
         if (
-          colLower.includes("srno") ||
-          colLower.includes("sr_no") ||
-          colLower.includes("serial") ||
-          colLower.includes("slno") ||
-          colLower === "id"
+          colKey === "srno" ||
+          colKey === "slno" ||
+          colKey === "serial" ||
+          colKey === "serialno" ||
+          colKey === "id"
         ) {
           return false;
         }
