@@ -5982,7 +5982,6 @@ function PreviousReportOnlyView({
             academicYear: submission.auditCycle || submission.academicYear || "",
             university: submission.universityName || sessionStorage.getItem("universityName") || "",
             address: "",
-            act: "",
           }}
           modules={resolvedSchema?.sections || submission.sections || []}
           data={{ fields: submission.values, tables: submission.tables }}
@@ -6737,7 +6736,6 @@ function FullFormReview({
               academicYear: submission.auditCycle || submission.academicYear || "",
               university: submission.universityName || sessionStorage.getItem("universityName") || "",
               address: "",
-              act: "",
             }}
             modules={resolvedSchema?.sections || submission.sections || []}
             data={{ fields: submission.values, tables: submission.tables }}

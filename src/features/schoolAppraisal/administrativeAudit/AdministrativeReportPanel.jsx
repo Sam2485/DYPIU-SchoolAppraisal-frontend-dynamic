@@ -275,7 +275,6 @@ export default function AdministrativeReportPanel({
           <p style={styles.kicker}>{sessionStorage.getItem("universityName") || meta.university}</p>
           <h2 style={styles.title}>{meta.title}</h2>
           <p style={styles.text}>{sessionStorage.getItem("universityAddress") || meta.address}</p>
-          <p style={styles.text}>{meta.act}</p>
           <p style={styles.year}>Academic Year {meta.academicYear}</p>
         </div>
         <div style={styles.headerRight}>

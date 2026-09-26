@@ -320,10 +320,9 @@ export default function AuditReportPanel({
       <header className="generated-report__cover" style={styles.header}>
         {resolvedUniversityLogo && <img src={resolvedUniversityLogo} alt="University Logo" style={styles.logo} />}
         <div style={styles.headerText}>
-          <p style={styles.kicker}>{sessionStorage.getItem("universityName") || schema.header.university}</p>
+          <p style={styles.kicker}>{sessionStorage.getItem("universityName") || schema.header?.university}</p>
           <h1 style={styles.title}>{schema.title}</h1>
-          <p style={styles.meta}>{sessionStorage.getItem("universityAddress") || schema.header.address}</p>
-          <p style={styles.meta}>{schema.header.act}</p>
+          <p style={styles.meta}>{sessionStorage.getItem("universityAddress") || schema.header?.address}</p>
           <p style={styles.year}>Academic Year {schema.academicYear}</p>
         </div>
         <div className="generated-report__document-meta" style={styles.documentMeta}>
@@ -332,7 +331,7 @@ export default function AuditReportPanel({
         </div>
       </header>
 
-      {schema.sections.map((section, sectionIndex) => (
+      {(schema.sections || []).map((section, sectionIndex) => (
         <section className="generated-report__section" key={section.id} style={styles.section}>
           <div className="generated-report__section-heading" style={styles.sectionHeading}>
             <span style={styles.sectionNumber}>{String(sectionIndex + 1).padStart(2, "0")}</span>

@@ -1062,7 +1062,6 @@ export default function AdministrativeAuditDashboard() {
                 academicYear,
                 university: universityInfo?.universityName || sessionStorage.getItem("universityName") || "",
                 address: universityInfo?.address || "",
-                act: universityInfo?.act || "",
               }}
               modules={dynamicModules}
               data={data}
@@ -1163,7 +1162,6 @@ export default function AdministrativeAuditDashboard() {
                 <p style={styles.kicker}>{universityInfo?.universityName || sessionStorage.getItem("universityName") || ""}</p>
                 <h1 style={styles.title}>{dynamicSchema?.title || "Internal Administrative Audit"}</h1>
                 {universityInfo?.address && <p style={styles.meta}>{universityInfo.address}</p>}
-                {universityInfo?.act && <p style={styles.meta}>{universityInfo.act}</p>}
                 <p style={styles.year}>Academic Year {academicYear}</p>
                 <p style={styles.cycleLabel}>{cycleLabelFor(workflow)}</p>
               </div>
