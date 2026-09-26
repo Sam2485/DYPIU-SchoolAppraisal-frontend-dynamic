@@ -6,6 +6,7 @@ import { SchoolManager } from './SchoolManager';
 import { PostManager } from './PostManager';
 import { GraduationCapIcon, BuildingIcon } from './StudioIcons';
 import apiClient from '../../../api/client';
+import { fetchUniversityBranding } from '../../../api/config';
 
 export default function AppraisalFormStudio({ currentUser }) {
   // Top-Level Form Type Selector: 'academic' vs 'administrative'
@@ -24,12 +25,27 @@ export default function AppraisalFormStudio({ currentUser }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isActive = true;
     setCurrentUniversity({
       id: 1,
       code: 'DYPIU',
       name: currentUser?.universityName || 'University',
     });
+    // The institution name IQAC actually maintains lives in the branding record (Institution
+    // Profile), not on the logged-in user's own account — currentUser.universityName can be
+    // stale/unrelated to whatever IQAC has since saved there. Prefer the branding record once
+    // it loads so this always matches what IQAC sees on the Institution Profile screen.
+    fetchUniversityBranding()
+      .then((data) => {
+        if (isActive && data?.universityName) {
+          setCurrentUniversity((prev) => ({ ...(prev || { id: 1, code: 'DYPIU' }), name: data.universityName }));
+        }
+      })
+      .catch(() => {});
     setLoading(false);
+    return () => {
+      isActive = false;
+    };
   }, [currentUser]);
 
   const handleOpenBuilder = (versionId) => {

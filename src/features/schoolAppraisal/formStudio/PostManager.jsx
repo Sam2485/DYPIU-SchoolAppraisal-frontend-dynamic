@@ -99,7 +99,7 @@ export const PostManager = ({ selectedUniversity }) => {
 
   return (
     <div className="post-manager-container" style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: "var(--radius-sm)", padding: "var(--space-9)" }}>
-      <div className="d-flex justify-content-between align-items-flex-start mb-4 flex-wrap gap-3">
+      <div style={{ display: 'flex', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
         <div style={{ display: 'flex', gap: "var(--space-6)", alignItems: 'flex-start' }}>
           <IconBadge tone="indigo" icon={<UsersIcon />} />
           <div>
@@ -110,6 +110,8 @@ export const PostManager = ({ selectedUniversity }) => {
             </p>
           </div>
         </div>
+      </div>
+      <div style={{ marginBottom: 16 }}>
         <button
           type="button"
           className="btn btn-primary px-3 py-2 fw-semibold shadow-sm"

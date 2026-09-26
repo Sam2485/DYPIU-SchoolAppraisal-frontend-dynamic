@@ -10333,6 +10333,10 @@ const styles = {
     alignItems: "center",
     gap: 10,
     flexWrap: "wrap",
+    // submissionRow wraps its children onto new lines when they no longer fit (e.g. an extra
+    // "Start External Cycle" button pushes total width over). Without this, a wrapped actions
+    // group falls back to the row's default left alignment instead of staying pinned right.
+    marginLeft: "auto",
   },
   kebabMenuRoot: {
     position: "relative",

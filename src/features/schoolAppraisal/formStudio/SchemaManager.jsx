@@ -289,7 +289,7 @@ export const SchemaManager = ({
   return (
     <div className="form-studio-container" style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: "var(--radius-sm)", padding: "var(--space-9)" }}>
       {/* Header section with instructions & actions */}
-      <div className="d-flex justify-content-between align-items-flex-start flex-wrap gap-3" style={{ marginBottom: '28px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
         <div style={{ display: 'flex', gap: "var(--space-6)", alignItems: 'flex-start' }}>
           <IconBadge tone={isAdministrative ? 'indigo' : 'emerald'} icon={isAdministrative ? <BuildingIcon /> : <GraduationCapIcon />} />
           <div>
@@ -306,19 +306,19 @@ export const SchemaManager = ({
             </p>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: "var(--space-4)", flexWrap: 'wrap' }}>
-          {(!isAdministrative || schemas.length === 0) && (
-            <button
-              type="button"
-              className="btn btn-primary px-3 py-2 fw-semibold shadow-sm"
-              style={{ borderRadius: "var(--radius-sm)", background: 'var(--primary)', color: 'var(--card)', border: 'none', cursor: 'pointer', padding: '11px 22px', fontSize: "var(--text-md)", fontWeight: 600 }}
-              onClick={() => handleOpenCreateModal()}
-            >
-              {isAdministrative ? '+ Create Single Administrative Form' : '+ Create New Form Schema'}
-            </button>
-          )}
-        </div>
       </div>
+      {(!isAdministrative || schemas.length === 0) && (
+        <div style={{ display: 'flex', gap: "var(--space-4)", flexWrap: 'wrap', marginBottom: 28 }}>
+          <button
+            type="button"
+            className="btn btn-primary px-3 py-2 fw-semibold shadow-sm"
+            style={{ borderRadius: "var(--radius-sm)", background: 'var(--primary)', color: 'var(--card)', border: 'none', cursor: 'pointer', padding: '11px 22px', fontSize: "var(--text-md)", fontWeight: 600 }}
+            onClick={() => handleOpenCreateModal()}
+          >
+            {isAdministrative ? '+ Create Single Administrative Form' : '+ Create New Form Schema'}
+          </button>
+        </div>
+      )}
 
       {/* Info card describing the specific workflow rules */}
       {isAdministrative ? (
@@ -365,7 +365,7 @@ export const SchemaManager = ({
         <div>
           {selectedSchema && (
             <div className="card" style={{ borderRadius: "var(--radius-sm)", border: '1px solid var(--border)', boxShadow: 'none', background: 'var(--card)', overflow: 'hidden' }}>
-              <div style={{ padding: '18px 24px', background: 'var(--card)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: "var(--space-5)" }}>
+              <div style={{ padding: '18px 24px', background: 'var(--card)', borderBottom: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: "var(--space-4)" }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-4)" }}>
                     <h3 style={{ margin: 0, fontWeight: 800, color: 'var(--ink)', fontSize: "var(--text-xl)" }}>{selectedSchema.name}</h3>
@@ -587,7 +587,7 @@ export const SchemaManager = ({
           <div>
             {selectedSchema && (
               <div className="card" style={{ borderRadius: "var(--radius-sm)", border: '1px solid var(--border)', boxShadow: 'none', background: 'var(--card)', overflow: 'hidden' }}>
-                <div style={{ padding: '16px 20px', background: 'var(--card)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: "var(--space-4)" }}>
+                <div style={{ padding: '16px 20px', background: 'var(--card)', borderBottom: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: "var(--space-4)" }}>
                   <div>
                     <h4 style={{ margin: 0, fontWeight: 800, color: 'var(--ink)', fontSize: "var(--text-lg)" }}>{selectedSchema.name}</h4>
                     <div style={{ marginTop: "var(--space-1)", fontSize: "var(--text-base)", color: 'var(--muted)' }}>
