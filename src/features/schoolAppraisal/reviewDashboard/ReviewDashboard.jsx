@@ -612,7 +612,15 @@ const normalizeDynamicSchema = (schema) => {
   if (!schema || !Array.isArray(schema.sections) || schema.sections.length === 0) {
     return null;
   }
-  const normalizedSections = schema.sections.map((sec, idx) => {
+  // A null/undefined entry in schema.sections (a malformed row, a stale reference to a section
+  // that's since been deleted, etc.) must never reach rendering as a section — sectionLabelFor
+  // falls back to a bare "Part N" for a falsy section with no real content behind it, which reads
+  // as a phantom/mismatched tab. Drop those before normalizing rather than trying to render them.
+  const validSections = schema.sections.filter(Boolean);
+  if (validSections.length === 0) {
+    return null;
+  }
+  const normalizedSections = validSections.map((sec, idx) => {
     const rawFields = Array.isArray(sec.fields) ? sec.fields : [];
     const normalizedFields = rawFields.map(normalizeFieldDefinition);
 
@@ -1030,7 +1038,14 @@ export const getSubmissionSchemaKey = (sub) => {
 
 export const resolveSubmissionSchema = async (sub) => {
   if (!sub) return null;
-  if (sub.schema && Array.isArray(sub.schema.sections) && sub.schema.sections.length > 0) {
+  // Only trust an embedded sub.schema snapshot for an approved/archived report. For anything still
+  // in review, that field can be a frozen copy from whenever this submission/assignment record was
+  // last written (e.g. at auditor-assignment time) — IQAC may have republished the schema since
+  // (added/removed sections) and this snapshot never gets refreshed. Two auditors on the very same
+  // submission can end up with different embedded snapshots this way (one assigned before a
+  // republish, one after), each showing a different section count for what should be one shared
+  // form. Always defer to the live active schema below instead.
+  if (isApprovedReport(sub) && sub.schema && Array.isArray(sub.schema.sections) && sub.schema.sections.length > 0) {
     return sub.schema;
   }
   const key = getSubmissionSchemaKey(sub);
@@ -1071,16 +1086,14 @@ export const resolveSubmissionSchema = async (sub) => {
       }
     }
 
-    if (!dynamicSchema && sub.schemaVersionId && !preferVersion) {
-      try {
-        const fetched = await fetchSchemaByVersion(sub.schemaVersionId);
-        if (fetched && Array.isArray(fetched.sections) && fetched.sections.length > 0) {
-          dynamicSchema = normalizeDynamicSchema(fetched);
-        }
-      } catch (e) {
-        console.warn("Could not fetch schema by version", e);
-      }
-    }
+    // Deliberately no fallback to sub.schemaVersionId here for a non-approved submission: that id
+    // is just whatever schema happened to be active the moment this draft was last saved, and IQAC
+    // can republish (add/remove sections, reassign school exclusivity) at any time afterward. Once
+    // republished, that old version id no longer represents the form this submission should be
+    // reviewed against — falling back to it silently served a stale/wrong section list (e.g. an
+    // extra section that had since been removed or reassigned to a different school). Only an
+    // approved/archived report should ever pin to a specific frozen version (handled above via
+    // preferVersion) — anything still in review must always reflect the current active schema.
 
     // A "ver:<id>" key points at one immutable published version, so it's always safe to keep
     // cached. A school/post key ("academic:SOD", …) instead points at "whatever schema is
@@ -2753,7 +2766,13 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
         previousApprovedSubmission: prevSubmission || submission.previousApprovedSubmission,
       };
 
-      let dynamicSchema = rawSub.schema ? normalizeDynamicSchema(rawSub.schema) : null;
+      // As in resolveSubmissionSchema: an embedded schema snapshot on the detail payload is only
+      // trustworthy for an approved/archived report. For a submission still in review, this detail
+      // fetch can be scoped to a particular auditor's assignment and carry whatever schema snapshot
+      // was frozen at that assignment's creation time — two auditors on the same submission can
+      // each open it here with a different stale snapshot. Always resolve the live active schema
+      // instead for anything still in review.
+      let dynamicSchema = isApprovedReport(rawSub) && rawSub.schema ? normalizeDynamicSchema(rawSub.schema) : null;
       if (!dynamicSchema) {
         dynamicSchema = await resolveSubmissionSchema(rawSub);
       }
@@ -6003,7 +6022,9 @@ function FullFormReview({
   onDownloadExcel,
   downloadingExcel,
 }) {
-  const [resolvedSchema, setResolvedSchema] = useState(submission.schema ? normalizeDynamicSchema(submission.schema) : null);
+  const initialSchemaFromSubmission = (sub) =>
+    isApprovedReport(sub) && sub.schema ? normalizeDynamicSchema(sub.schema) : null;
+  const [resolvedSchema, setResolvedSchema] = useState(initialSchemaFromSubmission(submission));
 
   useEffect(() => {
     let isSubscribed = true;
@@ -6011,14 +6032,21 @@ function FullFormReview({
     // auditor assigned to several schools), so resolvedSchema must be reset synchronously here —
     // otherwise the previous submission's schema (and any field values that happen to share the
     // same key) stays on screen for the entire async gap before the new one resolves, or
-    // permanently if that fetch ever comes back empty.
-    setResolvedSchema(submission.schema ? normalizeDynamicSchema(submission.schema) : null);
+    // permanently if that fetch ever comes back empty. Only an approved/archived report's embedded
+    // submission.schema is trustworthy as that starting point (see resolveSubmissionSchema) — for
+    // anything still in review this resets to null and waits for the live active schema instead.
+    setResolvedSchema(initialSchemaFromSubmission(submission));
     const loadSchema = async () => {
       try {
         const dynamicSchema = await resolveSubmissionSchema(submission);
         if (isSubscribed && dynamicSchema && Array.isArray(dynamicSchema.sections) && dynamicSchema.sections.length > 0) {
           setResolvedSchema(dynamicSchema);
-        } else if (isSubscribed && submission.schema) {
+        } else if (isSubscribed && submission.schema && isApprovedReport(submission)) {
+          // submission.schema is a frozen snapshot — only trustworthy for an archived/approved
+          // report. For anything still in review, IQAC can republish the schema at any time, so
+          // falling back to this stale snapshot risks showing a section list that's since been
+          // changed or reassigned to a different school — leave resolvedSchema at the reset value
+          // above instead of trusting it.
           setResolvedSchema(normalizeDynamicSchema(submission.schema) || submission.schema);
         }
       } catch (err) {
@@ -6032,10 +6060,14 @@ function FullFormReview({
   }, [submission.id, submission.schemaVersionId, submission.auditType, submission.school, submission.schoolName, submission.department, submission.administrativePost, submission.universityCode]);
 
   const sections = useMemo(() => {
-    if (resolvedSchema?.sections?.length) return resolvedSchema.sections;
-    if (submission.sections?.length && typeof submission.sections[0] === "object") return submission.sections;
+    // .filter(Boolean) as a last line of defense: a null/undefined entry anywhere in this array
+    // renders as a phantom "Part N" tab with no real section behind it (see normalizeDynamicSchema).
+    if (resolvedSchema?.sections?.length) return resolvedSchema.sections.filter(Boolean);
+    if (isApprovedReport(submission) && submission.sections?.length && typeof submission.sections[0] === "object") {
+      return submission.sections.filter(Boolean);
+    }
     return [];
-  }, [resolvedSchema, submission.sections]);
+  }, [resolvedSchema, submission]);
 
   const activeSchema = resolvedSchema || (submission.auditType === "academic" ? { ...(submission.schema || {}), sections } : null);
   const internalAssignmentsFromSubmission = (submission.auditorAssignments || []).filter(
