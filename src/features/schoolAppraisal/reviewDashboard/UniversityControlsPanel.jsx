@@ -4,7 +4,7 @@ import { uploadAttachment } from "../../../api/submissions";
 import { getApiErrorMessage } from "../../../api/client";
 import { getAttachmentUrl } from "../../../utils/attachment";
 
-const EMPTY_FORM = { universityName: "", address: "", act: "", logoUrl: "", iqacLogoUrl: "" };
+const EMPTY_FORM = { universityName: "", address: "", logoUrl: "", iqacLogoUrl: "" };
 
 const field = { display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 };
 const label = { fontSize: 12.5, fontWeight: 650, color: "#1e293b" };
@@ -116,7 +116,6 @@ export default function UniversityControlsPanel({ onSaved }) {
         const next = {
           universityName: data.universityName || "",
           address: data.address || "",
-          act: data.act || "",
           logoUrl: data.logoUrl || "",
           iqacLogoUrl: data.iqacLogoUrl || "",
         };
@@ -171,7 +170,7 @@ export default function UniversityControlsPanel({ onSaved }) {
         <div>
           <h2 style={{ margin: "0 0 4px", fontSize: 18, color: "var(--ink)" }}>Institution Profile</h2>
           <p style={{ margin: 0, fontSize: 13, color: "var(--muted)" }}>
-            {isEditing ? "Update your institution's name, campus address, establishment act, and header logos for official reports." : "Current institution details and report branding on record."}
+            {isEditing ? "Update your institution's name, campus address, and header logos for official reports." : "Current institution details and report branding on record."}
           </p>
         </div>
         {!isEditing && (
@@ -196,10 +195,6 @@ export default function UniversityControlsPanel({ onSaved }) {
                 <label style={label}>Campus Address</label>
                 <textarea style={{ ...input, resize: "vertical" }} rows={3} value={form.address} onChange={update("address")} placeholder="Full campus address for report headers" />
               </div>
-              <div style={{ ...field, marginBottom: 0 }}>
-                <label style={label}>Establishment Act / Legal Authority</label>
-                <input style={input} value={form.act} onChange={update("act")} placeholder="e.g. Maharashtra Act No. VI of 2019" />
-              </div>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -221,8 +216,7 @@ export default function UniversityControlsPanel({ onSaved }) {
         <div className="university-controls-grid" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.1fr) minmax(0, 1fr)", gap: 28 }}>
           <div>
             <div style={readRow}><span style={readLabel}>Institution / University Full Name</span><span style={readValue}>{saved.universityName || "—"}</span></div>
-            <div style={readRow}><span style={readLabel}>Campus Address</span><span style={readValue}>{saved.address || "—"}</span></div>
-            <div style={{ ...readRow, marginBottom: 0 }}><span style={readLabel}>Establishment Act / Authority</span><span style={readValue}>{saved.act || "—"}</span></div>
+            <div style={{ ...readRow, marginBottom: 0 }}><span style={readLabel}>Campus Address</span><span style={readValue}>{saved.address || "—"}</span></div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <LogoDisplay title="Institution Logo" icon="🏛️" value={saved.logoUrl} />

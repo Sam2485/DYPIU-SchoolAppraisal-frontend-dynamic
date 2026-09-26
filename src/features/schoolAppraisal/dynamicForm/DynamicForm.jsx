@@ -72,7 +72,6 @@ export const DynamicForm = ({
           )}
           <h3 className="fw-bold text-primary mb-1">{header.university || 'University Appraisal'}</h3>
           {header.address && <p className="text-muted small mb-1">{header.address}</p>}
-          {header.act && <p className="text-muted small mb-2 fst-italic">{header.act}</p>}
           <hr className="my-2" />
           <h4 className="fw-bold text-dark mt-2">{title}</h4>
           {academicYear && (

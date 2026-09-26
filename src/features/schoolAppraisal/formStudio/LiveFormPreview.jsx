@@ -674,11 +674,6 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                     📍 {header.address}
                   </p>
                 )}
-                {header?.act && (
-                  <p style={{ margin: '0', fontSize: "var(--text-base)", color: 'var(--muted)', fontStyle: 'italic' }}>
-                    ⚖️ {header.act}
-                  </p>
-                )}
               </div>
             </div>
 
