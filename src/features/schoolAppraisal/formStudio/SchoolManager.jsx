@@ -99,7 +99,7 @@ export const SchoolManager = ({ selectedUniversity }) => {
 
   return (
     <div className="school-manager-container" style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: "var(--radius-sm)", padding: "var(--space-9)" }}>
-      <div className="d-flex justify-content-between align-items-flex-start flex-wrap gap-3" style={{ marginBottom: '28px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
         <div style={{ display: 'flex', gap: "var(--space-6)", alignItems: 'flex-start' }}>
           <IconBadge tone="emerald" icon={<SchoolHouseIcon />} />
           <div>
@@ -110,6 +110,8 @@ export const SchoolManager = ({ selectedUniversity }) => {
             </p>
           </div>
         </div>
+      </div>
+      <div style={{ marginBottom: 28 }}>
         <button
           type="button"
           className="btn btn-primary px-3 py-2 fw-semibold shadow-sm"
