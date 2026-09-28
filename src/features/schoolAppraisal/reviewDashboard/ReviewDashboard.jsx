@@ -3731,6 +3731,7 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
               auditType="academic"
               submissions={deanSubmissions}
               academicYear={academicYear}
+              showYearFilter={false}
               activeGroup={activeGroup.academic}
               onGroupChange={(group) => setActiveGroup((current) => ({ ...current, academic: group }))}
               onOpen={(submission) => {
@@ -5417,7 +5418,7 @@ function SchoolProgressPanel({ schools, loading }) {
   );
 }
 
-function AuditReviewPanel({ auditType, submissions, activeGroup, onGroupChange, onOpen, onForward, onDownload, downloadingAttachmentsId, loading, resolveSubmitterAvatar, academicYear }) {
+function AuditReviewPanel({ auditType, submissions, activeGroup, onGroupChange, onOpen, onForward, onDownload, downloadingAttachmentsId, loading, resolveSubmitterAvatar, academicYear, showYearFilter = true }) {
   const currentYear = compactAcademicYear(academicYear);
   const availableYears = useMemo(() => {
     const years = new Set([currentYear]);
@@ -5465,17 +5466,19 @@ function AuditReviewPanel({ auditType, submissions, activeGroup, onGroupChange, 
           <h2 style={styles.sectionTitle}>{auditLabels[auditType]} Reviews</h2>
         </div>
         <div style={styles.pageTitleActions}>
-          <label style={styles.yearFilter}>
-            <span>Academic year</span>
-            <select
-              className="audit-control"
-              value={effectiveSelectedYear}
-              onChange={(event) => setSelectedYear(event.target.value)}
-              style={styles.yearSelect}
-            >
-              {availableYears.map((year) => <option key={year} value={year}>{year}</option>)}
-            </select>
-          </label>
+          {showYearFilter && (
+            <label style={styles.yearFilter}>
+              <span>Academic year</span>
+              <select
+                className="audit-control"
+                value={effectiveSelectedYear}
+                onChange={(event) => setSelectedYear(event.target.value)}
+                style={styles.yearSelect}
+              >
+                {availableYears.map((year) => <option key={year} value={year}>{year}</option>)}
+              </select>
+            </label>
+          )}
           <span style={styles.schoolCount}>
             {auditType === "administrative"
               ? `${filtered.length} ${filtered.length === 1 ? "submission" : "submissions"}`
@@ -8629,15 +8632,16 @@ function AuditorProgressPanel({ submission, compact = false, directoryUsers = []
                     {titleCase(assignment.auditorType || submission.forwardedAuditorType || "auditor")} - {displayPost}
                   </span>
                 </div>
-                <span style={auditorAssignmentSubmitted(assignment) ? styles.auditorProgressDone : styles.auditorProgressPending}>
-                  {auditorAssignmentSubmitted(assignment) ? "Submitted" : "Pending"}
-                </span>
                 <div style={styles.auditorAssignmentDocs}>
                   {documents.length ? documents.map((file) => (
                     <a key={attachmentKeyFor(file)} href={getAttachmentUrl(file.url)} target="_blank" rel="noreferrer">
                       {file.name || file.fileName || "Documentation"}
                     </a>
-                  )) : <span>No documentation uploaded</span>}
+                  )) : (
+                    <span style={auditorAssignmentSubmitted(assignment) ? styles.auditorProgressDone : styles.auditorProgressPending}>
+                      {auditorAssignmentSubmitted(assignment) ? "Submitted" : "Pending"}
+                    </span>
+                  )}
                 </div>
               </div>
             );
@@ -10238,7 +10242,10 @@ const styles = {
   },
   auditorAssignmentRow: {
     display: "grid",
-    gridTemplateColumns: "minmax(180px, 1fr) auto minmax(180px, .9fr)",
+    // Two columns now — the middle "auto" status column was removed when the status pill moved
+    // into the docs column (see AuditorProgressPanel); leaving three here stranded that pill in
+    // the middle slot instead of flush right.
+    gridTemplateColumns: "minmax(180px, 1fr) minmax(180px, .9fr)",
     alignItems: "center",
     gap: 10,
     border: "1px solid rgba(37, 99, 235, .16)",
