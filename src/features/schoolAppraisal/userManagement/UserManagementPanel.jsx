@@ -61,7 +61,7 @@ const mergeSchoolLists = (...values) => [...new Set(values.flatMap(normalizeScho
 
 const normalizeUser = (user = {}, index = 0) => {
   const role = String(user.role || "").toLowerCase().replaceAll("_", "-");
-  const accountType = String(user.accountType || user.userType || user.type || (role.includes("auditor") ? "auditor" : "user")).toLowerCase().replaceAll("_", "-");
+  const accountType = String(user.accountType || user.userType || user.type || (role.includes("auditor") ? "auditor" : role === "dean" ? "dean" : "user")).toLowerCase().replaceAll("_", "-");
   const auditorType = String(user.auditorType || user.auditorCategory || (
     role.includes("external")
       ? "external"
@@ -78,7 +78,9 @@ const normalizeUser = (user = {}, index = 0) => {
       ? "academic"
       : role === "administrative"
         ? "administrative"
-        : "authority"
+        : role === "dean"
+          ? "academic"
+          : "authority"
   );
   const designation = user.designation || user.post || "";
   const administrativePosts = [
@@ -102,7 +104,7 @@ const normalizeUser = (user = {}, index = 0) => {
         user.assignment,
       )
     : [];
-  const cachedAcademicSchools = accountType === "auditor" && category === "academic"
+  const cachedAcademicSchools = (accountType === "auditor" || accountType === "dean") && category === "academic"
     ? getStoredAcademicAuditorSchools(user)
     : [];
   const academicSchools = mergeSchoolLists(apiAcademicSchools, cachedAcademicSchools);
@@ -118,9 +120,11 @@ const normalizeUser = (user = {}, index = 0) => {
     schools: academicSchools,
     school: academicSchools[0] || "",
     administrativePosts: resolvedAdministrativePosts,
-    role: accountType === "auditor"
-      ? (user.auditorRole || `${category}-${auditorType || "internal"}-auditor`)
-      : (role || (category === "academic" ? "director" : "administrative")),
+    role: accountType === "dean"
+      ? (role || "dean")
+      : accountType === "auditor"
+        ? (user.auditorRole || `${category}-${auditorType || "internal"}-auditor`)
+        : (role || (category === "academic" ? "director" : "administrative")),
     assignment: category === "academic"
       ? (academicSchools.length ? academicSchools.join(", ") : (user.school || user.schoolName || "-"))
       : resolvedAdministrativePosts.length
@@ -148,16 +152,19 @@ const postLabelFor = (value) => {
 
 const titleCase = (value = "") => String(value).replaceAll("-", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 const auditorRoleForForm = (form) => `${form.category}-${form.auditorType}-auditor`;
+const isMultiSchoolAccount = (accountType) => accountType === "auditor" || accountType === "dean";
 const roleForForm = (form) => {
   if (form.accountType === "iqac" || form.role === "iqac" || form.category === "iqac") return "iqac";
   if (form.accountType === "vice-chancellor" || form.role === "vice-chancellor" || form.category === "vice-chancellor") return "vice-chancellor";
   if (form.accountType === "auditor") return auditorRoleForForm(form);
+  if (form.accountType === "dean") return "dean";
   return form.category === "academic" ? "director" : "administrative";
 };
 const designationForForm = (form, postsList = []) => {
   if (form.accountType === "iqac" || form.role === "iqac" || form.category === "iqac") return form.designation || "Head of Quality Assurance";
   if (form.accountType === "vice-chancellor" || form.role === "vice-chancellor" || form.category === "vice-chancellor") return form.designation || "Vice Chancellor";
   if (form.accountType === "auditor") return `${titleCase(form.auditorType)} ${titleCase(form.category)} Auditor`;
+  if (form.accountType === "dean") return form.designation || "Dean";
   if (form.category === "academic") return "Director";
   const found = (postsList && postsList.length ? postsList : dynamicPostRegistry)
     .find((p) => p.value === form.post || p.value?.toLowerCase() === form.post?.toLowerCase());
@@ -187,8 +194,8 @@ function validate(form) {
   const errors = {};
   if (!form.category) errors.category = "Select Academic or Administrative.";
   if (form.accountType === "auditor" && !form.auditorType) errors.auditorType = "Select Internal or External auditor.";
-  if (form.category === "academic" && form.accountType === "auditor" && !form.schools.length) errors.schools = "Select at least one school.";
-  if (form.category === "academic" && form.accountType !== "auditor" && !canonicalSchoolCode(form.school)) errors.school = "Select a valid school.";
+  if (form.category === "academic" && isMultiSchoolAccount(form.accountType) && !form.schools.length) errors.schools = "Select at least one school.";
+  if (form.category === "academic" && !isMultiSchoolAccount(form.accountType) && !canonicalSchoolCode(form.school)) errors.school = "Select a valid school.";
   if (
     form.category === "administrative" &&
     form.accountType === "auditor" &&
@@ -211,8 +218,8 @@ function validateEdit(form) {
   if (!isReviewer) {
     if (!form.category) errors.category = "Select Academic or Administrative.";
     if (form.accountType === "auditor" && !form.auditorType) errors.auditorType = "Select Internal or External auditor.";
-    if (form.category === "academic" && form.accountType === "auditor" && !form.schools.length) errors.schools = "Select at least one school.";
-    if (form.category === "academic" && form.accountType !== "auditor" && !canonicalSchoolCode(form.school)) errors.school = "Select a valid school.";
+    if (form.category === "academic" && isMultiSchoolAccount(form.accountType) && !form.schools.length) errors.schools = "Select at least one school.";
+    if (form.category === "academic" && !isMultiSchoolAccount(form.accountType) && !canonicalSchoolCode(form.school)) errors.school = "Select a valid school.";
     if (
       form.category === "administrative" &&
       form.accountType === "auditor" &&
@@ -232,9 +239,10 @@ const editFormFromUser = (user = {}) => {
   const isReviewer = user.accountType === "iqac" || user.accountType === "vice-chancellor" || user.role === "iqac" || user.role === "vice-chancellor" || user.category === "iqac" || user.category === "vice-chancellor";
   const reviewerRole = user.role === "vice-chancellor" || user.accountType === "vice-chancellor" || user.category === "vice-chancellor" ? "vice-chancellor" : "iqac";
   const isAuditor = user.accountType === "auditor";
+  const isDean = user.accountType === "dean";
   const isAcademic = user.category === "academic";
   const isAdministrative = user.category === "administrative";
-  const currentSchools = isAuditor && isAcademic
+  const currentSchools = (isAuditor || isDean) && isAcademic
     ? (user.schools?.length ? user.schools : getStoredAcademicAuditorSchools(user))
     : [];
 
@@ -244,7 +252,7 @@ const editFormFromUser = (user = {}) => {
     auditorType: user.auditorType || "",
     auditorRole: user.auditorRole || "",
     role: isReviewer ? reviewerRole : (user.role || ""),
-    school: !isAuditor && isAcademic ? user.school || "" : "",
+    school: !(isAuditor || isDean) && isAcademic ? user.school || "" : "",
     schools: currentSchools,
     designation: user.designation || "",
     post: !isAuditor && isAdministrative ? user.post || "" : "",
@@ -256,7 +264,7 @@ const editFormFromUser = (user = {}) => {
   };
 };
 
-const canDeleteUser = (user = {}) => user.accountType === "auditor" && !user.deleted;
+const canDeleteUser = (user = {}) => (user.accountType === "auditor" || user.accountType === "dean") && !user.deleted;
 
 export default function UserManagementPanel({ currentUser }) {
   const [users, setUsers] = useState([]);
@@ -312,6 +320,7 @@ export default function UserManagementPanel({ currentUser }) {
     academic: users.filter((user) => user.category === "academic").length,
     administrative: users.filter((user) => user.category === "administrative").length,
     auditors: users.filter((user) => user.accountType === "auditor").length,
+    deans: users.filter((user) => user.accountType === "dean").length,
     active: users.filter((user) => user.status === "active").length,
     deleted: users.filter((user) => user.deleted).length,
   }), [users]);
@@ -347,7 +356,7 @@ export default function UserManagementPanel({ currentUser }) {
     setForm((current) => ({
       ...current,
       [field]: value,
-      ...(field === "accountType" ? { category: "", auditorType: "", school: "", schools: [], post: "", administrativePosts: [] } : {}),
+      ...(field === "accountType" ? { category: value === "dean" ? "academic" : "", auditorType: "", school: "", schools: [], post: "", administrativePosts: [] } : {}),
       ...(field === "category" ? { school: "", schools: [], post: "", administrativePosts: [] } : {}),
     }));
     setErrors((current) => ({
@@ -403,11 +412,11 @@ export default function UserManagementPanel({ currentUser }) {
     if (Object.keys(nextErrors).length) return;
 
     const isAcademic = form.category === "academic";
-    const academicSchools = isAcademic && form.accountType === "auditor"
+    const academicSchools = isAcademic && isMultiSchoolAccount(form.accountType)
       ? form.schools
       : [canonicalSchoolCode(form.school)].filter(Boolean);
     const assignmentPayload = isAcademic
-      ? academicAssignmentPayload(academicSchools, form.accountType === "auditor")
+      ? academicAssignmentPayload(academicSchools, isMultiSchoolAccount(form.accountType))
       : { school: "Administrative Office", schoolName: "Administrative Office", schools: [] };
     const payload = {
       accountType: form.accountType,
@@ -436,13 +445,13 @@ export default function UserManagementPanel({ currentUser }) {
     try {
       const { data } = await createUser(payload);
       const created = data?.data?.user || data?.user || data?.data || data || payload;
-      if (payload.accountType === "auditor" && payload.category === "academic") {
+      if (isMultiSchoolAccount(payload.accountType) && payload.category === "academic") {
         rememberAcademicAuditorSchools({ ...payload, ...created }, academicSchools);
       } else {
         forgetAcademicAuditorSchools({ ...payload, ...created });
       }
       setUsers((current) => [normalizeUser({ ...payload, ...created }), ...current]);
-      setStatus(`${form.accountType === "auditor" ? "Auditor" : "User"} account created successfully.`);
+      setStatus(`${form.accountType === "auditor" ? "Auditor" : form.accountType === "dean" ? "Dean" : "User"} account created successfully.`);
       setForm(emptyForm);
       setErrors({});
       setShowForm(false);
@@ -470,7 +479,7 @@ export default function UserManagementPanel({ currentUser }) {
     setEditForm((current) => ({
       ...current,
       [field]: value,
-      ...(field === "accountType" ? { category: "", auditorType: "", school: "", schools: [], post: "", administrativePosts: [] } : {}),
+      ...(field === "accountType" ? { category: value === "dean" ? "academic" : "", auditorType: "", school: "", schools: [], post: "", administrativePosts: [] } : {}),
       ...(field === "category" ? { school: "", schools: [], post: "", administrativePosts: [] } : {}),
       ...(field === "password" && !value ? { confirmPassword: "" } : {}),
     }));
@@ -541,13 +550,13 @@ export default function UserManagementPanel({ currentUser }) {
     const reviewerRole = editTarget.role === "vice-chancellor" || editForm.role === "vice-chancellor" || editForm.accountType === "vice-chancellor" || editForm.category === "vice-chancellor" ? "vice-chancellor" : "iqac";
 
     const isAcademic = !isReviewer && editForm.category === "academic";
-    const academicSchools = isAcademic && editForm.accountType === "auditor"
+    const academicSchools = isAcademic && isMultiSchoolAccount(editForm.accountType)
       ? editForm.schools
       : [canonicalSchoolCode(editForm.school)].filter(Boolean);
     const assignmentPayload = isReviewer
       ? { school: null, schoolName: null, schools: [] }
       : isAcademic
-        ? academicAssignmentPayload(academicSchools, editForm.accountType === "auditor")
+        ? academicAssignmentPayload(academicSchools, isMultiSchoolAccount(editForm.accountType))
         : { school: "Administrative Office", schoolName: "Administrative Office", schools: [] };
 
     const payload = isReviewer
@@ -588,7 +597,7 @@ export default function UserManagementPanel({ currentUser }) {
     try {
       const { data } = await updateUser(editTarget.id, payload);
       const updated = data?.data?.user || data?.user || data?.data || data || payload;
-      if (payload.accountType === "auditor" && payload.category === "academic") {
+      if (isMultiSchoolAccount(payload.accountType) && payload.category === "academic") {
         rememberAcademicAuditorSchools({ ...editTarget, ...payload, ...updated }, academicSchools);
       } else {
         forgetAcademicAuditorSchools({ ...editTarget, ...payload, ...updated });
@@ -659,27 +668,29 @@ export default function UserManagementPanel({ currentUser }) {
         <form style={styles.formCard} onSubmit={handleCreate}>
           <div style={styles.formHeading}>
             <div>
-              <h3 style={styles.formTitle}>Create {form.accountType === "auditor" ? "Auditor" : "User"} Credentials</h3>
+              <h3 style={styles.formTitle}>Create {form.accountType === "auditor" ? "Auditor" : form.accountType === "dean" ? "Dean" : "User"} Credentials</h3>
               <span style={styles.formHint}>Fill assignment details first, then enter login credentials.</span>
             </div>
-            <span style={form.accountType === "auditor" ? styles.auditorPill : styles.userPill}>
-              {form.accountType === "auditor" ? "Auditor Account" : "Regular User"}
+            <span style={form.accountType === "auditor" ? styles.auditorPill : form.accountType === "dean" ? styles.deanPill : styles.userPill}>
+              {form.accountType === "auditor" ? "Auditor Account" : form.accountType === "dean" ? "Dean Account" : "Regular User"}
             </span>
           </div>
 
           <div style={styles.formSection}>
             <div style={styles.formSectionHeader}>
               <h4 style={styles.sectionTitle}>Assignment Details</h4>
-              <span style={styles.sectionHint}>{form.accountType === "auditor" ? "Set audit category and auditor type." : "Set user category and assignment."}</span>
+              <span style={styles.sectionHint}>{form.accountType === "auditor" ? "Set audit category and auditor type." : form.accountType === "dean" ? "Assign the schools this Dean can view (read-only)." : "Set user category and assignment."}</span>
             </div>
             <div className="user-management-field-grid" style={styles.fieldGrid}>
               <Field label="Account Type">
                 <select className="audit-control" style={styles.control} value={form.accountType} onChange={(event) => updateField("accountType", event.target.value)}>
                   <option value="user">Regular User</option>
                   <option value="auditor">Auditor</option>
+                  <option value="dean">Dean</option>
                 </select>
               </Field>
 
+              {form.accountType !== "dean" && (
               <Field label={form.accountType === "auditor" ? "Audit Category" : "User Category"} error={errors.category}>
                 <select className="audit-control" style={styles.control} value={form.category} onChange={(event) => updateField("category", event.target.value)}>
                   <option value="">Select category</option>
@@ -687,6 +698,7 @@ export default function UserManagementPanel({ currentUser }) {
                   <option value="administrative">Administrative</option>
                 </select>
               </Field>
+              )}
 
               {form.accountType === "auditor" && (
                 <Field label="Auditor Type" error={errors.auditorType}>
@@ -699,8 +711,8 @@ export default function UserManagementPanel({ currentUser }) {
               )}
 
               {form.category === "academic" && (
-                <Field label={form.accountType === "auditor" ? "Schools" : "School"} error={form.accountType === "auditor" ? errors.schools : errors.school}>
-                  {form.accountType === "auditor" ? (
+                <Field label={isMultiSchoolAccount(form.accountType) ? "Schools" : "School"} error={isMultiSchoolAccount(form.accountType) ? errors.schools : errors.school}>
+                  {isMultiSchoolAccount(form.accountType) ? (
                     <AcademicSchoolMultiSelect
                       selected={form.schools}
                       onToggle={toggleAcademicSchool}
@@ -786,6 +798,7 @@ export default function UserManagementPanel({ currentUser }) {
           <div style={styles.tableBadges}>
             <span style={styles.count}>{userStats.total} users</span>
             <span style={styles.count}>{userStats.auditors} auditors</span>
+            <span style={styles.count}>{userStats.deans} deans</span>
             <span style={styles.printHint}>Print-ready report available</span>
           </div>
         </div>
@@ -806,6 +819,7 @@ export default function UserManagementPanel({ currentUser }) {
               <option value="user">Users</option>
               <option value="internal-auditor">Internal Auditors</option>
               <option value="external-auditor">External Auditors</option>
+              <option value="dean">Deans</option>
             </select>
           </label>
           <button type="button" className="btn btn-secondary" onClick={resetFilters} disabled={categoryFilter === "all" && accountFilter === "all"}>
@@ -835,8 +849,8 @@ export default function UserManagementPanel({ currentUser }) {
                   </td>
                   <td style={styles.td}>{user.email}</td>
                   <td style={{ ...styles.td, ...styles.centerCell }}>
-                    <span style={user.accountType === "auditor" ? styles.auditorPill : styles.userPill}>
-                      {user.accountType === "auditor" ? `${titleCase(user.auditorType)} Auditor` : "User"}
+                    <span style={user.accountType === "auditor" ? styles.auditorPill : user.accountType === "dean" ? styles.deanPill : styles.userPill}>
+                      {user.accountType === "auditor" ? `${titleCase(user.auditorType)} Auditor` : user.accountType === "dean" ? "Dean" : "User"}
                     </span>
                   </td>
                   <td style={{ ...styles.td, ...styles.centerCell }}><span style={styles.categoryPill}>{user.category}</span></td>
@@ -988,9 +1002,11 @@ export default function UserManagementPanel({ currentUser }) {
                     <select className="audit-control" style={styles.control} value={editForm.accountType} onChange={(event) => updateEditField("accountType", event.target.value)}>
                       <option value="user">Regular User</option>
                       <option value="auditor">Auditor</option>
+                      <option value="dean">Dean</option>
                     </select>
                   </Field>
 
+                  {editForm.accountType !== "dean" && (
                   <Field label={editForm.accountType === "auditor" ? "Audit Category" : "User Category"} error={editErrors.category}>
                     <select className="audit-control" style={styles.control} value={editForm.category} onChange={(event) => updateEditField("category", event.target.value)}>
                       <option value="">Select category</option>
@@ -998,6 +1014,7 @@ export default function UserManagementPanel({ currentUser }) {
                       <option value="administrative">Administrative</option>
                     </select>
                   </Field>
+                  )}
 
                   {editForm.accountType === "auditor" && (
                     <Field label="Auditor Type" error={editErrors.auditorType}>
@@ -1010,8 +1027,8 @@ export default function UserManagementPanel({ currentUser }) {
                   )}
 
                   {editForm.category === "academic" && (
-                  <Field label={editForm.accountType === "auditor" ? "Schools" : "School"} error={editForm.accountType === "auditor" ? editErrors.schools : editErrors.school}>
-                    {editForm.accountType === "auditor" ? (
+                  <Field label={isMultiSchoolAccount(editForm.accountType) ? "Schools" : "School"} error={isMultiSchoolAccount(editForm.accountType) ? editErrors.schools : editErrors.school}>
+                    {isMultiSchoolAccount(editForm.accountType) ? (
                       <AcademicSchoolMultiSelect
                         selected={editForm.schools}
                         onToggle={toggleEditAcademicSchool}
@@ -1190,7 +1207,7 @@ function PrintableUsersReport({ users, stats }) {
                 <td>{index + 1}</td>
                 <td>{user.name}</td>
                 <td>{user.email}</td>
-                <td>{user.accountType === "auditor" ? `${titleCase(user.auditorType)} Auditor` : "User"}</td>
+                <td>{user.accountType === "auditor" ? `${titleCase(user.auditorType)} Auditor` : user.accountType === "dean" ? "Dean" : "User"}</td>
                 <td>{user.category}</td>
                 <td>{assignmentTextFor(user)}</td>
                 <td>{user.role}</td>
@@ -1228,14 +1245,14 @@ const schoolLabelFor = (value, availableSchools = []) => {
 };
 
 function assignmentTextFor(user = {}) {
-  if (user.accountType === "auditor" && user.category === "academic" && user.schools?.length) {
+  if (isMultiSchoolAccount(user.accountType) && user.category === "academic" && user.schools?.length) {
     return user.schools.join(", ");
   }
   return user.assignment;
 }
 
 function assignmentCellFor(user = {}) {
-  if (user.accountType === "auditor" && user.category === "academic" && user.schools?.length > 1) {
+  if (isMultiSchoolAccount(user.accountType) && user.category === "academic" && user.schools?.length > 1) {
     return (
       <div style={styles.assignmentBadgeList}>
         {user.schools.map((school) => (
@@ -1245,7 +1262,7 @@ function assignmentCellFor(user = {}) {
     );
   }
 
-  if (user.accountType === "auditor" && user.category === "academic" && user.schools?.length === 1) {
+  if (isMultiSchoolAccount(user.accountType) && user.category === "academic" && user.schools?.length === 1) {
     const [school] = user.schools;
     return <span title={school}>{school}</span>;
   }
@@ -1452,6 +1469,7 @@ const styles = {
   assignmentBadge: { display: "inline-flex", maxWidth: "100%", padding: "4px 7px", border: "1px solid var(--accent-border)", borderRadius: 999, color: "var(--primary-dark)", background: "var(--accent-soft)", fontSize: 11, fontWeight: 800, lineHeight: 1.15, whiteSpace: "nowrap" },
   userPill: { display: "inline-flex", padding: "4px 7px", borderRadius: 999, color: "#475569", background: "var(--bg-alt)", fontSize: 10.5, fontWeight: 750, textTransform: "capitalize" },
   auditorPill: { display: "inline-flex", padding: "4px 7px", borderRadius: 999, color: "#7c2d12", background: "#ffedd5", fontSize: 10.5, fontWeight: 750, textTransform: "capitalize" },
+  deanPill: { display: "inline-flex", padding: "4px 7px", borderRadius: 999, color: "#3730a3", background: "#e0e7ff", fontSize: 10.5, fontWeight: 750, textTransform: "capitalize" },
   activeStatus: { display: "inline-flex", padding: "4px 7px", borderRadius: 999, color: "var(--green-700)", background: "var(--green-100)", fontSize: 10.5, fontWeight: 700, textTransform: "capitalize" },
   inactiveStatus: { display: "inline-flex", padding: "4px 7px", borderRadius: 999, color: "var(--red-800)", background: "var(--red-100)", fontSize: 10.5, fontWeight: 700, textTransform: "capitalize" },
   deletedStatus: { display: "inline-flex", padding: "4px 7px", borderRadius: 999, color: "var(--muted)", background: "var(--bg-alt)", fontSize: 10.5, fontWeight: 700, textTransform: "capitalize" },
