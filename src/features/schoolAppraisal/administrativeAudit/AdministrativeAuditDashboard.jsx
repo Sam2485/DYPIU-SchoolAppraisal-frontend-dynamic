@@ -439,7 +439,10 @@ export default function AdministrativeAuditDashboard() {
     }
     const mapped = dynamicSchema.sections.map((sec, idx) => ({
       id: sec.idString || String(sec.id || `section-${idx + 1}`),
-      number: sec.number || String(idx + 1),
+      // Same fix as ReviewDashboard.jsx's normalizeDynamicSchema: a bare digit fallback here reads
+      // as a phantom "Part 4"-style section next to letter-labeled ones when the schema doesn't
+      // supply an explicit number. Derive a letter by position instead.
+      number: sec.number || String.fromCharCode(65 + idx),
       title: sec.title || `Section ${idx + 1}`,
       owner: sec.ownerRole || 'registrar',
       isAuditorSection: sec.ownerRole === 'auditor' || sec.isAuditorSection === true,
