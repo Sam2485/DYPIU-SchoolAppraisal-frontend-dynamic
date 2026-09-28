@@ -7580,6 +7580,12 @@ function SubmittedFormViewer({
                       tableButtons={sectionTableButtons}
                       sectionKey={getSectionKey(activeSection)}
                     />
+                    {isExternalCycle && previousInternalIqacRemarks && (
+                      <div style={{ marginTop: 12 }}>
+                        <h4 style={styles.partEReferenceTitle}>IQAC Internal Audit Review Remarks</h4>
+                        <p style={styles.reviewText}>{previousInternalIqacRemarks}</p>
+                      </div>
+                    )}
                   </div>
                 )}
                 {isExternalCycle && externalAssignments.length === 0 && (
