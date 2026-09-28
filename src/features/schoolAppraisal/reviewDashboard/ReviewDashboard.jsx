@@ -150,6 +150,12 @@ const REVIEW_ROLE_CONFIG = {
     roleTitle: "Auditor",
     roleText: "Assigned Audit Remarks",
   },
+  dean: {
+    badge: "DN",
+    title: "Dean Dashboard",
+    roleTitle: "Dean",
+    roleText: "Read-only Academic Overview",
+  },
 };
 
 const SCHOOL_GROUPS = {
@@ -1875,7 +1881,7 @@ const buildAuditorAssignmentsForForwarding = (submission = {}, auditorType = "",
     }));
   });
 };
-const auditCategoryFromRole = (role = "") => role.includes("administrative") ? "administrative" : role.includes("academic") ? "academic" : "";
+const auditCategoryFromRole = (role = "") => role.includes("administrative") ? "administrative" : (role.includes("academic") || role === "dean") ? "academic" : "";
 const auditorTypeFromRole = (role = "") => role.includes("external") ? "external" : role.includes("internal") ? "internal" : "";
 const normalizeAuditor = (user = {}, index = 0) => {
   const role = normalizeUserRole(user.role || user.auditorRole);
@@ -1999,6 +2005,15 @@ const matchesAuditorSession = (submission, profile) => {
 const submissionVisibleForRole = (submission, role, profile = {}) => {
   if (role === "iqac") return true;
   if (role === "vice-chancellor") return true;
+  if (role === "dean") {
+    // Dean is a read-only, academic-only, multi-school viewer: visible for every status once the
+    // director has submitted (this endpoint already excludes drafts), for every school assigned to
+    // this Dean — unlike an auditor, visibility never depends on forwarding/assignment/status.
+    if (submission.auditType !== "academic") return false;
+    return academicSchoolsFor(profile).some((school) =>
+      assignmentMatches(school, submission.school, schoolAliasesFor)
+    );
+  }
   if (isAuditorRole(role) || isAuditorRole(profile?.role) || isAuditorRole(profile?.auditorRole)) {
     if (!matchesAuditorSession(submission, profile)) return false;
     const correctionRequested = currentAuditorCorrectionRequested(submission, profile);
@@ -2251,6 +2266,7 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const role = String(sessionStorage.getItem("role") || "iqac").toLowerCase().replaceAll("_", "-");
   const isAuditor = dashboardKind === "auditor" || isAuditorRole(role);
+  const isDean = dashboardKind === "dean" || role === "dean";
   const isIqacDashboard = role === "iqac" && !isAuditor;
   const initialAuditorCategory = sessionStorage.getItem("category") || auditCategoryFromRole(role) || "academic";
   const defaultActiveView = isAuditor ? initialAuditorCategory : role === "vice-chancellor" ? "previous-reports" : "overview";
@@ -2476,18 +2492,21 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
 
     if (role === "vice-chancellor") return [];
 
+    // Dean is a single-page, read-only viewer: no intake queues, no advanced/admin views.
+    if (isDean) return REVIEW_NAV_ITEMS.filter((item) => item.id === "overview");
+
     if (isIqacDashboard) {
       return REVIEW_NAV_ITEMS.filter((item) => item.id !== "advanced-overview");
     }
 
     return REVIEW_NAV_ITEMS;
-  }, [isAuditor, isIqacDashboard, profile.category, role]);
+  }, [isAuditor, isDean, isIqacDashboard, profile.category, role]);
   const pinnedNavigationItems = useMemo(() => {
     if (isAuditor || !canManageUsers) return [];
     return [USER_MANAGEMENT_NAV_ITEM];
   }, [canManageUsers, isAuditor]);
   const standaloneNavigationItems = useMemo(() => {
-    if (isAuditor) return [];
+    if (isAuditor || isDean) return [];
     if (role === "vice-chancellor") return [PREVIOUS_REPORTS_NAV_ITEM];
     const items = [];
     if (role === "iqac") {
@@ -2497,7 +2516,7 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
       items.push(INSTITUTION_PROFILE_NAV_ITEM);
     }
     return items;
-  }, [isAuditor, role]);
+  }, [isAuditor, isDean, role]);
   const visibleActiveView = !canManageUsers && activeView === "user-management" ? defaultActiveView : activeView;
   const currentCompactAcademicYear = compactAcademicYear(academicYear);
   const auditorReviewedSubmissions = useMemo(
@@ -2557,7 +2576,9 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
   }), [isAuditor, profile, role, submissions]);
 
   useEffect(() => {
-    if (!isAuditor) return undefined;
+    // Dean also needs this fetch — same as an auditor, its multi-school assignment lives on the
+    // full user record (schools[]), not in sessionStorage.
+    if (!isAuditor && !isDean) return undefined;
 
     let isActive = true;
     const loadAuditorProfile = async () => {
@@ -2583,7 +2604,7 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
     return () => {
       isActive = false;
     };
-  }, [isAuditor, role, sessionProfile.auditorRole]);
+  }, [isAuditor, isDean, role, sessionProfile.auditorRole]);
 
   // sessionStorage never carries the avatar, and profileOverrides is only populated for the
   // rest of this session after a save in UserProfileModal — so without this, the sidebar
@@ -3623,9 +3644,10 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
               onReturnToAuditor={() => openCorrectionModal(selectedSubmission)}
               onCompleteAuditorReview={(values, attachments, tables, remarks) => completeAuditorReview(selectedSubmission, values, attachments, tables, remarks)}
               reviewingStatus={reviewingStatus}
-              canApprove={!isAuditor && isAuditorCompleted(selectedSubmission)}
+              canApprove={!isAuditor && !isDean && isAuditorCompleted(selectedSubmission)}
               canReturnToAuditor={
                 !isAuditor &&
+                !isDean &&
                 isAuditorCompleted(selectedSubmission) &&
                 !isApprovedReport(selectedSubmission) &&
                 (
