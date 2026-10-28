@@ -343,6 +343,11 @@ export default function DirectorDashboard() {
           onSaved={(updates) => {
             if (updates.name) sessionStorage.setItem("name", updates.name);
             if (updates.email) sessionStorage.setItem("email", updates.email);
+            if (updates.avatarUrl !== undefined) {
+              sessionStorage.setItem("avatarUrl", updates.avatarUrl || "");
+              localStorage.setItem("avatarUrl", updates.avatarUrl || "");
+              setAccountAvatarUrl(updates.avatarUrl || "");
+            }
             setProfileOverrides((prev) => ({ ...prev, ...updates }));
           }}
         />

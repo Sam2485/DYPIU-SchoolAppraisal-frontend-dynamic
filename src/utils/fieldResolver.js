@@ -24,17 +24,18 @@ export const resolveFieldValue = (field, values) => {
     field.label,
   ].filter((k) => k !== undefined && k !== null && String(k).trim() !== "");
 
+  // Pass 1: Try to find a non-empty direct value first (prevents empty string "" from blocking fallback keys)
   for (const key of directCandidates) {
     if (values[key] !== undefined && values[key] !== null) {
       const val = values[key];
-      if (typeof val === "string") return val;
+      if (typeof val === "string" && val.trim() !== "") return val;
       if (typeof val === "number" || typeof val === "boolean") return val;
-      if (Array.isArray(val)) return val;
-      if (typeof val === "object") return val;
+      if (Array.isArray(val) && val.length > 0) return val;
+      if (typeof val === "object" && Object.keys(val).length > 0) return val;
     }
   }
 
-  // 2. Normalized alphanumeric key matching across all keys in values
+  // Pass 2: Normalized alphanumeric key matching across all keys in values
   const normalizeKey = (k) => String(k || "").toLowerCase().replace(/[^a-z0-9]/g, "");
   const targetKeys = new Set(directCandidates.map(normalizeKey).filter(Boolean));
 
@@ -48,6 +49,13 @@ export const resolveFieldValue = (field, values) => {
           if (typeof val === "object" && Object.keys(val).length > 0) return val;
         }
       }
+    }
+  }
+
+  // Pass 3: If no non-empty value was found, fall back to the first defined direct candidate value
+  for (const key of directCandidates) {
+    if (values[key] !== undefined && values[key] !== null) {
+      return values[key];
     }
   }
 

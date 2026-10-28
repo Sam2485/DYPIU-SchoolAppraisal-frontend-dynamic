@@ -37,6 +37,7 @@ import { partitionTablesByButtons, getScopedTableRows, buildScopedTableKey, norm
 import UserProfileModal from "../components/UserProfileModal";
 import SubmitConfirmModal from "../components/SubmitConfirmModal";
 import AdministrativeReportPanel from "../administrativeAudit/AdministrativeReportPanel";
+import AdministrativePartE from "../administrativeAudit/AdministrativePartE";
 import UserManagementPanel from "../userManagement/UserManagementPanel";
 import {
   ADMINISTRATIVE_POSTS,
@@ -3796,6 +3797,11 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
             onSaved={(updates) => {
               if (updates.name) sessionStorage.setItem("name", updates.name);
               if (updates.email) sessionStorage.setItem("email", updates.email);
+              if (updates.avatarUrl !== undefined) {
+                sessionStorage.setItem("avatarUrl", updates.avatarUrl || "");
+                localStorage.setItem("avatarUrl", updates.avatarUrl || "");
+                setAccountProfile((prev) => ({ ...(prev || {}), avatarUrl: updates.avatarUrl }));
+              }
               setProfileOverrides((prev) => ({ ...prev, ...updates }));
             }}
           />
@@ -7603,6 +7609,17 @@ function SubmittedFormViewer({
                       key={`${activeSection.id}-attachment-${block.id}`}
                       fields={[{ id: block.id, label: block.label }]}
                       values={formData.values}
+                    />
+                  );
+                }
+
+                if (block.type === "part-e-schools") {
+                  return (
+                    <AdministrativePartE
+                      key={`${activeSection.id}-part-e-${blockIndex}`}
+                      value={formData.values?.[block.fieldId] || formData.values?.partESchools || []}
+                      coursesOffered={formData.tables?.coursesOffered || []}
+                      readOnly
                     />
                   );
                 }

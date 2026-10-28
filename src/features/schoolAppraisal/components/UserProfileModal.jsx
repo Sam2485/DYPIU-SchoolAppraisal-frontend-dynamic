@@ -199,6 +199,7 @@ export default function UserProfileModal({ profile, onClose, onSaved }) {
   const [email, setEmail] = useState(profile.email || "");
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl || "");
   const [avatarPreview, setAvatarPreview] = useState(profile.avatarUrl || "");
+  const [avatarLoadError, setAvatarLoadError] = useState(false);
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarCrop, setAvatarCrop] = useState({ zoom: 1, x: 0, y: 0 });
   const [avatarImageSize, setAvatarImageSize] = useState({ width: 0, height: 0 });
@@ -221,6 +222,7 @@ export default function UserProfileModal({ profile, onClose, onSaved }) {
         if (remote.avatarUrl && !selectedObjectUrlRef.current) {
           setAvatarUrl(remote.avatarUrl);
           setAvatarPreview(remote.avatarUrl);
+          setAvatarLoadError(false);
         }
       })
       .catch(() => {})
@@ -248,6 +250,7 @@ export default function UserProfileModal({ profile, onClose, onSaved }) {
     selectedObjectUrlRef.current = objectUrl;
     setAvatarFile(file);
     setAvatarPreview(objectUrl);
+    setAvatarLoadError(false);
     setAvatarCrop({ zoom: 1, x: 0, y: 0 });
     setBaseSize({ width: 0, height: 0 });
     event.target.value = "";
@@ -306,10 +309,35 @@ export default function UserProfileModal({ profile, onClose, onSaved }) {
         const adjustedAvatarFile = await createAdjustedAvatarFile(avatarPreview, avatarCrop, baseSize);
         nextAvatarUrl = (await uploadCurrentUserAvatar(adjustedAvatarFile)) || avatarUrl;
       }
-      onSaved({ name, email, avatarUrl: nextAvatarUrl });
+      setAvatarUrl(nextAvatarUrl);
+      setAvatarPreview(nextAvatarUrl);
+      setAvatarFile(null);
+      setAvatarLoadError(false);
+      sessionStorage.setItem("avatarUrl", nextAvatarUrl);
+      localStorage.setItem("avatarUrl", nextAvatarUrl);
+      onSaved?.({ name, email, avatarUrl: nextAvatarUrl });
       onClose();
     } catch (err) {
       setError(getApiErrorMessage(err, "Couldn't save your profile. Please try again."));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    setSaving(true);
+    setError("");
+    try {
+      await removeCurrentUserAvatar();
+      setAvatarUrl("");
+      setAvatarPreview("");
+      setAvatarFile(null);
+      setAvatarLoadError(false);
+      sessionStorage.removeItem("avatarUrl");
+      localStorage.removeItem("avatarUrl");
+      onSaved?.({ name, email, avatarUrl: "" });
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Couldn't remove your profile photo. Please try again."));
     } finally {
       setSaving(false);
     }
@@ -382,16 +410,36 @@ export default function UserProfileModal({ profile, onClose, onSaved }) {
           ) : (
             <>
               <div style={styles.profileModalAvatar}>
-                {avatarPreview ? (
-                  <img src={getAttachmentUrl(avatarPreview)} alt="" style={styles.profileModalAvatarImg} />
+                {avatarPreview && !avatarLoadError ? (
+                  <img
+                    src={getAttachmentUrl(avatarPreview)}
+                    alt={name || "Profile"}
+                    style={styles.profileModalAvatarImg}
+                    onError={() => setAvatarLoadError(true)}
+                  />
                 ) : (
                   <span>{initialsFromName(name) || "?"}</span>
                 )}
               </div>
-              <div>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
                 <button type="button" style={styles.uploadButton} onClick={() => fileInputRef.current?.click()}>
                   Change photo
                 </button>
+                {avatarPreview && (
+                  <button
+                    type="button"
+                    style={{
+                      ...styles.uploadButton,
+                      background: "transparent",
+                      color: "#ef4444",
+                      border: "1px solid #ef4444",
+                    }}
+                    onClick={handleRemovePhoto}
+                    disabled={saving}
+                  >
+                    Remove photo
+                  </button>
+                )}
               </div>
             </>
           )}

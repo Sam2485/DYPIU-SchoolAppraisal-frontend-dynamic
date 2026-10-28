@@ -13,6 +13,7 @@ import SubmissionConfirmation from "../components/SubmissionConfirmation";
 import { emptySubmissionConfirmation, isSubmissionConfirmed } from "../components/submissionConfirmationState";
 import { columnsWithSerial, serialColumnFor } from "../components/tableHelpers";
 import AdministrativeReportPanel from "./AdministrativeReportPanel";
+import AdministrativePartE from "./AdministrativePartE";
 import AppSidebar from "../components/AppSidebar";
 import UserProfileModal from "../components/UserProfileModal";
 import SubmitConfirmModal from "../components/SubmitConfirmModal";
@@ -20,6 +21,7 @@ import { AuditorSectionReviewPanel, buildAuditorSectionReview, isAuditorSection 
 import { getAttachmentUrl } from "../../../utils/attachment";
 import { scrollPageToTop } from "../../../utils/scrollToTop";
 import { fetchActiveSchema, fetchSchemaByVersion, fetchUniversityBranding } from "../../../api/config";
+import { resolveFieldValue } from "../../../utils/fieldResolver";
 
 const snapshotPayload = (entry = {}) => entry.submission || entry.snapshot || entry.data || entry;
 const responseList = (payload) => {
@@ -209,6 +211,7 @@ const moduleFieldsFor = (module) =>
     .flatMap((block) => {
       if (block.type === "fields") return block.fields;
       if (block.type === "attachment-field") return [{ id: block.id, initialValue: [] }];
+      if (block.type === "part-e-schools") return [{ id: block.fieldId, initialValue: [] }];
       return [];
     })
     .filter((field) => field.kind !== "heading");
@@ -445,26 +448,33 @@ export default function AdministrativeAuditDashboard() {
       isAuditorSection: sec.ownerRole === 'auditor' || sec.isAuditorSection === true,
       note: sec.description || '',
       tableButtons: sec.tableButtons,
-      blocks: [
-        ...(sec.fields?.length ? [{ type: 'fields', fields: sec.fields.map((f) => ({
-          id: f.fieldKey || f.idString || String(f.id),
-          label: f.label,
-          type: (f.fieldType || 'text').toLowerCase(),
-          options: Array.isArray(f.options) ? f.options : (typeof f.options === 'string' ? (JSON.parse(f.options || '[]') || []) : []),
-          required: f.isRequired,
-          placeholder: f.placeholder,
-        })) }] : []),
-        ...(sec.tables?.length ? [{ type: 'tables', tableButtons: sec.tableButtons, tables: sec.tables.map((t) => ({
-          id: t.tableKey || t.idString || String(t.id),
-          title: t.title,
-          isRepeatable: t.isRepeatable ?? true,
-          showTitle: t.showTitle ?? true,
-          columns: (t.fields && t.fields.length > 0)
-            ? t.fields.map((f) => f.label || f.fieldKey)
-            : (t.columns || []),
-          fields: t.fields || [],
-        })) }] : []),
-      ],
+      blocks: (sec.blocks && sec.blocks.length > 0)
+        ? sec.blocks
+        : [
+            ...(sec.fields?.length ? [{ type: 'fields', fields: sec.fields.map((f) => ({
+              id: f.fieldKey || f.idString || String(f.id),
+              rawId: f.id,
+              fieldKey: f.fieldKey || f.idString,
+              label: f.label,
+              type: (f.fieldType || 'text').toLowerCase(),
+              options: Array.isArray(f.options) ? f.options : (typeof f.options === 'string' ? (JSON.parse(f.options || '[]') || []) : []),
+              required: f.isRequired,
+              placeholder: f.placeholder,
+            })) }] : []),
+            ...(sec.tables?.length ? [{ type: 'tables', tableButtons: sec.tableButtons, tables: sec.tables.map((t) => ({
+              id: t.tableKey || t.idString || String(t.id),
+              rawId: t.id,
+              tableKey: t.tableKey || t.idString,
+              idString: t.idString || t.tableKey,
+              title: t.title,
+              isRepeatable: t.isRepeatable ?? true,
+              showTitle: t.showTitle ?? true,
+              columns: (t.fields && t.fields.length > 0)
+                ? t.fields.map((f) => f.label || f.fieldKey)
+                : (t.columns || []),
+              fields: t.fields || [],
+            })) }] : []),
+          ],
     }));
 
     return [
@@ -1080,6 +1090,11 @@ export default function AdministrativeAuditDashboard() {
               onSaved={(updates) => {
                 if (updates.name) sessionStorage.setItem("name", updates.name);
                 if (updates.email) sessionStorage.setItem("email", updates.email);
+                if (updates.avatarUrl !== undefined) {
+                  sessionStorage.setItem("avatarUrl", updates.avatarUrl || "");
+                  localStorage.setItem("avatarUrl", updates.avatarUrl || "");
+                  setAccountAvatarUrl(updates.avatarUrl || "");
+                }
                 setProfileOverrides((prev) => ({ ...prev, ...updates }));
               }}
             />
@@ -1268,6 +1283,20 @@ export default function AdministrativeAuditDashboard() {
                   );
                 }
 
+                if (block.type === "part-e-schools") {
+                  return (
+                    <AdministrativePartE
+                      key={`part-e-${index}`}
+                      value={data.fields[block.fieldId] || data.fields.partESchools || []}
+                      coursesOffered={data.tables.coursesOffered || []}
+                      onChange={(value) => setFieldValue(block.fieldId, value)}
+                      onUploadAttachment={uploadFormAttachments}
+                      onDeleteAttachment={deleteFormAttachment}
+                      readOnly={readOnly}
+                    />
+                  );
+                }
+
                 return (
                   <div key={`tables-${index}`} style={styles.tables}>
                     {(() => {
@@ -1277,7 +1306,7 @@ export default function AdministrativeAuditDashboard() {
                       );
 
                       const renderAdminTable = (table, overrideKey) => {
-                        const tableKey = overrideKey || table.scopedKey || table.id;
+                        const tableKey = overrideKey || table.scopedKey || table.tableKey || table.idString || table.id;
                         const tableWithKey = { ...table, scopedKey: tableKey };
                         return (
                           <AuditTable
@@ -1610,13 +1639,15 @@ function FieldGrid({ fields, data, onChange, readOnly = false }) {
           );
         }
 
+        const fieldKey = field.fieldKey || field.idString || field.id;
+        const fieldValue = resolveFieldValue ? resolveFieldValue(field, data.fields) : (data.fields[fieldKey] ?? data.fields[field.id] ?? "");
         return (
           <label className="audit-field" key={field.id} style={isWideField ? styles.wideField : styles.field}>
             <span style={styles.fieldLabel}>{field.label}</span>
             {field.type === "textarea" ? (
               <textarea
-                value={data.fields[field.id] ?? ""}
-                onChange={(event) => onChange(field.id, event.target.value)}
+                value={fieldValue}
+                onChange={(event) => onChange(fieldKey, event.target.value)}
                 className="audit-control"
                 style={styles.textarea}
                 rows={4}
@@ -1624,16 +1655,16 @@ function FieldGrid({ fields, data, onChange, readOnly = false }) {
               />
             ) : field.type === "date" ? (
               <DateInput
-                value={data.fields[field.id] ?? ""}
-                onChange={(value) => onChange(field.id, value)}
+                value={fieldValue}
+                onChange={(value) => onChange(fieldKey, value)}
                 className="audit-control"
                 style={styles.input}
                 readOnly={readOnly}
               />
             ) : (
               <input
-                value={data.fields[field.id] ?? ""}
-                onChange={(event) => onChange(field.id, event.target.value)}
+                value={fieldValue}
+                onChange={(event) => onChange(fieldKey, event.target.value)}
                 className="audit-control"
                 style={styles.input}
                 type="text"

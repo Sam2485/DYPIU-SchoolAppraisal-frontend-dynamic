@@ -31,6 +31,11 @@ export default function AppSidebar({
   onLogout,
   onOpenProfile,
 }) {
+  const [avatarError, setAvatarError] = useState(false);
+  useEffect(() => {
+    setAvatarError(false);
+  }, [profile?.avatarUrl]);
+
   const activeItem = items.find((item) => item.id === activeId);
   const hasYearSelector = Boolean(onYearChange && availableYears?.length);
   const isCurrentAcademicYear = (year) => currentAcademicYear && String(year) === String(currentAcademicYear);
@@ -263,10 +268,15 @@ export default function AppSidebar({
         aria-label="Open your profile"
       >
         <div className="app-sidebar__avatar">
-          {profile.avatarUrl ? (
-            <img className="app-sidebar__avatar-img" src={getAttachmentUrl(profile.avatarUrl)} alt="" />
+          {profile?.avatarUrl && !avatarError ? (
+            <img
+              className="app-sidebar__avatar-img"
+              src={getAttachmentUrl(profile.avatarUrl)}
+              alt=""
+              onError={() => setAvatarError(true)}
+            />
           ) : (
-            initialsFromName(profile.name) || badge
+            initialsFromName(profile?.name) || badge
           )}
         </div>
         <div className="app-sidebar__profile-copy">

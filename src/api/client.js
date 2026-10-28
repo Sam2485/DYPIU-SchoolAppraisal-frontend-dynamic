@@ -94,6 +94,9 @@ const storeUserProfile = (profile = {}) => {
   setSessionValue("auditorRole", auditorRole);
   setSessionValue("role", role);
   setSessionValue("academicYear", profile.academicYear || profile.currentAcademicYear || "");
+  if (profile.avatarUrl !== undefined) {
+    setSessionValue("avatarUrl", profile.avatarUrl || "");
+  }
 };
 
 const storeTokenSession = (accessToken, refreshToken) => {

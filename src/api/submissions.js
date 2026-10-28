@@ -219,6 +219,7 @@ export const normalizeUserProfile = (payload = {}) => {
     universityCode: user.universityCode || payload.universityCode || user.university_code || payload.university_code || "",
     universityName: user.universityName || payload.universityName || user.university_name || payload.university_name || "",
     academicYear: user.academicYear || user.currentAcademicYear || payload.academicYear || payload.currentAcademicYear || "",
+    avatarUrl: user.avatarUrl || payload.avatarUrl || user.avatar_url || payload.avatar_url || "",
     role: accountType === "auditor" ? auditorRole : rawRole,
   };
 };

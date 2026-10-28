@@ -4,6 +4,7 @@ import { columnsWithSerial, serialColumnFor } from "../components/tableHelpers";
 import { SIGN_OFF_FIELD, downloadSubmissionPdfReport, downloadSubmissionExcelReport, triggerBlobDownload } from "../../../api/submissions";
 import { formatDateDDMMYYYY } from "../../../utils/dateFormat";
 import { getAttachmentUrl } from "../../../utils/attachment";
+import AdministrativePartE from "./AdministrativePartE";
 import {
   partitionTablesByButtons,
   getActiveInstancesForButton,
@@ -352,6 +353,18 @@ export default function AdministrativeReportPanel({
                     key={`attachment-${block.id}`}
                     fields={[{ id: block.id, label: block.label }]}
                     values={combinedFields}
+                  />
+                );
+              }
+
+              if (block.type === "part-e-schools") {
+                return (
+                  <AdministrativePartE
+                    key={`part-e-${index}`}
+                    value={combinedFields[block.fieldId] || combinedFields.partESchools || []}
+                    coursesOffered={combinedTables.coursesOffered || []}
+                    readOnly
+                    showAllSchools
                   />
                 );
               }

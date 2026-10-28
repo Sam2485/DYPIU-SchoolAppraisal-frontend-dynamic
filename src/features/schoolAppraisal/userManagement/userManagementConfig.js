@@ -1,4 +1,13 @@
-export const SCHOOL_OPTIONS = [];
+export const SCHOOL_OPTIONS = [
+  { name: "School of Computer Science & Applications", code: "SoCSEA", group: "engineering" },
+  { name: "School of Bio-Engineering & Bio Science", code: "SoBB", group: "engineering" },
+  { name: "School of Continual Education", code: "SoCE", group: "engineering" },
+  { name: "School of Engineering, Management & Research", code: "SoEMR", group: "engineering" },
+  { name: "School of Commerce & Management", code: "SoCM", group: "nonEngineering" },
+  { name: "School of Media & Communication Studies", code: "SoMCS", group: "nonEngineering" },
+  { name: "School of Design", code: "SoD", group: "nonEngineering" },
+  { name: "School of Applied Arts", code: "SoAA", group: "nonEngineering" },
+];
 
 const normalizeSchoolValue = (value = "") =>
   String(value).trim().toLowerCase().replace(/[^a-z0-9]/g, "");
