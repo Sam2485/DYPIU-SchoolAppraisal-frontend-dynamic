@@ -169,6 +169,7 @@ export const dashboardForRole = (role) => {
     administrative: "/administrative/dashboard",
     "vice-chancellor": "/vice-chancellor/dashboard",
     iqac: "/iqac/dashboard",
+    dean: "/dean/dashboard",
   };
 
   return dashboards[normalizedRole] || "/login";

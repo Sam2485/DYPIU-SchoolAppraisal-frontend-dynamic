@@ -4,6 +4,7 @@ import Login from "./pages/auth/Login";
 import ResetPassword from "./pages/auth/ResetPassword";
 import AdministrativeDashboard from "./pages/administrative/AdministrativeDashboard";
 import AuditorDashboard from "./pages/auditor/AuditorDashboard";
+import DeanDashboard from "./pages/dean/DeanDashboard";
 import DirectorDashboard from "./pages/director/DirectorDashboard";
 import ReviewDashboardPage from "./pages/review/ReviewDashboardPage";
 import { dashboardForRole } from "./api/submissions";
@@ -115,6 +116,10 @@ function AppShell() {
         <Route
           path="/auditor/dashboard"
           element={<ProtectedRoute role="auditor"><AuditorDashboard /></ProtectedRoute>}
+        />
+        <Route
+          path="/dean/dashboard"
+          element={<ProtectedRoute role="dean"><DeanDashboard /></ProtectedRoute>}
         />
         <Route
           path="/review/dashboard"

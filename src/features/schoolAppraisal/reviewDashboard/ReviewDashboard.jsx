@@ -151,6 +151,12 @@ const REVIEW_ROLE_CONFIG = {
     roleTitle: "Auditor",
     roleText: "Assigned Audit Remarks",
   },
+  dean: {
+    badge: "DN",
+    title: "Dean Dashboard",
+    roleTitle: "Dean",
+    roleText: "Read-only Academic Forms",
+  },
 };
 
 const SCHOOL_GROUPS = {
@@ -638,7 +644,13 @@ const normalizeDynamicSchema = (schema) => {
       ...sec,
       id: sec.idString || sec.id || sec.sectionKey || `section-${idx + 1}`,
       sectionKey: sec.sectionKey || sec.idString || String(sec.id || `section-${idx + 1}`),
-      number: sec.number || sec.sectionNumber || (sec.sectionKey && sec.sectionKey.length <= 4 ? sec.sectionKey : String(idx + 1)),
+      // A bare digit here (the old `String(idx + 1)` fallback) is exactly what produced the
+      // "Part 4" phantom tab alongside real "Part A/B/C" tabs: this section is real, it just has
+      // no explicit number/sectionNumber and no short sectionKey to derive one from, so
+      // sectionLabelFor's `section.number` branch renders it verbatim as "Part 4" instead of
+      // falling through to its own letter-based fallback. Deriving a letter by position here
+      // keeps every section's label consistent with the others regardless of source.
+      number: sec.number || sec.sectionNumber || (sec.sectionKey && sec.sectionKey.length <= 4 ? sec.sectionKey : String.fromCharCode(65 + idx)),
       title: sec.title || sec.sectionTitle || sec.name || `Section ${idx + 1}`,
       ownerRole: sec.ownerRole || (sec.isAuditorSection ? "auditor" : "director-schools"),
       isAuditorSection: sec.ownerRole === "auditor" || sec.isAuditorSection === true || sec.auditorSection === true,
@@ -1039,20 +1051,9 @@ export const getSubmissionSchemaKey = (sub) => {
 
 export const resolveSubmissionSchema = async (sub) => {
   if (!sub) return null;
-  // Only trust an embedded sub.schema snapshot for an approved/archived report. For anything still
-  // in review, that field can be a frozen copy from whenever this submission/assignment record was
-  // last written (e.g. at auditor-assignment time) — IQAC may have republished the schema since
-  // (added/removed sections) and this snapshot never gets refreshed. Two auditors on the very same
-  // submission can end up with different embedded snapshots this way (one assigned before a
-  // republish, one after), each showing a different section count for what should be one shared
-  // form. Always defer to the live active schema below instead.
-  if (isApprovedReport(sub) && sub.schema && Array.isArray(sub.schema.sections) && sub.schema.sections.length > 0) {
-    return sub.schema;
-  }
   const key = getSubmissionSchemaKey(sub);
-  if (!key) return null;
 
-  if (schemaCache.has(key)) {
+  if (key && schemaCache.has(key)) {
     const cached = schemaCache.get(key);
     if (cached instanceof Promise) return await cached;
     return cached;
@@ -1071,6 +1072,17 @@ export const resolveSubmissionSchema = async (sub) => {
       } catch (e) {
         console.warn("Could not fetch schema by version", e);
       }
+    }
+
+    // Embedded sub.schema is only a fallback now, tried after the authoritative published-version
+    // fetch above — and always normalized rather than returned verbatim. It used to be returned
+    // directly and take priority over the version fetch for any approved report, which meant a
+    // submission whose embedded snapshot happened to carry a stale/orphaned extra section (e.g.
+    // one since removed from the published schema in Form Studio) rendered that phantom section as
+    // a permanent extra tab, even though fetching the actual published version by schemaVersionId
+    // would have returned the correct, current section set.
+    if (!dynamicSchema && isApprovedReport(sub) && sub.schema && Array.isArray(sub.schema.sections) && sub.schema.sections.length > 0) {
+      dynamicSchema = normalizeDynamicSchema(sub.schema);
     }
 
     if (!dynamicSchema) {
@@ -1876,7 +1888,7 @@ const buildAuditorAssignmentsForForwarding = (submission = {}, auditorType = "",
     }));
   });
 };
-const auditCategoryFromRole = (role = "") => role.includes("administrative") ? "administrative" : role.includes("academic") ? "academic" : "";
+const auditCategoryFromRole = (role = "") => role.includes("administrative") ? "administrative" : (role.includes("academic") || role === "dean") ? "academic" : "";
 const auditorTypeFromRole = (role = "") => role.includes("external") ? "external" : role.includes("internal") ? "internal" : "";
 const normalizeAuditor = (user = {}, index = 0) => {
   const role = normalizeUserRole(user.role || user.auditorRole);
@@ -2000,6 +2012,15 @@ const matchesAuditorSession = (submission, profile) => {
 const submissionVisibleForRole = (submission, role, profile = {}) => {
   if (role === "iqac") return true;
   if (role === "vice-chancellor") return true;
+  if (role === "dean") {
+    // Dean is a read-only, academic-only, multi-school viewer: visible for every status once the
+    // director has submitted (this endpoint already excludes drafts), for every school assigned to
+    // this Dean — unlike an auditor, visibility never depends on forwarding/assignment/status.
+    if (submission.auditType !== "academic") return false;
+    return academicSchoolsFor(profile).some((school) =>
+      assignmentMatches(school, submission.school, schoolAliasesFor)
+    );
+  }
   if (isAuditorRole(role) || isAuditorRole(profile?.role) || isAuditorRole(profile?.auditorRole)) {
     if (!matchesAuditorSession(submission, profile)) return false;
     const correctionRequested = currentAuditorCorrectionRequested(submission, profile);
@@ -2011,6 +2032,35 @@ const submissionVisibleForRole = (submission, role, profile = {}) => {
     return true;
   }
   return false;
+};
+
+// Once IQAC starts the external cycle for a school, that's a SEPARATE submission row from the
+// (by then approved) internal one, linked by previousApprovedSubmissionId/rootSubmissionId — both
+// rows keep matching the same school/year. Dean must only ever see one row per school per year: the
+// external one if it has been started at all (whatever its own status — draft through approved),
+// otherwise the internal one. Everything else (auditor/IQAC dashboards) intentionally keeps both
+// rows visible in their own separate places (the in-progress queue vs. the approved Reports
+// history), so this dedup is applied only for Dean's single merged view, not reused elsewhere.
+const currentCycleSubmissionsFor = (list = []) => {
+  const bySchoolYear = new Map();
+  list.forEach((submission) => {
+    const school = canonicalSchoolCode(submission.school) || String(submission.school || "").trim().toUpperCase();
+    const year = compactAcademicYear(submission.auditCycle || "");
+    const key = `${school}::${year}`;
+    const category = normalizeUserRole(submission.reportCategory) || "internal";
+    const existing = bySchoolYear.get(key);
+    if (!existing) {
+      bySchoolYear.set(key, submission);
+      return;
+    }
+    const existingCategory = normalizeUserRole(existing.reportCategory) || "internal";
+    if (category === "external" && existingCategory !== "external") {
+      bySchoolYear.set(key, submission);
+    } else if (category === existingCategory && Number(submission.version || 1) > Number(existing.version || 1)) {
+      bySchoolYear.set(key, submission);
+    }
+  });
+  return [...bySchoolYear.values()];
 };
 
 const normalizeSubmission = (submission = {}) => {
@@ -2252,6 +2302,7 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const role = String(sessionStorage.getItem("role") || "iqac").toLowerCase().replaceAll("_", "-");
   const isAuditor = dashboardKind === "auditor" || isAuditorRole(role);
+  const isDean = dashboardKind === "dean" || role === "dean";
   const isIqacDashboard = role === "iqac" && !isAuditor;
   const initialAuditorCategory = sessionStorage.getItem("category") || auditCategoryFromRole(role) || "academic";
   const defaultActiveView = isAuditor ? initialAuditorCategory : role === "vice-chancellor" ? "previous-reports" : "overview";
@@ -2477,18 +2528,25 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
 
     if (role === "vice-chancellor") return [];
 
+    // Dean is a single-page, read-only viewer: no intake queues, no advanced/admin views. Its
+    // one item is surfaced via pinnedNavigationItems instead (a flat, already-selected entry)
+    // rather than the "Appraisal form / Browse sections" dropdown, which only makes sense when
+    // there's actually more than one section to pick between.
+    if (isDean) return [];
+
     if (isIqacDashboard) {
       return REVIEW_NAV_ITEMS.filter((item) => item.id !== "advanced-overview");
     }
 
     return REVIEW_NAV_ITEMS;
-  }, [isAuditor, isIqacDashboard, profile.category, role]);
+  }, [isAuditor, isDean, isIqacDashboard, profile.category, role]);
   const pinnedNavigationItems = useMemo(() => {
+    if (isDean) return [{ id: "overview", title: "Academic Audits" }];
     if (isAuditor || !canManageUsers) return [];
     return [USER_MANAGEMENT_NAV_ITEM];
-  }, [canManageUsers, isAuditor]);
+  }, [canManageUsers, isAuditor, isDean]);
   const standaloneNavigationItems = useMemo(() => {
-    if (isAuditor) return [];
+    if (isAuditor || isDean) return [];
     if (role === "vice-chancellor") return [PREVIOUS_REPORTS_NAV_ITEM];
     const items = [];
     if (role === "iqac") {
@@ -2498,7 +2556,7 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
       items.push(INSTITUTION_PROFILE_NAV_ITEM);
     }
     return items;
-  }, [isAuditor, role]);
+  }, [isAuditor, isDean, role]);
   const visibleActiveView = !canManageUsers && activeView === "user-management" ? defaultActiveView : activeView;
   const currentCompactAcademicYear = compactAcademicYear(academicYear);
   const auditorReviewedSubmissions = useMemo(
@@ -2556,9 +2614,15 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
       ? submissions.administrative.filter((submission) => submissionVisibleForRole(submission, role, profile))
       : submissions.administrative.filter((submission) => !isAuditorCompleted(submission)),
   }), [isAuditor, profile, role, submissions]);
+  const deanSubmissions = useMemo(
+    () => currentCycleSubmissionsFor(submissions.academic),
+    [submissions.academic],
+  );
 
   useEffect(() => {
-    if (!isAuditor) return undefined;
+    // Dean also needs this fetch — same as an auditor, its multi-school assignment lives on the
+    // full user record (schools[]), not in sessionStorage.
+    if (!isAuditor && !isDean) return undefined;
 
     let isActive = true;
     const loadAuditorProfile = async () => {
@@ -2584,7 +2648,7 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
     return () => {
       isActive = false;
     };
-  }, [isAuditor, role, sessionProfile.auditorRole]);
+  }, [isAuditor, isDean, role, sessionProfile.auditorRole]);
 
   // sessionStorage never carries the avatar, and profileOverrides is only populated for the
   // rest of this session after a save in UserProfileModal — so without this, the sidebar
@@ -3624,9 +3688,10 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
               onReturnToAuditor={() => openCorrectionModal(selectedSubmission)}
               onCompleteAuditorReview={(values, attachments, tables, remarks) => completeAuditorReview(selectedSubmission, values, attachments, tables, remarks)}
               reviewingStatus={reviewingStatus}
-              canApprove={!isAuditor && isAuditorCompleted(selectedSubmission)}
+              canApprove={!isAuditor && !isDean && isAuditorCompleted(selectedSubmission)}
               canReturnToAuditor={
                 !isAuditor &&
+                !isDean &&
                 isAuditorCompleted(selectedSubmission) &&
                 !isApprovedReport(selectedSubmission) &&
                 (
@@ -3655,6 +3720,34 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
               downloadingPdf={downloadingPdfId === selectedSubmission.id}
               onDownloadExcel={handleDownloadExcelReport}
               downloadingExcel={downloadingExcelId === selectedSubmission.id}
+            />
+          ) : visibleActiveView === "overview" && isDean ? (
+            // Dean is a plain, read-only forms browser — no institutional hero/metrics dashboard
+            // and no IQAC-style coverage grid, just the academic submission list for the schools
+            // assigned to this Dean (submissions.academic is already scoped to those schools and
+            // every status, via submissionVisibleForRole; deanSubmissions further collapses each
+            // school/year down to its current cycle — external once started, else internal).
+            <AuditReviewPanel
+              key={academicYear}
+              auditType="academic"
+              submissions={deanSubmissions}
+              academicYear={academicYear}
+              showYearFilter={false}
+              activeGroup={activeGroup.academic}
+              onGroupChange={(group) => setActiveGroup((current) => ({ ...current, academic: group }))}
+              onOpen={(submission) => {
+                // openSubmission's default syncUrl behavior pushes view=<submission.auditType>
+                // ("academic") onto the URL, which doesn't match Dean's own nav id ("overview") —
+                // that mismatch sent "Back" to the shared academic-tab branch further down (built
+                // for auditor/IQAC's intake queue, which excludes approved/auditor-completed
+                // submissions) instead of back to this one. Set the route explicitly to Dean's own
+                // view instead of letting openSubmission guess it from the audit type.
+                setDashboardRouteState("overview", { submissionId: submission.id });
+                openSubmission(submission, { syncUrl: false });
+              }}
+              onForward={null}
+              loading={loadingSubmissions}
+              resolveSubmitterAvatar={resolveSubmitterAvatar}
             />
           ) : visibleActiveView === "overview" && isIqacDashboard ? (
             <AcademicAdministrativeSubmissionsPanel
@@ -5331,7 +5424,7 @@ function SchoolProgressPanel({ schools, loading }) {
   );
 }
 
-function AuditReviewPanel({ auditType, submissions, activeGroup, onGroupChange, onOpen, onForward, onDownload, downloadingAttachmentsId, loading, resolveSubmitterAvatar, academicYear }) {
+function AuditReviewPanel({ auditType, submissions, activeGroup, onGroupChange, onOpen, onForward, onDownload, downloadingAttachmentsId, loading, resolveSubmitterAvatar, academicYear, showYearFilter = true }) {
   const currentYear = compactAcademicYear(academicYear);
   const availableYears = useMemo(() => {
     const years = new Set([currentYear]);
@@ -5379,17 +5472,19 @@ function AuditReviewPanel({ auditType, submissions, activeGroup, onGroupChange, 
           <h2 style={styles.sectionTitle}>{auditLabels[auditType]} Reviews</h2>
         </div>
         <div style={styles.pageTitleActions}>
-          <label style={styles.yearFilter}>
-            <span>Academic year</span>
-            <select
-              className="audit-control"
-              value={effectiveSelectedYear}
-              onChange={(event) => setSelectedYear(event.target.value)}
-              style={styles.yearSelect}
-            >
-              {availableYears.map((year) => <option key={year} value={year}>{year}</option>)}
-            </select>
-          </label>
+          {showYearFilter && (
+            <label style={styles.yearFilter}>
+              <span>Academic year</span>
+              <select
+                className="audit-control"
+                value={effectiveSelectedYear}
+                onChange={(event) => setSelectedYear(event.target.value)}
+                style={styles.yearSelect}
+              >
+                {availableYears.map((year) => <option key={year} value={year}>{year}</option>)}
+              </select>
+            </label>
+          )}
           <span style={styles.schoolCount}>
             {auditType === "administrative"
               ? `${filtered.length} ${filtered.length === 1 ? "submission" : "submissions"}`
@@ -5884,19 +5979,24 @@ function PreviousReportOnlyView({
   onDownloadExcel,
   downloadingExcel,
 }) {
-  const [resolvedSchema, setResolvedSchema] = useState(submission.schema ? normalizeDynamicSchema(submission.schema) : null);
+  // Same rule as resolveSubmissionSchema/FullFormReview: an embedded submission.schema snapshot is
+  // only trustworthy for an approved/archived report — this view is normally only ever opened on
+  // one (it's the "previous reports" browser), but it took no submission at all when reached from
+  // elsewhere, unconditionally trusting whatever snapshot happened to be on the object.
+  const initialSchemaFromSubmission = (sub) =>
+    isApprovedReport(sub) && sub.schema ? normalizeDynamicSchema(sub.schema) : null;
+  const [resolvedSchema, setResolvedSchema] = useState(initialSchemaFromSubmission(submission));
 
   useEffect(() => {
     let isSubscribed = true;
-    if (submission.schema && Array.isArray(submission.schema.sections) && submission.schema.sections.length > 0) {
-      setResolvedSchema(normalizeDynamicSchema(submission.schema) || submission.schema);
-      return;
-    }
+    setResolvedSchema(initialSchemaFromSubmission(submission));
     const loadSchema = async () => {
       try {
         const dynamicSchema = await resolveSubmissionSchema(submission);
-        if (isSubscribed && dynamicSchema) {
+        if (isSubscribed && dynamicSchema && Array.isArray(dynamicSchema.sections) && dynamicSchema.sections.length > 0) {
           setResolvedSchema(dynamicSchema);
+        } else if (isSubscribed && submission.schema && isApprovedReport(submission)) {
+          setResolvedSchema(normalizeDynamicSchema(submission.schema) || submission.schema);
         }
       } catch (err) {
         console.warn("Could not dynamically resolve schema in PreviousReportOnlyView", err);
@@ -7486,6 +7586,12 @@ function SubmittedFormViewer({
                       tableButtons={sectionTableButtons}
                       sectionKey={getSectionKey(activeSection)}
                     />
+                    {isExternalCycle && previousInternalIqacRemarks && (
+                      <div style={{ marginTop: 12 }}>
+                        <h4 style={styles.partEReferenceTitle}>IQAC Internal Audit Review Remarks</h4>
+                        <p style={styles.reviewText}>{previousInternalIqacRemarks}</p>
+                      </div>
+                    )}
                   </div>
                 )}
                 {isExternalCycle && externalAssignments.length === 0 && (
@@ -7945,17 +8051,26 @@ function sectionLabelFor(section, index) {
 
   if (section.number && String(section.number).trim()) {
     const rawNum = String(section.number).trim();
-    if (/^[A-Za-z0-9]+$/.test(rawNum) && rawNum.length <= 4) {
-      return `Part ${rawNum.toUpperCase()}`;
-    }
-    if (/^part\s+/i.test(rawNum)) {
-      return rawNum.replace(/^part\s+/i, "Part ");
+    // A pure digit ("1", "2", "4"...) is a raw ordinal/display_order value, not a display letter —
+    // rendering it verbatim is exactly what produced a "Part 4" tab sitting next to "Part A/B/C"
+    // ones. This can come from either a live schema section with no real number, or — since an
+    // approved submission renders from its frozen section snapshot rather than the live schema —
+    // a value baked in at approval time under an older, buggy fallback. Skip a pure-digit value in
+    // both cases and fall through to the letter-by-position fallback below, so this self-corrects
+    // for already-approved historical submissions too, with no data migration needed.
+    if (!/^\d+$/.test(rawNum)) {
+      if (/^[A-Za-z0-9]+$/.test(rawNum) && rawNum.length <= 4) {
+        return `Part ${rawNum.toUpperCase()}`;
+      }
+      if (/^part\s+/i.test(rawNum)) {
+        return rawNum.replace(/^part\s+/i, "Part ");
+      }
     }
   }
 
   const title = String(section.title || "").trim();
   const partMatch = title.match(/^Part\s*([A-Za-z0-9]+)/i);
-  if (partMatch) {
+  if (partMatch && !/^\d+$/.test(partMatch[1])) {
     return `Part ${partMatch[1].toUpperCase()}`;
   }
 
@@ -8540,15 +8655,16 @@ function AuditorProgressPanel({ submission, compact = false, directoryUsers = []
                     {titleCase(assignment.auditorType || submission.forwardedAuditorType || "auditor")} - {displayPost}
                   </span>
                 </div>
-                <span style={auditorAssignmentSubmitted(assignment) ? styles.auditorProgressDone : styles.auditorProgressPending}>
-                  {auditorAssignmentSubmitted(assignment) ? "Submitted" : "Pending"}
-                </span>
                 <div style={styles.auditorAssignmentDocs}>
                   {documents.length ? documents.map((file) => (
                     <a key={attachmentKeyFor(file)} href={getAttachmentUrl(file.url)} target="_blank" rel="noreferrer">
                       {file.name || file.fileName || "Documentation"}
                     </a>
-                  )) : <span>No documentation uploaded</span>}
+                  )) : (
+                    <span style={auditorAssignmentSubmitted(assignment) ? styles.auditorProgressDone : styles.auditorProgressPending}>
+                      {auditorAssignmentSubmitted(assignment) ? "Submitted" : "Pending"}
+                    </span>
+                  )}
                 </div>
               </div>
             );
@@ -10149,7 +10265,10 @@ const styles = {
   },
   auditorAssignmentRow: {
     display: "grid",
-    gridTemplateColumns: "minmax(180px, 1fr) auto minmax(180px, .9fr)",
+    // Two columns now — the middle "auto" status column was removed when the status pill moved
+    // into the docs column (see AuditorProgressPanel); leaving three here stranded that pill in
+    // the middle slot instead of flush right.
+    gridTemplateColumns: "minmax(180px, 1fr) minmax(180px, .9fr)",
     alignItems: "center",
     gap: 10,
     border: "1px solid rgba(37, 99, 235, .16)",
