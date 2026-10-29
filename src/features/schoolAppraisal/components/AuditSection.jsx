@@ -2,7 +2,7 @@
 import { useMemo } from "react";
 import AuditTable from "./AuditTable";
 import { TableButtonGroup } from "./TableButtonGroup";
-import { partitionTablesByButtons, buildScopedTableKey, getScopedTableRows, normalizeTableButtons, getSectionKey } from "../utils/tableButtonHelpers";
+import { partitionTablesByButtons, buildScopedTableKey, getScopedTableRows, normalizeTableButtons, getSectionKey, isTextFieldBlock } from "../utils/tableButtonHelpers";
 import DateInput from "./DateInput";
 import { columnsWithSerial, serialColumnFor, numberedRowFor, withSerialNumbers, emptyRowFor } from "./tableHelpers";
 import { getAttachmentUrl } from "../../../utils/attachment";
@@ -695,6 +695,47 @@ function TableList({ tableDefinitions, tableValues, values, tableButtons, onFiel
     const rows = activeInstance
       ? (getScopedTableRows(tableValues, tableWithKey, activeInstance, context) || [])
       : (tableValues[tableKey] || (!isScoped ? ((table.id != null ? tableValues[table.id] : []) || (table.tableKey ? tableValues[table.tableKey] : [])) : []) || []);
+
+    if (isTextFieldBlock(table)) {
+      const field = table.fields?.[0] || { fieldType: 'TEXTAREA', label: table.title, fieldKey: 'value' };
+      const rawVal = rows?.[0]?.value ?? values?.[tableKey] ?? "";
+      const isTextArea = String(field.fieldType || "").toUpperCase() === "TEXTAREA" || !field.fieldType;
+      return (
+        <div key={table.id ? `${table.id}_${tableKey}` : tableKey} style={{ ...styles.section, marginBottom: "var(--space-6)", padding: "var(--space-6)", background: "var(--card)", borderRadius: "var(--radius-lg)", border: "1px solid var(--border)" }}>
+          <label style={{ display: "block", fontWeight: 700, fontSize: "var(--text-base)", color: "var(--ink)", marginBottom: "var(--space-2)" }}>
+            {table.title} {field.isRequired && <span style={{ color: "var(--red-500)" }}>*</span>}
+          </label>
+          {readOnly ? (
+            <div style={{ padding: "10px 14px", background: "var(--bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", minHeight: isTextArea ? "80px" : "40px", whiteSpace: "pre-wrap", color: "var(--ink)", fontSize: "var(--text-base)" }}>
+              {rawVal || <span style={{ color: "var(--muted)" }}>-</span>}
+            </div>
+          ) : isTextArea ? (
+            <textarea
+              rows={4}
+              placeholder={field.placeholder || `Enter ${table.title}...`}
+              value={rawVal}
+              onChange={(e) => {
+                onTableChange(tableKey, 0, "value", e.target.value);
+                if (onFieldChange) onFieldChange(tableKey, e.target.value);
+              }}
+              style={{ width: "100%", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-strong)", padding: "10px 12px", fontSize: "var(--text-base)", color: "var(--ink)", resize: "vertical", boxSizing: "border-box" }}
+            />
+          ) : (
+            <input
+              type="text"
+              placeholder={field.placeholder || `Enter ${table.title}...`}
+              value={rawVal}
+              onChange={(e) => {
+                onTableChange(tableKey, 0, "value", e.target.value);
+                if (onFieldChange) onFieldChange(tableKey, e.target.value);
+              }}
+              style={{ width: "100%", height: "40px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-strong)", padding: "0 12px", fontSize: "var(--text-base)", color: "var(--ink)", boxSizing: "border-box" }}
+            />
+          )}
+        </div>
+      );
+    }
+
     return (
       <AuditTable
         key={table.id ? `${table.id}_${tableKey}` : tableKey}

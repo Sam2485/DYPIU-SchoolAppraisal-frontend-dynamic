@@ -33,7 +33,7 @@ import { InlineSpinner, LoadingState, SkeletonList } from "../components/Loading
 import { columnsWithSerial, serialColumnFor, numberedRowFor, withSerialNumbers } from "../components/tableHelpers";
 import AuditTable from "../components/AuditTable";
 import { TableButtonGroup } from "../components/TableButtonGroup";
-import { partitionTablesByButtons, getScopedTableRows, buildScopedTableKey, normalizeTableButtons, getSectionKey } from "../utils/tableButtonHelpers";
+import { partitionTablesByButtons, getScopedTableRows, buildScopedTableKey, normalizeTableButtons, getSectionKey, isTextFieldBlock } from "../utils/tableButtonHelpers";
 import UserProfileModal from "../components/UserProfileModal";
 import SubmitConfirmModal from "../components/SubmitConfirmModal";
 import AdministrativeReportPanel from "../administrativeAudit/AdministrativeReportPanel";
@@ -8274,6 +8274,18 @@ function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType,
 }
 
 function ReadOnlyTable({ table, rows = [], values = {} }) {
+  if (isTextFieldBlock(table)) {
+    const rawVal = rows?.[0]?.value ?? values?.[table.tableKey || table.idString || table.id] ?? "";
+    return (
+      <div style={styles.readOnlyTableBlock}>
+        {table.showTitle !== false && <h4 style={styles.readOnlyTableTitle}>{table.title}</h4>}
+        <div style={{ padding: "10px 14px", background: "var(--bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", minHeight: "40px", whiteSpace: "pre-wrap", color: "var(--ink)", fontSize: "var(--text-base)" }}>
+          {rawVal || <span style={{ color: "var(--muted)" }}>-</span>}
+        </div>
+      </div>
+    );
+  }
+
   const columns = resolveTableColumns(table);
   const visibleRows = (Array.isArray(rows) && rows.length > 0)
     ? withSerialNumbers(columns, rows)

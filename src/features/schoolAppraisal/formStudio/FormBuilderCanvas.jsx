@@ -16,6 +16,7 @@ import {
   reorderSections,
   reorderTables,
   reorderFields,
+  reorderSectionFields,
   copyTable,
   getAvailableTables,
   getUniversityPosts,
@@ -25,6 +26,7 @@ import { ExcelFullSchemaImportModal } from './ExcelFullSchemaImportModal';
 import {
   normalizeTableButtons,
   isTableAssignedToButton,
+  isTextFieldBlock,
 } from '../utils/tableButtonHelpers';
 
 const isReviewRemarkField = (f) => {
@@ -91,6 +93,22 @@ export const FormBuilderCanvas = ({
     data: { id: null, title: '', tableKey: '', isRepeatable: true, showTitle: true },
   });
 
+  // Standalone Text Field Block Modal State (in section stream, alongside tables)
+  const [textFieldBlockModal, setTextFieldBlockModal] = useState({
+    show: false,
+    sectionId: null,
+    isEdit: false,
+    tableId: null,
+    fieldId: null,
+    data: {
+      title: '',
+      tableKey: '',
+      fieldType: 'TEXTAREA',
+      placeholder: '',
+      isRequired: false,
+    },
+  });
+
   // Copy Table Modal State (Academic Flow Only)
   const [copyTableModal, setCopyTableModal] = useState({
     show: false,
@@ -108,6 +126,8 @@ export const FormBuilderCanvas = ({
     sectionId: null,
     tableId: null,
     isEdit: false,
+    isReviewField: false,
+    isTextField: false,
     data: {
       id: null,
       label: '',
@@ -564,6 +584,115 @@ export const FormBuilderCanvas = ({
     }
   };
 
+  // Standalone Text Field Block Handlers (in section body alongside tables)
+  const handleOpenAddTextFieldBlock = (secId) => {
+    setTextFieldBlockModal({
+      show: true,
+      sectionId: secId,
+      isEdit: false,
+      tableId: null,
+      fieldId: null,
+      data: {
+        title: '',
+        tableKey: '',
+        fieldType: 'TEXTAREA',
+        placeholder: '',
+        isRequired: false,
+      },
+    });
+  };
+
+  const handleOpenEditTextFieldBlock = (tbl, secId) => {
+    const f = tbl.fields?.[0] || {};
+    setTextFieldBlockModal({
+      show: true,
+      sectionId: secId,
+      isEdit: true,
+      tableId: tbl.id,
+      fieldId: f.id || null,
+      data: {
+        title: tbl.title || '',
+        tableKey: tbl.tableKey || '',
+        fieldType: f.fieldType || 'TEXTAREA',
+        placeholder: f.placeholder || '',
+        isRequired: Boolean(f.isRequired),
+      },
+    });
+  };
+
+  const handleSaveTextFieldBlock = async (e) => {
+    e.preventDefault();
+    try {
+      const { title, tableKey, fieldType, placeholder, isRequired } = textFieldBlockModal.data;
+      if (!title?.trim()) {
+        toast.error('Field title/label is required');
+        return;
+      }
+
+      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+      const rawKey = tableKey?.trim() ? tableKey.trim() : slug;
+      const candidateKey = rawKey.toLowerCase().startsWith('textfield_')
+        ? rawKey
+        : `textfield_${rawKey}`;
+
+      if (textFieldBlockModal.isEdit) {
+        await updateTable(textFieldBlockModal.tableId, {
+          title: title.trim(),
+          tableKey: candidateKey,
+          isRepeatable: false,
+          showTitle: true,
+        });
+
+        if (textFieldBlockModal.fieldId) {
+          await updateField(textFieldBlockModal.fieldId, {
+            label: title.trim(),
+            fieldKey: 'value',
+            fieldType,
+            isRequired,
+            placeholder,
+          });
+        } else {
+          await createField(textFieldBlockModal.sectionId, {
+            tableId: textFieldBlockModal.tableId,
+            label: title.trim(),
+            fieldKey: 'value',
+            fieldType,
+            isRequired,
+            placeholder,
+          });
+        }
+        toast.success('Text field updated');
+      } else {
+        const newTbl = await createTable(textFieldBlockModal.sectionId, {
+          sectionId: textFieldBlockModal.sectionId,
+          title: title.trim(),
+          tableKey: candidateKey,
+          isRepeatable: false,
+          showTitle: true,
+        });
+
+        if (newTbl?.id) {
+          await createField(textFieldBlockModal.sectionId, {
+            sectionId: textFieldBlockModal.sectionId,
+            tableId: newTbl.id,
+            label: title.trim(),
+            fieldKey: 'value',
+            fieldType,
+            isRequired,
+            placeholder,
+          });
+        }
+        toast.success('Text field added to section');
+      }
+
+      setTextFieldBlockModal({ ...textFieldBlockModal, show: false });
+      await loadTree();
+    } catch (err) {
+      console.error('Failed to save text field:', err);
+      toast.error('Failed to save text field: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
   const handleMoveTable = async (tbl, tIdx, direction) => {
     if (!currentSection?.tables) return;
     const targetIdx = direction === 'up' ? tIdx - 1 : tIdx + 1;
@@ -637,6 +766,28 @@ export const FormBuilderCanvas = ({
       tableId: tblId,
       isEdit: false,
       isReviewField: false,
+      isTextField: false,
+      data: {
+        id: null,
+        label: '',
+        fieldKey: '',
+        fieldType: 'TEXT',
+        kind: null,
+        isRequired: false,
+        placeholder: '',
+        optionsString: '',
+      },
+    });
+  };
+
+  const handleOpenAddTextField = (secId, tblId = null) => {
+    setFieldModal({
+      show: true,
+      sectionId: secId,
+      tableId: tblId,
+      isEdit: false,
+      isReviewField: false,
+      isTextField: true,
       data: {
         id: null,
         label: '',
@@ -657,6 +808,7 @@ export const FormBuilderCanvas = ({
       tableId: null,
       isEdit: false,
       isReviewField: true,
+      isTextField: false,
       data: {
         id: null,
         label: 'Review Remarks / Observations',
@@ -672,12 +824,14 @@ export const FormBuilderCanvas = ({
 
   const handleOpenEditField = (f, secId, tblId = null) => {
     const isReview = isReviewRemarkField(f);
+    const isText = (f.fieldType === 'TEXT' || f.fieldType === 'TEXTAREA') && !isReview;
     setFieldModal({
       show: true,
       sectionId: secId,
       tableId: tblId,
       isEdit: true,
       isReviewField: isReview,
+      isTextField: isText,
       data: {
         id: f.id,
         label: f.label || '',
@@ -698,12 +852,16 @@ export const FormBuilderCanvas = ({
         ? JSON.stringify(fieldModal.data.optionsString.split(',').map((s) => s.trim()).filter(Boolean))
         : null;
 
+      const computedKind = fieldModal.data.fieldType === 'HEADING'
+        ? 'heading'
+        : (fieldModal.data.kind || (fieldModal.isReviewField ? 'review' : null));
+
       if (fieldModal.isEdit) {
         await updateField(fieldModal.data.id, {
           label: fieldModal.data.label,
           fieldKey: fieldModal.data.fieldKey,
           fieldType: fieldModal.data.fieldType,
-          kind: fieldModal.data.kind || (fieldModal.isReviewField ? 'review' : null),
+          kind: computedKind,
           isRequired: fieldModal.data.isRequired,
           placeholder: fieldModal.data.placeholder,
           options: opts,
@@ -715,7 +873,7 @@ export const FormBuilderCanvas = ({
           label: fieldModal.data.label,
           fieldKey: fieldModal.data.fieldKey,
           fieldType: fieldModal.data.fieldType,
-          kind: fieldModal.data.kind || (fieldModal.isReviewField ? 'review' : null),
+          kind: computedKind,
           isRequired: fieldModal.data.isRequired,
           placeholder: fieldModal.data.placeholder,
           options: opts,
@@ -723,6 +881,7 @@ export const FormBuilderCanvas = ({
       }
       setFieldModal({ ...fieldModal, show: false });
       await loadTree();
+      toast.success(fieldModal.isEdit ? 'Field updated' : 'Field added');
     } catch (err) {
       toast.error('Error saving field/column: ' + err.message);
     }
@@ -755,6 +914,37 @@ export const FormBuilderCanvas = ({
     } catch (err) {
       console.error('Failed to reorder fields:', err);
       toast.error('Failed to save column order: ' + err.message);
+      await loadTree();
+    }
+  };
+
+  const handleMoveSectionField = async (section, fIdx, direction) => {
+    if (!section?.fields) return;
+    const headerFields = section.fields.filter((f) => !isReviewRemarkField(f));
+    const reviewFields = section.fields.filter((f) => isReviewRemarkField(f));
+
+    const targetIdx = direction === 'up' ? fIdx - 1 : fIdx + 1;
+    if (targetIdx < 0 || targetIdx >= headerFields.length) return;
+
+    const headerFieldsCopy = [...headerFields];
+    const [moved] = headerFieldsCopy.splice(fIdx, 1);
+    headerFieldsCopy.splice(targetIdx, 0, moved);
+
+    const allUpdatedFields = [...headerFieldsCopy, ...reviewFields];
+    const orderedIds = allUpdatedFields.map((f) => f.id);
+
+    // Optimistically update tree state
+    const updatedSections = tree.sections.map((s) =>
+      s.id === section.id ? { ...s, fields: allUpdatedFields } : s
+    );
+    setTree({ ...tree, sections: updatedSections });
+
+    try {
+      await reorderSectionFields(section.id, orderedIds);
+      await loadTree();
+    } catch (err) {
+      console.error('Failed to reorder section fields:', err);
+      toast.error('Failed to save field order: ' + err.message);
       await loadTree();
     }
   };
@@ -1080,53 +1270,180 @@ export const FormBuilderCanvas = ({
 
               {/* Top-Level Fields in Section */}
               <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: "var(--radius-lg)", padding: "var(--space-7)", marginBottom: "var(--space-9)", boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: "var(--space-6)" }}>
-                  <h4 style={{ margin: 0, fontWeight: 700, color: 'var(--ink)', fontSize: "var(--text-md)" }}>📌 Header Fields (Non-table Inputs)</h4>
-                  <button
-                    type="button"
-                    style={{ padding: '5px 12px', borderRadius: "var(--radius-sm)", border: '1px solid #93c5fd', background: 'var(--accent-soft)', color: 'var(--primary-dark)', fontWeight: 600, fontSize: "var(--text-base)", cursor: 'pointer' }}
-                    onClick={() => handleOpenAddField(currentSection.id, null)}
-                  >
-                    + Add Header Field
-                  </button>
-                </div>
-
                 {(() => {
                   const headerFields = (currentSection.fields || []).filter(
                     (f) => !isReviewRemarkField(f)
                   );
-                  return headerFields.length > 0 ? (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: "var(--space-4)" }}>
-                      {headerFields.map((f) => (
-                        <div key={f.id} style={{ padding: '10px 12px', border: '1px solid var(--border)', borderRadius: "var(--radius-sm)", background: 'var(--bg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div>
-                            <span style={{ fontWeight: 700, fontSize: "var(--text-base)", color: 'var(--ink)' }}>{f.label}</span>
-                            <span style={{ fontSize: "var(--text-2xs)", fontWeight: 700, padding: '2px 6px', background: '#e0f2fe', color: '#0369a1', borderRadius: "var(--radius-2xs)", marginLeft: "var(--space-2)" }}>
-                              {f.fieldType}
+                  return (
+                    <>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: "var(--space-6)", flexWrap: 'wrap', gap: "var(--space-3)" }}>
+                        <div>
+                          <h4 style={{ margin: 0, fontWeight: 700, color: 'var(--ink)', fontSize: "var(--text-md)", display: 'flex', alignItems: 'center', gap: "var(--space-2)" }}>
+                            <span>📌 Header & Text Fields (Non-table Inputs)</span>
+                            <span style={{ fontSize: "var(--text-xs)", background: 'var(--bg-alt)', color: 'var(--muted)', padding: '2px 8px', borderRadius: "var(--radius-pill)", fontWeight: 600 }}>
+                              {headerFields.length}
                             </span>
-                            {f.isRequired && <span style={{ color: 'var(--red-500)', marginLeft: "var(--space-1)" }}>*</span>}
-                          </div>
-                          <div style={{ display: 'flex', gap: "var(--space-1)" }}>
-                            <button
-                              type="button"
-                              style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px' }}
-                              onClick={() => handleOpenEditField(f, currentSection.id, null)}
-                            >
-                              ✏️
-                            </button>
-                            <button
-                              type="button"
-                              style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px', color: 'var(--red-500)' }}
-                              onClick={() => handleDeleteField(f.id)}
-                            >
-                              ✕
-                            </button>
-                          </div>
+                          </h4>
+                          <p style={{ margin: '3px 0 0', color: 'var(--muted)', fontSize: "var(--text-base)" }}>
+                            Top-level non-table inputs rendered in this section. Use the arrow controls to rearrange their order in the form.
+                          </p>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p style={{ color: 'var(--muted)', fontSize: "var(--text-base)", margin: 0 }}>No header fields in this section.</p>
+                        <div style={{ display: 'flex', gap: "var(--space-2)", alignItems: 'center', flexWrap: 'wrap' }}>
+                          <button
+                            type="button"
+                            style={{ padding: '6px 14px', borderRadius: "var(--radius-sm)", border: '1px solid #93c5fd', background: 'var(--accent-soft)', color: 'var(--primary-dark)', fontWeight: 700, fontSize: "var(--text-base)", cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                            onClick={() => handleOpenAddTextField(currentSection.id, null)}
+                            title="Add a single-line or multi-line text input field"
+                          >
+                            <span>➕ Add Text Field</span>
+                          </button>
+                          <button
+                            type="button"
+                            style={{ padding: '6px 14px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', background: 'var(--card)', color: '#334155', fontWeight: 600, fontSize: "var(--text-base)", cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                            onClick={() => handleOpenAddField(currentSection.id, null)}
+                            title="Add any header / non-table field (File, Dropdown, Date, Heading, etc.)"
+                          >
+                            <span>+ Add Header Field</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {headerFields.length > 0 ? (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: "var(--space-4)" }}>
+                          {headerFields.map((f, fIdx) => (
+                            <div
+                              key={f.id}
+                              style={{
+                                padding: '10px 12px',
+                                border: '1px solid var(--border)',
+                                borderRadius: "var(--radius-sm)",
+                                background: 'var(--bg)',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                gap: "var(--space-3)",
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-2)", minWidth: 0, flex: 1 }}>
+                                {/* Move Up / Down Buttons */}
+                                {headerFields.length > 1 && (
+                                  <div style={{ display: 'inline-flex', flexDirection: 'column', gap: '1px', flexShrink: 0 }}>
+                                    <button
+                                      type="button"
+                                      disabled={fIdx === 0}
+                                      style={{
+                                        border: 'none',
+                                        background: fIdx === 0 ? 'transparent' : 'var(--card)',
+                                        color: fIdx === 0 ? 'var(--border-strong)' : 'var(--muted)',
+                                        cursor: fIdx === 0 ? 'not-allowed' : 'pointer',
+                                        fontSize: "var(--text-3xs)",
+                                        lineHeight: '1',
+                                        padding: '1px 4px',
+                                        borderRadius: "var(--radius-2xs)",
+                                      }}
+                                      onClick={() => handleMoveSectionField(currentSection, fIdx, 'up')}
+                                      title="Move Field Up (Earlier in form)"
+                                    >
+                                      ▲
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={fIdx === headerFields.length - 1}
+                                      style={{
+                                        border: 'none',
+                                        background: fIdx === headerFields.length - 1 ? 'transparent' : 'var(--card)',
+                                        color: fIdx === headerFields.length - 1 ? 'var(--border-strong)' : 'var(--muted)',
+                                        cursor: fIdx === headerFields.length - 1 ? 'not-allowed' : 'pointer',
+                                        fontSize: "var(--text-3xs)",
+                                        lineHeight: '1',
+                                        padding: '1px 4px',
+                                        borderRadius: "var(--radius-2xs)",
+                                      }}
+                                      onClick={() => handleMoveSectionField(currentSection, fIdx, 'down')}
+                                      title="Move Field Down (Later in form)"
+                                    >
+                                      ▼
+                                    </button>
+                                  </div>
+                                )}
+
+                                {/* Position index badge */}
+                                <span
+                                  style={{
+                                    display: 'inline-block',
+                                    minWidth: '22px',
+                                    padding: '1px 4px',
+                                    background: 'var(--bg-alt)',
+                                    color: 'var(--muted)',
+                                    borderRadius: "var(--radius-2xs)",
+                                    fontSize: "var(--text-3xs)",
+                                    fontWeight: 800,
+                                    textAlign: 'center',
+                                    flexShrink: 0,
+                                  }}
+                                  title={`Position #${fIdx + 1} in section`}
+                                >
+                                  #{fIdx + 1}
+                                </span>
+
+                                <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                                  <span
+                                    style={{
+                                      fontWeight: 700,
+                                      fontSize: "var(--text-base)",
+                                      color: 'var(--ink)',
+                                      display: 'inline-block',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap',
+                                      maxWidth: '100%',
+                                    }}
+                                    title={f.label}
+                                  >
+                                    {f.label}
+                                  </span>
+                                  <span
+                                    style={{
+                                      fontSize: "var(--text-2xs)",
+                                      fontWeight: 700,
+                                      padding: '2px 6px',
+                                      background: f.kind === 'heading' || f.fieldType === 'HEADING' ? '#f3e8ff' : '#e0f2fe',
+                                      color: f.kind === 'heading' || f.fieldType === 'HEADING' ? '#7e22ce' : '#0369a1',
+                                      borderRadius: "var(--radius-2xs)",
+                                      marginLeft: "var(--space-2)",
+                                      flexShrink: 0,
+                                    }}
+                                  >
+                                    {f.kind === 'heading' ? 'HEADING' : f.fieldType}
+                                  </span>
+                                  {f.isRequired && <span style={{ color: 'var(--red-500)', marginLeft: "var(--space-1)" }}>*</span>}
+                                </div>
+                              </div>
+                              <div style={{ display: 'flex', gap: "var(--space-1)", flexShrink: 0 }}>
+                                <button
+                                  type="button"
+                                  style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px' }}
+                                  onClick={() => handleOpenEditField(f, currentSection.id, null)}
+                                  title="Edit Field"
+                                >
+                                  ✏️
+                                </button>
+                                <button
+                                  type="button"
+                                  style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px', color: 'var(--red-500)' }}
+                                  onClick={() => handleDeleteField(f.id)}
+                                  title="Delete Field"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p style={{ color: 'var(--muted)', fontSize: "var(--text-base)", margin: 0 }}>No header or text fields in this section.</p>
+                      )}
+                    </>
                   );
                 })()}
               </div>
@@ -1252,10 +1569,39 @@ export const FormBuilderCanvas = ({
                 })()}
               </div>
 
-              {/* Tables in Section */}
+              {/* Tables & Form Elements in Section */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: "var(--space-7)", flexWrap: 'wrap', gap: "var(--space-4)" }}>
-                <h4 style={{ margin: 0, fontWeight: 800, color: 'var(--ink)', fontSize: "var(--text-lg)" }}>📊 Tables in Section</h4>
-                <div style={{ display: 'flex', gap: "var(--space-3)", flexWrap: 'wrap' }}>
+                <div>
+                  <h4 style={{ margin: 0, fontWeight: 800, color: 'var(--ink)', fontSize: "var(--text-lg)" }}>
+                    📊 Tables & Form Inputs in Section
+                  </h4>
+                  <p style={{ margin: '2px 0 0', color: 'var(--muted)', fontSize: "var(--text-base)" }}>
+                    Tables and standalone text fields rendered in this section. Rearrange them freely with ▲ Up and ▼ Down controls.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: "var(--space-3)", flexWrap: 'wrap', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: "var(--radius-sm)",
+                      border: '1px solid #93c5fd',
+                      background: 'var(--accent-soft)',
+                      color: 'var(--primary-dark)',
+                      fontWeight: 700,
+                      fontSize: "var(--text-base)",
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: "var(--space-2)",
+                    }}
+                    onClick={() => handleOpenAddTextFieldBlock(currentSection.id)}
+                    title="Add a standalone text field or textarea anywhere in this section"
+                  >
+                    <span>➕</span>
+                    <span>Add Text Field</span>
+                  </button>
+
                   {/* Excel Import button */}
                   <button
                     type="button"
@@ -1300,8 +1646,110 @@ export const FormBuilderCanvas = ({
               </div>
 
               {currentSection.tables && currentSection.tables.length > 0 ? (
-                currentSection.tables.map((tbl, tIdx) => (
-                  <div key={tbl.id} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: "var(--radius-lg)", padding: "var(--space-8)", marginBottom: "var(--space-8)", boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                currentSection.tables.map((tbl, tIdx) => {
+                  if (isTextFieldBlock(tbl)) {
+                    const f = tbl.fields?.[0] || {};
+                    return (
+                      <div
+                        key={tbl.id}
+                        style={{
+                          background: 'var(--card)',
+                          border: '1.5px solid #bfdbfe',
+                          borderRadius: "var(--radius-lg)",
+                          padding: "var(--space-7)",
+                          marginBottom: "var(--space-8)",
+                          boxShadow: '0 2px 5px rgba(59,130,246,0.05)',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: "var(--space-4)" }}>
+                          <div style={{ flex: 1, minWidth: '240px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-3)", flexWrap: 'wrap', marginBottom: "var(--space-2)" }}>
+                              <h4 style={{ margin: 0, fontWeight: 700, color: 'var(--ink)', fontSize: "var(--text-md)" }}>
+                                {tIdx + 1}. {tbl.title}
+                              </h4>
+                              <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, padding: '2px 8px', borderRadius: "var(--radius-pill)", background: '#dbeafe', color: '#1e40af', border: '1px solid #bfdbfe' }}>
+                                📝 Standalone Text Field
+                              </span>
+                              <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, padding: '2px 8px', borderRadius: "var(--radius-pill)", background: '#f1f5f9', color: '#475569' }}>
+                                {f.fieldType || 'TEXTAREA'}
+                              </span>
+                              {f.isRequired && (
+                                <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, padding: '2px 8px', borderRadius: "var(--radius-pill)", background: '#fee2e2', color: '#b91c1c' }}>
+                                  Required
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ color: 'var(--muted)', fontSize: "var(--text-base)" }}>
+                              Key: <code>{tbl.tableKey}</code>
+                              {f.placeholder && <span style={{ marginLeft: "var(--space-2)" }}>• Placeholder: "<em>{f.placeholder}</em>"</span>}
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', gap: "var(--space-2)", alignItems: 'center', flexWrap: 'wrap' }}>
+                            {/* Sequence Reordering (SAME AS TABLES!) */}
+                            {currentSection.tables.length > 1 && (
+                              <div style={{ display: 'inline-flex', border: '1px solid var(--border-strong)', borderRadius: "var(--radius-sm)", overflow: 'hidden', background: 'var(--card)' }}>
+                                <button
+                                  type="button"
+                                  disabled={tIdx === 0}
+                                  style={{
+                                    border: 'none',
+                                    background: tIdx === 0 ? 'var(--bg)' : 'var(--card)',
+                                    color: tIdx === 0 ? 'var(--border-strong)' : '#334155',
+                                    cursor: tIdx === 0 ? 'not-allowed' : 'pointer',
+                                    padding: '4px 8px',
+                                    fontSize: "var(--text-xs)",
+                                    fontWeight: 700,
+                                    borderRight: '1px solid var(--border)',
+                                  }}
+                                  onClick={() => handleMoveTable(tbl, tIdx, 'up')}
+                                  title="Move Text Field Up"
+                                >
+                                  ▲ Up
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={tIdx === currentSection.tables.length - 1}
+                                  style={{
+                                    border: 'none',
+                                    background: tIdx === currentSection.tables.length - 1 ? 'var(--bg)' : 'var(--card)',
+                                    color: tIdx === currentSection.tables.length - 1 ? 'var(--border-strong)' : '#334155',
+                                    cursor: tIdx === currentSection.tables.length - 1 ? 'not-allowed' : 'pointer',
+                                    padding: '4px 8px',
+                                    fontSize: "var(--text-xs)",
+                                    fontWeight: 700,
+                                  }}
+                                  onClick={() => handleMoveTable(tbl, tIdx, 'down')}
+                                  title="Move Text Field Down"
+                                >
+                                  ▼ Down
+                                </button>
+                              </div>
+                            )}
+
+                            <button
+                              type="button"
+                              style={{ padding: '5px 11px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', background: 'var(--card)', color: '#334155', fontWeight: 600, fontSize: "var(--text-base)", cursor: 'pointer' }}
+                              onClick={() => handleOpenEditTextFieldBlock(tbl, currentSection.id)}
+                            >
+                              ✏️ Edit
+                            </button>
+                            <button
+                              type="button"
+                              style={{ padding: '5px 8px', borderRadius: "var(--radius-sm)", border: '1px solid var(--red-200)', background: 'var(--card)', color: 'var(--red-700)', cursor: 'pointer' }}
+                              onClick={() => handleDeleteTable(tbl.id)}
+                              title="Delete Text Field"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={tbl.id} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: "var(--radius-lg)", padding: "var(--space-8)", marginBottom: "var(--space-8)", boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: "var(--space-6)", flexWrap: 'wrap', gap: "var(--space-4)" }}>
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: "var(--space-3)", flexWrap: 'wrap', marginBottom: "var(--space-1)" }}>
@@ -1482,7 +1930,8 @@ export const FormBuilderCanvas = ({
                       </div>
                     </div>
                   </div>
-                ))
+                );
+              })
               ) : (
                 <div style={{ background: 'var(--card)', border: '1px dashed var(--border-strong)', borderRadius: "var(--radius-lg)", padding: "var(--space-10)", textAlign: 'center' }}>
                   <p style={{ color: 'var(--muted)', margin: '0 0 10px' }}>No tables created in this section yet.</p>
@@ -1927,6 +2376,144 @@ export const FormBuilderCanvas = ({
         document.body
       )}
 
+      {/* Standalone Text Field Block Modal */}
+      {textFieldBlockModal.show && typeof document !== 'undefined' && createPortal(
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10000, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: "var(--space-8)" }}>
+          <div style={{ width: '100%', maxWidth: '520px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: 'var(--card)', borderRadius: "var(--radius-lg)", overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <div style={{ padding: '16px 20px', background: 'var(--bg)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h4 style={{ margin: 0, fontWeight: 800, color: 'var(--ink)', fontSize: "var(--text-lg)" }}>
+                {textFieldBlockModal.isEdit ? '✏️ Edit Text Field' : '➕ Add Standalone Text Field'}
+              </h4>
+              <button
+                type="button"
+                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: "var(--text-xl)", color: 'var(--muted)' }}
+                onClick={() => setTextFieldBlockModal({ ...textFieldBlockModal, show: false })}
+              >
+                ✕
+              </button>
+            </div>
+            <form onSubmit={handleSaveTextFieldBlock} style={{ overflowY: 'auto', flex: 1 }}>
+              <div style={{ padding: "var(--space-8)", display: 'grid', gap: "var(--space-6)" }}>
+                <div style={{ padding: '8px 12px', background: 'var(--accent-soft)', border: '1px solid #bfdbfe', borderRadius: "var(--radius-sm)", fontSize: "var(--text-base)", color: 'var(--primary-dark)', lineHeight: 1.4 }}>
+                  ℹ️ This text field is placed directly in the section body alongside tables and can be rearranged anywhere in the form using <strong>▲ Up</strong> and <strong>▼ Down</strong>.
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>
+                    Field Label / Question*
+                  </label>
+                  <input
+                    type="text"
+                    style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
+                    placeholder="e.g. Describe any innovative teaching practices..."
+                    required
+                    value={textFieldBlockModal.data.title}
+                    onChange={(e) =>
+                      setTextFieldBlockModal({
+                        ...textFieldBlockModal,
+                        data: { ...textFieldBlockModal.data, title: e.target.value },
+                      })
+                    }
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: "var(--space-4)" }}>
+                  <div>
+                    <label style={{ display: 'block', fontWeight: 600, fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>
+                      Field Type
+                    </label>
+                    <select
+                      style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
+                      value={textFieldBlockModal.data.fieldType}
+                      onChange={(e) =>
+                        setTextFieldBlockModal({
+                          ...textFieldBlockModal,
+                          data: { ...textFieldBlockModal.data, fieldType: e.target.value },
+                        })
+                      }
+                    >
+                      <option value="TEXTAREA">Multi-line Textarea (Large text box)</option>
+                      <option value="TEXT">Single Line Text</option>
+                      <option value="NUMBER">Number</option>
+                      <option value="DATE">Date Picker</option>
+                      <option value="FILE">Document / File Upload</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontWeight: 600, fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>
+                      Field Key (Identifier)
+                    </label>
+                    <input
+                      type="text"
+                      style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
+                      placeholder="e.g. innovative_practices (auto)"
+                      value={textFieldBlockModal.data.tableKey}
+                      onChange={(e) =>
+                        setTextFieldBlockModal({
+                          ...textFieldBlockModal,
+                          data: { ...textFieldBlockModal.data, tableKey: e.target.value },
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>
+                    Placeholder / Helper Prompt
+                  </label>
+                  <input
+                    type="text"
+                    style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
+                    placeholder="e.g. Type your detailed response here..."
+                    value={textFieldBlockModal.data.placeholder}
+                    onChange={(e) =>
+                      setTextFieldBlockModal({
+                        ...textFieldBlockModal,
+                        data: { ...textFieldBlockModal.data, placeholder: e.target.value },
+                      })
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: "var(--space-3)", fontSize: "var(--text-base)", cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={textFieldBlockModal.data.isRequired}
+                      onChange={(e) =>
+                        setTextFieldBlockModal({
+                          ...textFieldBlockModal,
+                          data: { ...textFieldBlockModal.data, isRequired: e.target.checked },
+                        })
+                      }
+                    />
+                    <span>Mark as Required (Mandatory input before submit)</span>
+                  </label>
+                </div>
+              </div>
+              <div style={{ padding: '14px 20px', background: 'var(--bg)', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: "var(--space-4)" }}>
+                <button
+                  type="button"
+                  style={{ padding: '8px 16px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', background: 'var(--card)', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
+                  onClick={() => setTextFieldBlockModal({ ...textFieldBlockModal, show: false })}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{ padding: '8px 18px', borderRadius: "var(--radius-sm)", border: 'none', background: 'var(--primary)', color: 'var(--card)', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  {textFieldBlockModal.isEdit ? 'Save Changes' : 'Save Text Field'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
       {/* Copy Table Modal (Academic Flow Only) */}
       {copyTableModal.show && typeof document !== 'undefined' && createPortal(
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10000, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: "var(--space-8)" }}>
@@ -2024,6 +2611,8 @@ export const FormBuilderCanvas = ({
                   ? '📝 Add Review Remark Field (Auditor)'
                   : fieldModal.tableId
                   ? '➕ Add Column to Table'
+                  : fieldModal.isTextField
+                  ? '➕ Add Text Field'
                   : '➕ Add Header Field'}
               </h4>
               <button
@@ -2043,12 +2632,12 @@ export const FormBuilderCanvas = ({
                 )}
                 <div>
                   <label style={{ display: 'block', fontWeight: 600, fontSize: "var(--text-base)", marginBottom: "var(--space-1)" }}>
-                    {fieldModal.tableId ? 'Column Header / Label*' : 'Field Label*'}
+                    {fieldModal.tableId ? 'Column Header / Label*' : fieldModal.data.fieldType === 'HEADING' ? 'Heading / Subheading Text*' : fieldModal.isTextField ? 'Text Field Label*' : 'Field Label*'}
                   </label>
                   <input
                     type="text"
                     style={{ width: '100%', height: '38px', borderRadius: "var(--radius-sm)", border: '1px solid var(--border-strong)', padding: '0 10px', fontSize: "var(--text-base)", boxSizing: 'border-box' }}
-                    placeholder="e.g. Total Number of Students"
+                    placeholder={fieldModal.data.fieldType === 'HEADING' ? 'e.g. Sub-Section 1: General Information' : 'e.g. Total Number of Students'}
                     required
                     value={fieldModal.data.label}
                     onChange={(e) =>
@@ -2081,6 +2670,9 @@ export const FormBuilderCanvas = ({
                       <option value="RADIO">Radio Choices</option>
                       <option value="CHECKBOX">Checkbox</option>
                       <option value="FILE">Document / File Upload</option>
+                      {!fieldModal.tableId && !fieldModal.isReviewField && (
+                        <option value="HEADING">Section Sub-Heading (Visual Divider)</option>
+                      )}
                     </select>
                   </div>
 
@@ -2119,21 +2711,23 @@ export const FormBuilderCanvas = ({
                   </div>
                 )}
 
-                <div>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: "var(--space-3)", fontSize: "var(--text-base)", cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={fieldModal.data.isRequired}
-                      onChange={(e) =>
-                        setFieldModal({
-                          ...fieldModal,
-                          data: { ...fieldModal.data, isRequired: e.target.checked },
-                        })
-                      }
-                    />
-                    <span>{fieldModal.isReviewField ? 'Mandatory for Auditor (Required before submit)' : 'Mark as Required (Mandatory input)'}</span>
-                  </label>
-                </div>
+                {fieldModal.data.fieldType !== 'HEADING' && (
+                  <div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: "var(--space-3)", fontSize: "var(--text-base)", cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={fieldModal.data.isRequired}
+                        onChange={(e) =>
+                          setFieldModal({
+                            ...fieldModal,
+                            data: { ...fieldModal.data, isRequired: e.target.checked },
+                          })
+                        }
+                      />
+                      <span>{fieldModal.isReviewField ? 'Mandatory for Auditor (Required before submit)' : 'Mark as Required (Mandatory input)'}</span>
+                    </label>
+                  </div>
+                )}
               </div>
               <div style={{ padding: '14px 20px', background: 'var(--bg)', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: "var(--space-4)" }}>
                 <button
@@ -2147,7 +2741,7 @@ export const FormBuilderCanvas = ({
                   type="submit"
                   style={{ padding: '8px 18px', borderRadius: "var(--radius-sm)", border: 'none', background: 'var(--primary)', color: 'var(--card)', fontWeight: 700, cursor: 'pointer' }}
                 >
-                  Save Column / Field
+                  {fieldModal.isEdit ? 'Save Changes' : fieldModal.isTextField ? 'Add Text Field' : 'Save Field'}
                 </button>
               </div>
             </form>

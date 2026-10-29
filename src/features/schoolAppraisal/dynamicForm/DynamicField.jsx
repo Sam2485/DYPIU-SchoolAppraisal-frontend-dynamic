@@ -20,7 +20,7 @@ export const DynamicField = ({ field, value, onChange, readOnly = false, error =
   const key = fieldKey || idString || 'field';
   const displayLabel = label || key;
 
-  if (kind === 'heading') {
+  if (kind === 'heading' || fieldType?.toUpperCase() === 'HEADING') {
     return (
       <div className="dynamic-field-heading my-3">
         <h5 className="text-primary fw-bold">{displayLabel}</h5>

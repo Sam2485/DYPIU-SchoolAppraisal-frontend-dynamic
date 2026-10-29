@@ -2,7 +2,7 @@ import { confirmAction } from "../../../components/feedback/feedbackBus";
 import React, { useState, useEffect, useRef } from 'react';
 import { getVersionTree } from './formStudioApi';
 import { TableButtonGroup } from '../components/TableButtonGroup';
-import { partitionTablesByButtons, getSectionKey } from '../utils/tableButtonHelpers';
+import { partitionTablesByButtons, getSectionKey, isTextFieldBlock } from '../utils/tableButtonHelpers';
 
 const isReviewRemarkField = (f) => {
   if (!f) return false;
@@ -928,6 +928,16 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
                     const isRequired = field.isRequired;
                     const fieldVal = valuesData[key] || '';
 
+                    if (field.kind === 'heading' || field.fieldType === 'HEADING') {
+                      return (
+                        <div key={field.id || key} style={{ gridColumn: '1 / -1', marginTop: '8px', marginBottom: '2px', borderBottom: '2px solid var(--border)', paddingBottom: '6px' }}>
+                          <h4 style={{ margin: 0, fontWeight: 750, color: 'var(--primary-dark)', fontSize: "var(--text-md)" }}>
+                            {field.label || key}
+                          </h4>
+                        </div>
+                      );
+                    }
+
                     return (
                       <div key={field.id || key} style={{ display: 'flex', flexDirection: 'column', gap: "var(--space-2)" }}>
                         <label style={{ fontSize: "var(--text-base)", fontWeight: 650, color: '#334155', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1065,6 +1075,82 @@ export const LiveFormPreview = ({ versionId, onBack }) => {
 
               const renderLivePreviewTable = (tbl, overrideKey) => {
                 const tKey = overrideKey || tbl.scopedKey || tbl.tableKey || tbl.idString || `table_${tbl.id || 0}`;
+
+                if (isTextFieldBlock(tbl)) {
+                  const tblField = tbl.fields?.[0] || { fieldType: 'TEXTAREA', label: tbl.title, placeholder: '' };
+                  const rawVal = tablesData[tKey]?.[0]?.value ?? valuesData[tKey] ?? '';
+                  const isTextArea = String(tblField.fieldType || '').toUpperCase() === 'TEXTAREA' || !tblField.fieldType;
+                  return (
+                    <div
+                      key={tbl.id ? `${tbl.id}_${tKey}` : tKey}
+                      style={{
+                        background: 'var(--card)',
+                        borderRadius: "var(--radius-xl)",
+                        border: '1px solid var(--border)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                        overflow: 'hidden',
+                        padding: '20px 24px',
+                      }}
+                    >
+                      <label style={{ fontSize: "var(--text-base)", fontWeight: 700, color: '#1e293b', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span>
+                          {tbl.title} {tblField.isRequired && <span style={{ color: 'var(--red-500)', marginLeft: '4px' }}>*</span>}
+                        </span>
+                        <span style={{ fontSize: "var(--text-2xs)", color: 'var(--muted)', fontWeight: 700, textTransform: 'uppercase' }}>
+                          {tblField.fieldType || 'TEXTAREA'}
+                        </span>
+                      </label>
+                      {isTextArea ? (
+                        <textarea
+                          disabled={isSectionLockedInCurrentRole}
+                          rows={4}
+                          placeholder={tblField.placeholder || `Enter ${tbl.title}...`}
+                          value={rawVal}
+                          onChange={(e) => {
+                            handleCellChange(tKey, 0, 'value', e.target.value);
+                            setValuesData((prev) => ({ ...prev, [tKey]: e.target.value }));
+                          }}
+                          style={{
+                            width: '100%',
+                            borderRadius: "var(--radius-sm)",
+                            border: '1px solid var(--border-strong)',
+                            padding: '10px 12px',
+                            fontSize: "var(--text-base)",
+                            color: 'var(--ink)',
+                            background: isSectionLockedInCurrentRole ? 'var(--bg)' : 'var(--card)',
+                            resize: 'vertical',
+                            outline: 'none',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                      ) : (
+                        <input
+                          type="text"
+                          disabled={isSectionLockedInCurrentRole}
+                          placeholder={tblField.placeholder || `Enter ${tbl.title}...`}
+                          value={rawVal}
+                          onChange={(e) => {
+                            handleCellChange(tKey, 0, 'value', e.target.value);
+                            setValuesData((prev) => ({ ...prev, [tKey]: e.target.value }));
+                          }}
+                          style={{
+                            width: '100%',
+                            height: '40px',
+                            borderRadius: "var(--radius-sm)",
+                            border: '1px solid var(--border-strong)',
+                            padding: '0 12px',
+                            fontSize: "var(--text-base)",
+                            color: 'var(--ink)',
+                            background: isSectionLockedInCurrentRole ? 'var(--bg)' : 'var(--card)',
+                            outline: 'none',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                      )}
+                    </div>
+                  );
+                }
+
                 const rows = tablesData[tKey] || [];
                 const columns = tbl.columns && tbl.columns.length > 0
                   ? tbl.columns

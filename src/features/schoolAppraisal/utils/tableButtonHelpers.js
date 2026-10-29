@@ -447,3 +447,17 @@ export const getScopedTableRows = (tablesData = {}, table = {}, instance = null,
 
   return [];
 };
+
+/**
+ * Detects whether a table entry represents a standalone text field block in a section.
+ */
+export const isTextFieldBlock = (table) => {
+  if (!table) return false;
+  if (table.isTextField === true || table.tableType === 'field' || table.blockType === 'field') return true;
+  const key = String(table.tableKey || table.idString || '').toLowerCase();
+  if (key.startsWith('textfield_') || key.startsWith('text_field_')) return true;
+  if (table.isRepeatable === false && Array.isArray(table.fields) && table.fields.length === 1 && table.fields[0]?.fieldKey === 'value') {
+    return true;
+  }
+  return false;
+};
