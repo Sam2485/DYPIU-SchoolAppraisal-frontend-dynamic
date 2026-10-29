@@ -844,7 +844,7 @@ function ReadOnlyPartEValue({ value }) {
 
 const isReviewRemarkField = (f) => {
   if (!f) return false;
-  if (f.kind === "review") return true;
+  if (f.kind === "review" || f.isReviewField === true) return true;
   const key = String(f.fieldKey || f.idString || f.id || "").toLowerCase();
   const label = String(f.label || "").toLowerCase();
   if (
@@ -852,8 +852,13 @@ const isReviewRemarkField = (f) => {
     key === "review_remarks" ||
     key === "remarks" ||
     key === "auditobservations" ||
+    key === "audit_observations" ||
+    key === "auditrecommendations" ||
+    key === "audit_recommendations" ||
     key.includes("reviewremark") ||
-    key.includes("review_remark")
+    key.includes("review_remark") ||
+    key.includes("auditobservation") ||
+    key.includes("audit_observation")
   ) {
     return true;
   }
@@ -864,7 +869,11 @@ const isReviewRemarkField = (f) => {
     label.includes("review observations") ||
     label.includes("remarks / observations") ||
     label.includes("remarks/observations") ||
-    label.includes("observations of the audit")
+    label.includes("observations of the audit") ||
+    label.includes("audit observation") ||
+    label.includes("audit observations") ||
+    label.includes("audit recommendation") ||
+    label.includes("audit recommendations")
   ) {
     return true;
   }
@@ -995,14 +1004,52 @@ function AuditorCard({ assignment, index, fieldDefinitions, tableDefinitions, fa
         </div>
       )}
 
-      {Boolean(finalRemarks && String(finalRemarks).trim()) && (
+      {reviewRemarkFields.length > 0 && reviewRemarkFields.map((rf) => {
+        const val = resolveFieldValue(rf, values) || (
+          rf.fieldKey === "auditObservations" || rf.id === "auditObservations"
+            ? (assignment.auditObservations || assignment.remarks)
+            : rf.fieldKey === "auditRecommendations" || rf.id === "auditRecommendations"
+              ? (assignment.auditRecommendations || assignment.recommendations)
+              : ""
+        );
+        return (
+          <div key={rf.id || rf.fieldKey || rf.label} style={{ marginTop: 14, width: "100%" }}>
+            <div style={styles.auditorReviewDocsField}>
+              <div style={styles.readOnlyLabel}>
+                {rf.label || "Review Remark"}
+              </div>
+              <div style={styles.auditorReviewValue}>
+                <ReadOnlyPartEValue value={val || "-"} />
+              </div>
+            </div>
+          </div>
+        );
+      })}
+
+      {reviewRemarkFields.length === 0 && (
         <div style={{ marginTop: 14, width: "100%" }}>
           <div style={styles.auditorReviewDocsField}>
             <div style={styles.readOnlyLabel}>
-              {reviewRemarkField?.label || "Review Remarks / Observations"}
+              Observations of the Audit Team
             </div>
             <div style={styles.auditorReviewValue}>
-              <ReadOnlyPartEValue value={finalRemarks} />
+              <ReadOnlyPartEValue value={remarks || values.auditObservations || assignment.auditObservations || "-"} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!reviewRemarkFields.some((rf) => {
+        const key = String(rf.fieldKey || rf.id || rf.label || "").toLowerCase();
+        return key.includes("recommendation");
+      }) && (
+        <div style={{ marginTop: 14, width: "100%" }}>
+          <div style={styles.auditorReviewDocsField}>
+            <div style={styles.readOnlyLabel}>
+              Recommendations of the Audit Team
+            </div>
+            <div style={styles.auditorReviewValue}>
+              <ReadOnlyPartEValue value={values.auditRecommendations || assignment.auditRecommendations || values.recommendations || assignment.recommendations || "-"} />
             </div>
           </div>
         </div>

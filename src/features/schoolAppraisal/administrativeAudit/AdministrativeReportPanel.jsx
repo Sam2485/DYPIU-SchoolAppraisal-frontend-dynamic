@@ -472,6 +472,8 @@ export default function AdministrativeReportPanel({
         <CertificationSignOff
           signOff={data.fields[SIGN_OFF_FIELD]}
           reportCategory={reportCategory}
+          auditorAssignments={auditorAssignments}
+          iqacRemarks={iqacRemarks}
           currentAuditor={currentAuditor}
           previousInternalAuditor={previousInternalAuditor}
         />
@@ -519,17 +521,27 @@ function approverLabel(role = "") {
   return String(role).includes("vice-chancellor") ? "Vice Chancellor" : String(role).includes("iqac") ? "IQAC Authority" : "Approving Authority";
 }
 
-function SignerDetails({ signer = {}, pendingText }) {
+function SignerDetails({ signer = {}, pendingText, showRemarks = true }) {
   const s = signer || {};
   if (!s.name) return <div style={styles.pendingApproval}>{pendingText}</div>;
 
+  const remarksText = s.remarks || s.auditObservations || s.comments || "";
+
   return (
     <>
-      <div style={styles.signatureRow}><span>Name</span><strong>{s.name}</strong></div>
+      <div style={styles.signatureRow}><span>Name</span><strong>{s.name || "-"}</strong></div>
       <div style={styles.signatureRow}><span>Designation</span><strong>{s.designation || "-"}</strong></div>
-      {s.role && <div style={styles.signatureRow}><span>Role</span><strong>{s.role}</strong></div>}
-      {s.email && <div style={styles.signatureRow}><span>Email</span><strong>{s.email}</strong></div>}
-      <div style={styles.signatureRow}><span>Date</span><strong>{formatSignOffDate(s.date)}</strong></div>
+      {s.role && <div style={styles.signatureRow}><span>Role</span><strong>{s.role || "-"}</strong></div>}
+      {s.email && <div style={styles.signatureRow}><span>Email</span><strong>{s.email || "-"}</strong></div>}
+      <div style={styles.signatureRow}><span>Date</span><strong>{formatSignOffDate(s.date) || "-"}</strong></div>
+      {showRemarks && (
+        <div style={styles.signatureRow}>
+          <span>Remarks</span>
+          <strong style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+            {remarksText && String(remarksText).trim() ? remarksText : "-"}
+          </strong>
+        </div>
+      )}
     </>
   );
 }
@@ -537,16 +549,59 @@ function SignerDetails({ signer = {}, pendingText }) {
 function CertificationSignOff({
   signOff = {},
   reportCategory = "",
+  auditorAssignments = [],
+  iqacRemarks = "",
   currentAuditor = {},
   previousInternalAuditor = {},
 }) {
   const submittedBy = signOff?.submittedBy || {};
   const storedAuditor = signOff?.auditedBy || signOff?.auditorBy || {};
-  const approvedBy = signOff?.approvedBy || {};
-  const safeCurrentAuditor = currentAuditor || {};
-  const activeAuditor = safeCurrentAuditor.name ? safeCurrentAuditor : storedAuditor;
+  const approvedBy = { ...(signOff?.approvedBy || {}) };
+  if (iqacRemarks && !approvedBy.remarks) {
+    approvedBy.remarks = iqacRemarks;
+  }
+  const safeCurrentAuditor = { ...(currentAuditor || {}) };
+  const safePreviousInternalAuditor = { ...(previousInternalAuditor || {}) };
+
+  const internalAssignment = (auditorAssignments || []).find((a) => {
+    const roleType = String(a.auditorType || a.type || a.role || "").toLowerCase();
+    return roleType.includes("internal");
+  });
+  const externalAssignment = (auditorAssignments || []).find((a) => {
+    const roleType = String(a.auditorType || a.type || a.role || "").toLowerCase();
+    return roleType.includes("external") || !roleType.includes("internal");
+  });
+
   const isExternalReport = String(reportCategory).toLowerCase() === "external";
-  const internalAuditor = isExternalReport ? (previousInternalAuditor || {}) : activeAuditor;
+
+  let internalAuditor;
+  if (isExternalReport) {
+    if (safePreviousInternalAuditor.name) {
+      internalAuditor = safePreviousInternalAuditor;
+    } else if (internalAssignment) {
+      internalAuditor = {
+        name: internalAssignment.auditorName || internalAssignment.name || "Internal Auditor",
+        designation: internalAssignment.auditorDesignation || internalAssignment.designation || "-",
+        role: internalAssignment.auditorRole || internalAssignment.role || "Internal Auditor",
+        email: internalAssignment.auditorEmail || internalAssignment.email || "-",
+        date: internalAssignment.submittedAt || internalAssignment.completedAt || internalAssignment.date || "",
+        remarks: internalAssignment.remarks || internalAssignment.auditObservations || internalAssignment.auditRecommendations || "-",
+      };
+    } else {
+      internalAuditor = safePreviousInternalAuditor;
+    }
+  } else {
+    internalAuditor = safeCurrentAuditor.name ? safeCurrentAuditor : storedAuditor;
+  }
+
+  if (internalAuditor && !internalAuditor.remarks && internalAssignment?.remarks) {
+    internalAuditor.remarks = internalAssignment.remarks;
+  }
+
+  const activeAuditor = safeCurrentAuditor.name ? safeCurrentAuditor : storedAuditor;
+  if (activeAuditor && !activeAuditor.remarks && externalAssignment?.remarks) {
+    activeAuditor.remarks = externalAssignment.remarks;
+  }
 
   return (
     <section className="generated-report__signatures" style={styles.signatureWrap}>
@@ -554,7 +609,7 @@ function CertificationSignOff({
         <h3 style={styles.signerTitle}>Form filled and submitted by</h3>
         <div style={styles.signatureRow}><span>Name</span><strong>{submittedBy.name || "-"}</strong></div>
         <div style={styles.signatureRow}><span>Designation</span><strong>{submittedBy.designation || "-"}</strong></div>
-        <div style={styles.signatureRow}><span>Date</span><strong>{formatSignOffDate(submittedBy.date)}</strong></div>
+        <div style={styles.signatureRow}><span>Date</span><strong>{formatSignOffDate(submittedBy.date) || "-"}</strong></div>
       </div>
       <div style={styles.signatureBlock}>
         <h3 style={styles.signerTitle}>Internal Auditor remarks filled by</h3>
@@ -575,13 +630,14 @@ function CertificationSignOff({
 }
 
 function IqacReviewRemarks({ remarks }) {
+  const displayText = remarks && String(remarks).trim() ? remarks : "-";
   return (
     <section className="generated-report__iqac-remarks" style={styles.iqacReviewSection}>
       <div style={styles.moduleHeading}>
         <span style={styles.sectionNumber}>IQ</span>
         <h3 style={styles.moduleTitle}>IQAC Review Remarks</h3>
       </div>
-      <p style={styles.iqacReviewText}>{remarks}</p>
+      <p style={styles.iqacReviewText}>{displayText}</p>
     </section>
   );
 }
