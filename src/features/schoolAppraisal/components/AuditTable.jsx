@@ -3,33 +3,10 @@ import { FileText, Upload } from "lucide-react";
 import { confirmAction } from "../../../components/feedback/feedbackBus";
 import { useState } from "react";
 import { getApiErrorMessage } from "../../../api/client";
-import { columnsWithSerial, serialColumnFor, numberedRowFor, withSerialNumbers } from "./tableHelpers";
+import { columnsWithSerial, serialColumnFor, numberedRowFor, withSerialNumbers, findFieldForColumn, isAttachmentColumn } from "./tableHelpers";
 import { getAttachmentUrl } from "../../../utils/attachment";
 import { formatDateDDMMYYYY } from "../../../utils/dateFormat";
 import DateInput from "./DateInput";
-
-const findFieldForColumn = (column, table = {}) => {
-  if (!Array.isArray(table.fields)) return null;
-  const colStr = String(column || "").trim().toLowerCase();
-  return table.fields.find((f) => {
-    if (!f) return false;
-    const label = String(f.label || "").trim().toLowerCase();
-    const key = String(f.fieldKey || f.key || "").trim().toLowerCase();
-    const id = String(f.id || "").trim().toLowerCase();
-    return label === colStr || key === colStr || id === colStr;
-  });
-};
-
-const isAttachmentColumn = (column, table = {}) => {
-  if (table.urlColumns?.includes(column)) return false;
-  const field = findFieldForColumn(column, table);
-  if (field) {
-    const fieldType = String(field.fieldType || field.type || "").toUpperCase();
-    if (fieldType === "FILE" || fieldType === "ATTACHMENT") return true;
-  }
-  if (table.fileColumns?.includes(column) || table.attachmentColumns?.includes(column)) return true;
-  return /\b(link|proof|attachment|document|mom|attach|file|upload)\b/i.test(column);
-};
 
 const isDateColumn = (column, table = {}) => {
   const field = findFieldForColumn(column, table);
@@ -501,7 +478,7 @@ export default function AuditTable({
                           el.style.height = "auto";
                           el.style.height = `${el.scrollHeight}px`;
                         }}
-                        value={row[column] ?? ""}
+                        value={row[column] && typeof row[column] === "object" ? (row[column].name || row[column].fileName || row[column].value || "") : (row[column] ?? "")}
                         onChange={(event) => handleCellChange(rowIndex, column, event.target.value)}
                         maxLength={textareaMaxLengthFor(column, table)}
                         placeholder={placeholderFor(column, table)}
@@ -519,7 +496,7 @@ export default function AuditTable({
                         type={isUrlColumn(column, table) ? "url" : isNumberColumn(column, table) ? "number" : "text"}
                         min={isNumberColumn(column, table) ? "0" : undefined}
                         step={isNumberColumn(column, table) ? "1" : undefined}
-                        value={serialColumnFor([column]) ? (row[column] || String(rowIndex + 1)) : (row[column] ?? "")}
+                        value={serialColumnFor([column]) ? (row[column] || String(rowIndex + 1)) : (row[column] && typeof row[column] === "object" ? (row[column].name || row[column].fileName || row[column].value || "") : (row[column] ?? ""))}
                         onChange={(event) => handleCellChange(rowIndex, column, event.target.value)}
                         style={{
                           ...styles.cellInput,

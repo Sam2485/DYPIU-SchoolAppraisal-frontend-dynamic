@@ -4,7 +4,7 @@ import AuditTable from "./AuditTable";
 import { TableButtonGroup } from "./TableButtonGroup";
 import { partitionTablesByButtons, buildScopedTableKey, getScopedTableRows, normalizeTableButtons, getSectionKey, isTextFieldBlock } from "../utils/tableButtonHelpers";
 import DateInput from "./DateInput";
-import { columnsWithSerial, serialColumnFor, numberedRowFor, withSerialNumbers, emptyRowFor } from "./tableHelpers";
+import { columnsWithSerial, serialColumnFor, numberedRowFor, withSerialNumbers, emptyRowFor, isAttachmentColumn } from "./tableHelpers";
 import { getAttachmentUrl } from "../../../utils/attachment";
 import { formatDateDDMMYYYY } from "../../../utils/dateFormat";
 import { uploadAttachments } from "../../../api/submissions";
@@ -456,22 +456,37 @@ const resolveTableColumns = (table = {}) => {
   return columnsWithSerial(raw);
 };
 
-function renderTableCellValue(rawValue) {
+function renderTableCellValue(rawValue, options = {}) {
+  const isAttachment = options.isAttachment;
   const value = parseIfJson(rawValue);
+
+  if (isAttachment === false) {
+    if (value === undefined || value === null || String(value).trim() === "") return "-";
+    if (Array.isArray(value)) {
+      const items = value
+        .map((item) => (item && typeof item === "object" ? item.name || item.fileName || item.value || "" : String(item)))
+        .filter(Boolean);
+      return items.length ? items.join(", ") : "-";
+    }
+    if (value && typeof value === "object") {
+      return value.name || value.fileName || value.value || "-";
+    }
+    return String(value).trim();
+  }
 
   if (Array.isArray(value)) {
     return value.length ? (
       <div style={styles.attachmentList}>
         {value.map((file, index) => (
           <div key={`${file?.url || file?.name || "attachment"}-${index}`}>
-            {renderTableCellValue(file)}
+            {renderTableCellValue(file, options)}
           </div>
         ))}
       </div>
     ) : "-";
   }
 
-  if (isAttachmentValue(value)) {
+  if (isAttachmentValue(value) && isAttachment !== false) {
     const name = value.name || value.fileName || value.filename || "Attachment";
     const url = value.url || value.publicUrl || value.downloadUrl;
     return url ? (
@@ -527,6 +542,7 @@ function ReadOnlyTable({ table, rows = [], values = {} }) {
               <tr key={`${table.id || table.tableKey || "tbl"}-readonly-${rowIndex}`}>
                 {columns.map((column) => {
                   const isSerial = Boolean(serialColumnFor([column]));
+                  const isAttachment = isAttachmentColumn(column, table);
                   return (
                     <td
                       key={column}
@@ -535,7 +551,10 @@ function ReadOnlyTable({ table, rows = [], values = {} }) {
                         ...(isSerial ? { width: "65px", maxWidth: "70px", textAlign: "center" } : {}),
                       }}
                     >
-                      {renderTableCellValue(isSerial ? (row[column] || row["Sr. no"] || row["Sr.no"] || row["Sr No"] || String(rowIndex + 1)) : getCellValue(row, column, table))}
+                      {renderTableCellValue(
+                        isSerial ? (row[column] || row["Sr. no"] || row["Sr.no"] || row["Sr No"] || String(rowIndex + 1)) : getCellValue(row, column, table),
+                        { isAttachment }
+                      )}
                     </td>
                   );
                 })}
