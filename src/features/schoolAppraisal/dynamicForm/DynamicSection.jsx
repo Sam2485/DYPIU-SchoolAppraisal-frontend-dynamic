@@ -2,7 +2,7 @@ import React from 'react';
 import { DynamicField } from './DynamicField';
 import { DynamicTable } from './DynamicTable';
 import { TableButtonGroup } from '../components/TableButtonGroup';
-import { partitionTablesByButtons, getSectionKey } from '../utils/tableButtonHelpers';
+import { partitionTablesByButtons, getSectionKey, isTextFieldBlock } from '../utils/tableButtonHelpers';
 
 export const DynamicSection = ({
   section,
@@ -92,8 +92,9 @@ export const DynamicSection = ({
             <div className="row g-3">
               {headerFields.map((field) => {
                 const key = field.fieldKey || field.idString;
+                const isHeading = field.kind === 'heading' || field.fieldType?.toUpperCase() === 'HEADING';
                 return (
-                  <div key={field.id || key} className="col-md-6 col-12">
+                  <div key={field.id || key} className={isHeading ? "col-12" : "col-md-6 col-12"}>
                     <DynamicField
                       field={field}
                       value={valuesData[key]}
@@ -115,9 +116,49 @@ export const DynamicSection = ({
 
         return (
           <div className="section-tables">
-            {/* 1. Permanent / Unassigned tables */}
+            {/* 1. Permanent / Unassigned tables & text fields */}
             {unassignedTables.map((table) => {
               const tKey = table.tableKey || table.idString;
+              if (isTextFieldBlock(table)) {
+                const field = table.fields?.[0] || { fieldType: 'TEXTAREA', label: table.title, fieldKey: 'value' };
+                const rawVal = tablesData[tKey]?.[0]?.value ?? valuesData[tKey] ?? '';
+                const isTextArea = String(field.fieldType || '').toUpperCase() === 'TEXTAREA' || !field.fieldType;
+                return (
+                  <div key={table.id || tKey} className="card mb-4 shadow-sm border-0">
+                    <div className="card-body">
+                      <label className="form-label fw-bold">
+                        {table.title} {field.isRequired && <span className="text-danger">*</span>}
+                      </label>
+                      {isTextArea ? (
+                        <textarea
+                          className="form-control"
+                          rows={4}
+                          placeholder={field.placeholder || `Enter ${table.title}...`}
+                          value={rawVal}
+                          disabled={effectiveReadOnly}
+                          onChange={(e) => {
+                            onTableChange(tKey, [{ value: e.target.value }]);
+                            if (onValueChange) onValueChange(tKey, e.target.value);
+                          }}
+                        />
+                      ) : (
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder={field.placeholder || `Enter ${table.title}...`}
+                          value={rawVal}
+                          disabled={effectiveReadOnly}
+                          onChange={(e) => {
+                            onTableChange(tKey, [{ value: e.target.value }]);
+                            if (onValueChange) onValueChange(tKey, e.target.value);
+                          }}
+                        />
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <DynamicTable
                   key={table.id || tKey}

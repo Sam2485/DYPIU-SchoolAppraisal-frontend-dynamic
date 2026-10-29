@@ -118,6 +118,16 @@ export const reorderFields = async (tableId, fieldIds) => {
   return res.data;
 };
 
+export const reorderSectionFields = async (sectionId, fieldIds) => {
+  try {
+    const res = await apiClient.put(`/api/admin/config/sections/${sectionId}/reorder-fields`, fieldIds);
+    return res.data;
+  } catch {
+    const res = await apiClient.put(`/api/admin/config/tables/${sectionId || 0}/reorder-fields`, fieldIds);
+    return res.data;
+  }
+};
+
 // University Schools / Departments Management
 export const getUniversitySchools = async (universityId, all = false) => {
   if (!universityId) return [];
