@@ -334,15 +334,47 @@ export const normalizeDraft = (payload = {}, fallbackValues = {}, fallbackTables
   };
 };
 
-export const extractAllUniqueAttachments = (attachmentsPayload, tablesData, valuesData) => {
+export const extractAllUniqueAttachments = (attachmentsPayload, tablesData, valuesData, auditorAssignments) => {
   const list = [];
   const seen = new Set();
 
   const addAttachment = (item) => {
-    if (!item || typeof item !== "object") return;
-    const url = item.url || item.publicUrl || item.downloadUrl || "";
-    const fileName = item.fileName || item.filename || item.name || "";
-    if (!url || !fileName) return;
+    if (!item) return;
+    if (typeof item === "string") {
+      const rawStr = item.trim();
+      if (
+        rawStr.includes("/api/attachments/") ||
+        rawStr.includes("/uploads/") ||
+        rawStr.includes("uploads/") ||
+        /^https?:\/\//i.test(rawStr)
+      ) {
+        const fileNameMatch = rawStr.match(/fileName=([^&]+)/i);
+        const fileName = fileNameMatch ? decodeURIComponent(fileNameMatch[1]) : rawStr.split("/").pop() || "Attachment";
+        const key = rawStr.toLowerCase();
+        if (seen.has(key)) return;
+        seen.add(key);
+        list.push({
+          name: fileName,
+          fileName: fileName,
+          url: rawStr,
+        });
+      }
+      return;
+    }
+    if (typeof item !== "object") return;
+    const url = item.url || item.publicUrl || item.downloadUrl || item.fileUrl || item.filePath || item.path || "";
+    const fileName = item.name || item.fileName || item.filename || item.title || "";
+    if (!url && !fileName) return;
+
+    const hasExtension = /\.(pdf|docx?|xlsx?|pptx?|csv|png|jpe?g|gif|webp|svg|zip|rar|txt)$/i.test(fileName || url);
+    const hasValidUrl = Boolean(
+      url &&
+      (url.includes("/api/attachments/") ||
+       url.includes("/uploads/") ||
+       url.includes("uploads/") ||
+       /^https?:\/\//i.test(url))
+    );
+    if (!hasValidUrl && !hasExtension) return;
 
     const key = (url || fileName).trim().toLowerCase();
     if (key && seen.has(key)) return;
@@ -361,12 +393,24 @@ export const extractAllUniqueAttachments = (attachmentsPayload, tablesData, valu
     if (Array.isArray(node)) {
       node.forEach(processNode);
     } else if (typeof node === "object") {
-      const hasUrl = node.url || node.publicUrl || node.downloadUrl;
-      const hasFileName = node.fileName || node.filename;
-      if (hasUrl && hasFileName) {
+      const hasUrl = Boolean(node.url || node.publicUrl || node.downloadUrl || node.fileUrl || node.filePath || node.path);
+      const hasFileName = Boolean(node.name || node.fileName || node.filename || node.title);
+      const hasExtension = /\.(pdf|docx?|xlsx?|pptx?|csv|png|jpe?g|gif|webp|svg|zip|rar|txt)$/i.test(node.name || node.fileName || node.filename || node.title || "");
+      if (hasUrl || (hasFileName && hasExtension)) {
         addAttachment(node);
+        return;
       }
       Object.values(node).forEach(processNode);
+    } else if (typeof node === "string") {
+      const trimmed = node.trim();
+      if ((trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          processNode(parsed);
+          return;
+        } catch {}
+      }
+      addAttachment(trimmed);
     }
   };
 
@@ -377,6 +421,9 @@ export const extractAllUniqueAttachments = (attachmentsPayload, tablesData, valu
 
   processNode(safeJsonParse(tablesData, {}));
   processNode(safeJsonParse(valuesData, {}));
+  if (auditorAssignments) {
+    processNode(safeJsonParse(auditorAssignments, []));
+  }
 
   return list;
 };
@@ -598,14 +645,55 @@ export const fetchAdministrativeStatus = (cycleId) => {
 };
 
 export const parseSubmissionFormData = (submission = {}) => {
-  const values = safeJsonParse(submission.valuesData ?? submission.values ?? submission.fieldsData ?? submission.fields, {});
-  const tables = safeJsonParse(submission.tablesData ?? submission.tables, {});
-  const attachments = extractAllUniqueAttachments(submission.attachments, submission.tablesData, submission.valuesData);
+  const values = safeJsonParse(
+    submission.valuesData ??
+    submission.values ??
+    submission.fieldsData ??
+    submission.fields ??
+    submission.values_data ??
+    submission.fields_data ??
+    submission.data?.values,
+    {}
+  );
+  const tables = safeJsonParse(
+    submission.tablesData ??
+    submission.tables ??
+    submission.tables_data ??
+    submission.data?.tables,
+    {}
+  );
+  const rawAttachments =
+    submission.attachments ??
+    submission.attachmentsData ??
+    submission.attachments_data ??
+    submission.data?.attachments;
+
+  const assignments =
+    submission.auditorAssignments ??
+    submission.auditor_assignments ??
+    submission.auditorReviews ??
+    submission.data?.auditorAssignments;
+
+  const attachments = extractAllUniqueAttachments(
+    rawAttachments,
+    tables,
+    values,
+    assignments
+  );
 
   return {
     values,
     tables,
     attachments,
-    hasSavedData: Boolean(submission.valuesData || submission.values || submission.fieldsData || submission.fields || submission.tablesData || submission.tables),
+    hasSavedData: Boolean(
+      submission.valuesData ||
+      submission.values ||
+      submission.fieldsData ||
+      submission.fields ||
+      submission.tablesData ||
+      submission.tables ||
+      submission.tables_data ||
+      submission.values_data
+    ),
   };
 };

@@ -997,15 +997,76 @@ const getSubmissionAuditorSignOff = (submission = {}) => {
       role: "",
       email: "",
       date: "",
+      remarks: "",
     };
   }
   const storedSignOff = getAuditorSignOff(submission.values);
+  const assignments = submission.auditorAssignments || [];
+  const primaryAssignment = assignments.find((a) => a.auditorName || a.name || a.remarks || a.status === "submitted" || a.status === "completed") || assignments[0] || {};
+
+  const name =
+    storedSignOff.name ||
+    submission.auditorReviewedBy ||
+    submission.auditorName ||
+    submission.name ||
+    primaryAssignment.auditorName ||
+    primaryAssignment.name ||
+    "";
+
+  const designation =
+    storedSignOff.designation ||
+    submission.auditorReviewedByDesignation ||
+    submission.auditorDesignation ||
+    submission.designation ||
+    primaryAssignment.auditorDesignation ||
+    primaryAssignment.designation ||
+    "";
+
+  const role =
+    storedSignOff.role ||
+    submission.auditorReviewedByRole ||
+    submission.auditorRole ||
+    submission.role ||
+    primaryAssignment.role ||
+    primaryAssignment.auditorType ||
+    "";
+
+  const email =
+    storedSignOff.email ||
+    submission.auditorReviewedByEmail ||
+    submission.auditorEmail ||
+    submission.email ||
+    primaryAssignment.auditorEmail ||
+    primaryAssignment.email ||
+    "";
+
+  const date =
+    storedSignOff.date ||
+    submission.auditorReviewedOn ||
+    submission.reviewedOn ||
+    submission.submittedAt ||
+    submission.completedAt ||
+    primaryAssignment.submittedAt ||
+    primaryAssignment.completedAt ||
+    "";
+
+  const remarks =
+    storedSignOff.remarks ||
+    submission.remarks ||
+    submission.auditorRemarks ||
+    submission.comments ||
+    primaryAssignment.remarks ||
+    primaryAssignment.auditObservations ||
+    primaryAssignment.auditRecommendations ||
+    "";
+
   return {
-    name: storedSignOff.name || submission.auditorReviewedBy || "",
-    designation: storedSignOff.designation || submission.auditorReviewedByDesignation || "",
-    role: storedSignOff.role || submission.auditorReviewedByRole || "",
-    email: storedSignOff.email || submission.auditorReviewedByEmail || "",
-    date: storedSignOff.date || submission.auditorReviewedOn || "",
+    name,
+    designation,
+    role,
+    email,
+    date,
+    remarks,
   };
 };
 const isApprovedReport = (submission = {}) => (submission || {}).status === "approved";
@@ -1671,9 +1732,18 @@ const normalizeAuditorAssignment = (assignment = {}, index = 0) => {
     auditorCorrectionMessage: assignment.auditorCorrectionMessage || assignment.correctionRemarks || "",
     auditorCorrectionRequestedOn: assignment.auditorCorrectionRequestedOn || assignment.correctionRequestedOn || "",
     auditorCorrectionRequestedBy: assignment.auditorCorrectionRequestedBy || assignment.correctionRequestedBy || "",
-    values: safeObjectValue(assignment.values || assignment.valuesData || assignment.reviewValues || assignment.reviewValuesData),
+    values: (() => {
+      const vals = safeObjectValue(assignment.values || assignment.valuesData || assignment.reviewValues || assignment.reviewValuesData);
+      const auditRec = assignment.auditRecommendations || vals.auditRecommendations || assignment.recommendations || vals.recommendations || "";
+      const auditObs = assignment.auditObservations || vals.auditObservations || assignment.remarks || vals.remarks || "";
+      if (auditRec && !vals.auditRecommendations) vals.auditRecommendations = auditRec;
+      if (auditObs && !vals.auditObservations) vals.auditObservations = auditObs;
+      return vals;
+    })(),
     tables: safeObjectValue(assignment.tables || (assignment.tablesData ? safeJsonParse(assignment.tablesData, {}) : (assignment.reviewTablesData ? safeJsonParse(assignment.reviewTablesData, {}) : assignment.reviewTables))),
     remarks: assignment.remarks || assignment.auditObservations || assignment.observations || assignment.reviewRemarks || "",
+    auditObservations: assignment.auditObservations || assignment.remarks || "",
+    auditRecommendations: assignment.auditRecommendations || assignment.recommendations || "",
     attachments: arrayValue(assignment.attachments),
   };
 };
@@ -2278,6 +2348,15 @@ const normalizeSubmission = (submission = {}) => {
     rawSections,
     rawSectionsCount,
     dynamicSectionsCount: rawSectionsCount ?? submission.dynamicSectionsCount ?? null,
+    totalAttachmentsCount: typeof submission.totalAttachmentsCount === "number"
+      ? submission.totalAttachmentsCount
+      : typeof submission.total_attachments_count === "number"
+        ? submission.total_attachments_count
+        : typeof submission.attachmentsCount === "number"
+          ? submission.attachmentsCount
+          : typeof submission.attachments_count === "number"
+            ? submission.attachments_count
+            : null,
     attachments: formData.attachments.length ? formData.attachments : submission.attachments || [],
     status,
     remarks: submission.remarks || "",
@@ -3421,6 +3500,7 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
         reviewStatus: "submitted",
         remarks: effectiveRemarks || signedValues.remarks || "",
         auditObservations: effectiveRemarks || signedValues.auditObservations || "",
+        auditRecommendations: signedValues.auditRecommendations || values.auditRecommendations || values.recommendations || "",
         valuesData,
         tablesData,
         attachments,
@@ -3464,13 +3544,19 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
             reviewStatus: "submitted",
             submittedAt: assignment.submittedAt || auditorReviewedOn,
             values: assignment.values && Object.keys(assignment.values).length
-              ? { ...assignment.values, remarks: auditorRemarks || assignment.values.remarks || signedValues.remarks, auditObservations: auditorRemarks || assignment.values.auditObservations || signedValues.auditObservations }
+              ? {
+                  ...assignment.values,
+                  remarks: auditorRemarks || assignment.values.remarks || signedValues.remarks,
+                  auditObservations: auditorRemarks || assignment.values.auditObservations || signedValues.auditObservations,
+                  auditRecommendations: signedValues.auditRecommendations || values.auditRecommendations || values.recommendations || assignment.values.auditRecommendations || "",
+                }
               : signedValues,
             tables: assignment.tables && Object.keys(assignment.tables).length
               ? assignment.tables
               : (auditorTables || submission.tables || {}),
             remarks: auditorRemarks || assignment.remarks || signedValues.remarks || "",
             auditObservations: auditorRemarks || assignment.auditObservations || signedValues.auditObservations || "",
+            auditRecommendations: signedValues.auditRecommendations || values.auditRecommendations || values.recommendations || assignment.auditRecommendations || "",
             attachments: assignment.attachments?.length ? assignment.attachments : attachments,
             auditorCorrectionRequested: false,
             correctionRequestedForAuditor: false,
@@ -3499,6 +3585,7 @@ export default function ReviewDashboard({ dashboardKind = "review" }) {
               tables: auditorTables || submission.tables || {},
               remarks: auditorRemarks || assignment.remarks || signedValues.remarks || "",
               auditObservations: auditorRemarks || assignment.auditObservations || signedValues.auditObservations || "",
+              auditRecommendations: signedValues.auditRecommendations || values.auditRecommendations || values.recommendations || assignment.auditRecommendations || "",
               attachments,
               auditorCorrectionRequested: false,
               correctionRequestedForAuditor: false,
@@ -5917,7 +6004,18 @@ function SubmissionCard({
                   : (submission.schema?.sections?.length || submission.sections.length))
           }
         />
-        <InfoPill label="Attachments" value={submission.attachments.length} />
+        <InfoPill
+          label="Attachments"
+          value={
+            typeof submission.totalAttachmentsCount === "number"
+              ? submission.totalAttachmentsCount
+              : typeof submission.attachmentsCount === "number"
+                ? submission.attachmentsCount
+                : Array.isArray(submission.attachments)
+                  ? submission.attachments.length
+                  : 0
+          }
+        />
         {isApprovedReport(submission) && <InfoPill label="Audit type" value={auditLabels[submission.auditType]} />}
         {isApprovedReport(submission) && <InfoPill label="Cycle / Version" value={`${submission.auditCycle} / V${submission.version}`} />}
       </div>
@@ -6010,19 +6108,57 @@ function PreviousReportOnlyView({
 
   const activeSchema = resolvedSchema || (submission.auditType === "academic" ? { ...(submission.schema || {}), sections: submission.sections || [] } : null);
 
-  const previousInternalReport = (submission.versionHistory || [])
-    .filter((entry) =>
-      (
-        String(entry.reportCategory || "").toLowerCase() === "internal" ||
-        (
-          String(submission.reportCategory || "").toLowerCase() === "external" &&
-          Number(entry.version || 0) < Number(submission.version || 0)
+  const internalAssignmentsFromSubmission = (submission.auditorAssignments || []).filter(
+    (assignment) => normalizeUserRole(assignment.auditorType || assignment.type || "").includes("internal")
+  );
+  const isExternalSubmission =
+    String(submission.reportCategory || "").toLowerCase() === "external" ||
+    String(submission.forwardedAuditorType || "").toLowerCase() === "external" ||
+    Number(submission.version || 1) > 1;
+
+  const previousInternalReport = isExternalSubmission
+    ? ((submission.versionHistory || [])
+        .filter((entry) =>
+          (
+            String(entry.reportCategory || "").toLowerCase() === "internal" ||
+            Number(entry.version || 0) < Number(submission.version || 0)
+          ) &&
+          (getSubmissionAuditorSignOff(entry).name || hasAcademicPartEValues(entry?.values) || (entry.auditorAssignments && entry.auditorAssignments.length > 0))
         )
-      ) &&
-      (getSubmissionAuditorSignOff(entry).name || hasAcademicPartEValues(entry?.values))
-    )
-    .sort((first, second) => Number(second.version || 0) - Number(first.version || 0))[0];
-  const previousInternalAuditor = getSubmissionAuditorSignOff(previousInternalReport);
+        .sort((first, second) => Number(second.version || 0) - Number(first.version || 0))[0] || (
+          internalAssignmentsFromSubmission.length > 0
+            ? {
+                reportCategory: "internal",
+                auditCycle: submission.auditCycle,
+                version: 1,
+                values: internalAssignmentsFromSubmission[0].values || {},
+                tables: internalAssignmentsFromSubmission[0].tables || {},
+                remarks: internalAssignmentsFromSubmission[0].remarks || internalAssignmentsFromSubmission[0].auditObservations || "",
+                auditorReviewedBy: internalAssignmentsFromSubmission[0].auditorName,
+                auditorReviewedByDesignation: internalAssignmentsFromSubmission[0].auditorDesignation,
+                auditorReviewedByEmail: internalAssignmentsFromSubmission[0].auditorEmail,
+                auditorReviewedOn: internalAssignmentsFromSubmission[0].submittedAt || internalAssignmentsFromSubmission[0].completedAt,
+                auditorAssignments: internalAssignmentsFromSubmission,
+              }
+            : null
+        ))
+    : null;
+
+  const fallbackInternalAuditor = internalAssignmentsFromSubmission.length > 0
+    ? {
+        name: internalAssignmentsFromSubmission[0].auditorName || "Internal Auditor",
+        designation: internalAssignmentsFromSubmission[0].auditorDesignation || "-",
+        role: internalAssignmentsFromSubmission[0].role || "Internal Auditor",
+        email: internalAssignmentsFromSubmission[0].auditorEmail || "",
+        date: internalAssignmentsFromSubmission[0].submittedAt || internalAssignmentsFromSubmission[0].completedAt || "",
+        remarks: internalAssignmentsFromSubmission[0].remarks || internalAssignmentsFromSubmission[0].auditObservations || internalAssignmentsFromSubmission[0].auditRecommendations || "",
+      }
+    : null;
+
+  const resolvedInternalSignOff = getSubmissionAuditorSignOff(previousInternalReport);
+  const previousInternalAuditor = isExternalSubmission
+    ? (resolvedInternalSignOff.name ? resolvedInternalSignOff : (fallbackInternalAuditor || resolvedInternalSignOff))
+    : resolvedInternalSignOff;
   const currentAuditor = getSubmissionAuditorSignOff(submission);
 
   return (
@@ -6366,7 +6502,18 @@ function FullFormReview({
 
     return list;
   }, [submission, allSubmissions, previousInternalReport]);
-  const previousInternalAuditor = getSubmissionAuditorSignOff(previousInternalReport);
+  const resolvedInternalSignOff = getSubmissionAuditorSignOff(previousInternalReport);
+  const firstPreviousInternal = allPreviousInternalAssignments[0];
+  const previousInternalAuditor = isExternalSubmission
+    ? (resolvedInternalSignOff.name ? resolvedInternalSignOff : (firstPreviousInternal ? {
+        name: firstPreviousInternal.auditorName || "Internal Auditor",
+        designation: firstPreviousInternal.auditorDesignation || "-",
+        role: firstPreviousInternal.role || "Internal Auditor",
+        email: firstPreviousInternal.auditorEmail || "",
+        date: firstPreviousInternal.submittedAt || "",
+        remarks: firstPreviousInternal.remarks || "",
+      } : resolvedInternalSignOff))
+    : resolvedInternalSignOff;
   const currentAuditor = getSubmissionAuditorSignOff(submission);
   const isExternalAcademicReport =
     submission.auditType === "academic" && isExternalSubmission;
@@ -8254,14 +8401,52 @@ function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType,
               </div>
             )}
 
-            {Boolean(reviewRemarkField || (finalRemarks && String(finalRemarks).trim())) && (
+            {reviewRemarkFields.length > 0 && reviewRemarkFields.map((rf) => {
+              const val = resolveFieldValue(rf, values) || (
+                rf.fieldKey === "auditObservations" || rf.id === "auditObservations"
+                  ? (assignment.auditObservations || assignment.remarks)
+                  : rf.fieldKey === "auditRecommendations" || rf.id === "auditRecommendations"
+                    ? (assignment.auditRecommendations || assignment.recommendations)
+                    : ""
+              );
+              return (
+                <div key={rf.id || rf.fieldKey || rf.label} style={{ marginTop: 14, width: "100%" }}>
+                  <div style={styles.auditorReviewDocsField}>
+                    <div style={styles.readOnlyLabel}>
+                      {rf.label || "Review Remark"}
+                    </div>
+                    <div style={styles.auditorReviewValue}>
+                      {renderValue(val, { isAttachment: false })}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {reviewRemarkFields.length === 0 && (
               <div style={{ marginTop: 14, width: "100%" }}>
                 <div style={styles.auditorReviewDocsField}>
                   <div style={styles.readOnlyLabel}>
-                    {reviewRemarkField?.label || "Review Remarks / Observations"}
+                    Observations of the Audit Team
                   </div>
                   <div style={styles.auditorReviewValue}>
-                    {String(finalRemarks || "").trim() ? renderValue(finalRemarks, { isAttachment: false }) : "-"}
+                    {renderValue(remarks || values.auditObservations || assignment.auditObservations || "", { isAttachment: false })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {!reviewRemarkFields.some((rf) => {
+              const key = String(rf.fieldKey || rf.id || rf.label || "").toLowerCase();
+              return key.includes("recommendation");
+            }) && (
+              <div style={{ marginTop: 14, width: "100%" }}>
+                <div style={styles.auditorReviewDocsField}>
+                  <div style={styles.readOnlyLabel}>
+                    Recommendations of the Audit Team
+                  </div>
+                  <div style={styles.auditorReviewValue}>
+                    {renderValue(values.auditRecommendations || assignment.auditRecommendations || values.recommendations || assignment.recommendations || "", { isAttachment: false })}
                   </div>
                 </div>
               </div>
