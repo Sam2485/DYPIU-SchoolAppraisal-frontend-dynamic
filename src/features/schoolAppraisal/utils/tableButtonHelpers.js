@@ -453,7 +453,7 @@ export const getScopedTableRows = (tablesData = {}, table = {}, instance = null,
  */
 export const isTextFieldBlock = (table) => {
   if (!table) return false;
-  if (table.isTextField === true || table.tableType === 'field' || table.blockType === 'field') return true;
+  if (table.isTextField === true || table.tableType === 'field' || table.blockType === 'field' || table.blockType === 'TEXT_FIELD') return true;
   const key = String(table.tableKey || table.idString || '').toLowerCase();
   if (key.startsWith('textfield_') || key.startsWith('text_field_')) return true;
   if (table.isRepeatable === false && Array.isArray(table.fields) && table.fields.length === 1 && table.fields[0]?.fieldKey === 'value') {
