@@ -267,12 +267,13 @@ const PreviewTableCell = ({
 
   // 6. TEXTAREA CELL
   if (type === 'TEXTAREA') {
+    const textVal = cellVal && typeof cellVal === 'object' ? (cellVal.name || cellVal.fileName || cellVal.value || '') : (cellVal || '');
     return (
       <textarea
         rows={2}
         disabled={isLocked}
         placeholder={`Enter ${colName}...`}
-        value={cellVal || ''}
+        value={textVal}
         onChange={(e) => onCellChange(tableKey, rowIndex, colName, e.target.value)}
         style={{
           width: '100%',
@@ -290,12 +291,13 @@ const PreviewTableCell = ({
   }
 
   // 7. DEFAULT TEXT CELL
+  const textVal = cellVal && typeof cellVal === 'object' ? (cellVal.name || cellVal.fileName || cellVal.value || '') : (cellVal || '');
   return (
     <input
       type="text"
       disabled={isLocked}
       placeholder={`Enter ${colName}...`}
-      value={cellVal || ''}
+      value={textVal}
       onChange={(e) => onCellChange(tableKey, rowIndex, colName, e.target.value)}
       style={{
         width: '100%',

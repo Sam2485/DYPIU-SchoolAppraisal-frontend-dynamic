@@ -1,6 +1,6 @@
 import { toast } from "../../../components/feedback/feedbackBus";
 import { useMemo, useState } from "react";
-import { columnsWithSerial, serialColumnFor } from "../components/tableHelpers";
+import { columnsWithSerial, serialColumnFor, isAttachmentColumn, isAttachmentField } from "../components/tableHelpers";
 import { SIGN_OFF_FIELD, downloadSubmissionPdfReport, downloadSubmissionExcelReport, triggerBlobDownload } from "../../../api/submissions";
 import { formatDateDDMMYYYY } from "../../../utils/dateFormat";
 import { getAttachmentUrl } from "../../../utils/attachment";
@@ -427,6 +427,7 @@ export default function AdministrativeReportPanel({
                             <tr key={`${table.id || tableKey}-${instance || 'main'}-${rowIndex}`}>
                               {columns.map((column) => {
                                 const isSerial = Boolean(serialColumnFor([column]));
+                                const isAttachment = isAttachmentColumn(column, table);
                                 return (
                                   <td
                                     key={column}
@@ -435,7 +436,7 @@ export default function AdministrativeReportPanel({
                                       ...(isSerial ? { width: "65px", maxWidth: "70px", textAlign: "center" } : {}),
                                     }}
                                   >
-                                    <ReportCellValue value={getCellValue(row, column, table)} />
+                                    <ReportCellValue value={getCellValue(row, column, table)} isAttachment={isAttachment} />
                                   </td>
                                 );
                               })}
@@ -594,6 +595,7 @@ function ReportFieldsTable({ fields, values }) {
           return !isOmittedReportText(field.label) && !isOmittedReportText(val);
         }).map((field) => {
           const val = values[field.id] ?? (field.fieldKey ? values[field.fieldKey] : undefined);
+          const isAttachment = isAttachmentField(field);
           return field.kind === "heading" ? (
             <tr key={field.id}>
               <th className="generated-report__detail-heading" colSpan="2" style={styles.detailHeading}>{field.label}</th>
@@ -601,7 +603,7 @@ function ReportFieldsTable({ fields, values }) {
           ) : (
             <tr key={field.id}>
               <th scope="row" style={styles.detailLabel}>{field.label}</th>
-              <td style={styles.detailValue}><ReportCellValue value={val} /></td>
+              <td style={styles.detailValue}><ReportCellValue value={val} isAttachment={isAttachment} /></td>
             </tr>
           );
         })}
@@ -610,18 +612,32 @@ function ReportFieldsTable({ fields, values }) {
   );
 }
 
-function ReportCellValue({ value: rawValue }) {
+function ReportCellValue({ value: rawValue, isAttachment }) {
   const value = parseIfJson(rawValue);
   if (!value) return "-";
+
+  if (isAttachment === false) {
+    if (Array.isArray(value)) {
+      const items = value
+        .map((item) => (item && typeof item === "object" ? item.name || item.fileName || item.value || "" : String(item)))
+        .filter(Boolean);
+      return items.length ? items.join(", ") : "-";
+    }
+    if (typeof value === "object") {
+      return value.name || value.fileName || value.value || "-";
+    }
+    return isOmittedReportText(value) ? "-" : String(value);
+  }
+
   if (Array.isArray(value)) {
     return value.length ? (
-      <div>{value.map((file, index) => <ReportCellValue key={`${file?.url || file?.name || "attachment"}-${index}`} value={file} />)}</div>
+      <div>{value.map((file, index) => <ReportCellValue key={`${file?.url || file?.name || "attachment"}-${index}`} value={file} isAttachment={isAttachment} />)}</div>
     ) : "-";
   }
   if (typeof value !== "object") return isOmittedReportText(value) ? "-" : String(value);
   const name = value.name || value.fileName || value.filename || "View attachment";
   const url = value.url || value.publicUrl || value.downloadUrl;
-  return url ? <a className="generated-report__attachment" href={getAttachmentUrl(url)} target="_blank" rel="noreferrer">{name}</a> : name;
+  return url && isAttachment !== false ? <a className="generated-report__attachment" href={getAttachmentUrl(url)} target="_blank" rel="noreferrer">{name}</a> : name;
 }
 
 const styles = {

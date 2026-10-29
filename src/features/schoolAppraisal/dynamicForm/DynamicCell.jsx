@@ -149,25 +149,27 @@ export const DynamicCell = ({
   // 5. TEXTAREA CELL
   if (type === 'TEXTAREA') {
     const maxLen = textareaMaxLengths[colName] || fieldDef?.validationRules?.maxLength || 500;
+    const textVal = value && typeof value === 'object' ? (value.name || value.fileName || value.value || '') : (value ?? '');
     return (
       <textarea
         className="form-control form-control-sm"
         rows={2}
         disabled={readOnly}
         maxLength={maxLen}
-        value={value ?? ''}
+        value={textVal}
         onChange={(e) => onChange(e.target.value)}
       />
     );
   }
 
   // 6. DEFAULT TEXT CELL
+  const textVal = value && typeof value === 'object' ? (value.name || value.fileName || value.value || '') : (value ?? '');
   return (
     <input
       type="text"
       className="form-control form-control-sm"
       disabled={readOnly}
-      value={value ?? ''}
+      value={textVal}
       onChange={(e) => onChange(e.target.value)}
     />
   );

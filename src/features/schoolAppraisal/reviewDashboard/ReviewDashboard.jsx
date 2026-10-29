@@ -30,7 +30,7 @@ import { fetchCurrentUser, fetchUsers } from "../../../api/users";
 import AppSidebar from "../components/AppSidebar";
 import AuditReportPanel from "../components/AuditReportPanel";
 import { InlineSpinner, LoadingState, SkeletonList } from "../components/LoadingState";
-import { columnsWithSerial, serialColumnFor, numberedRowFor, withSerialNumbers } from "../components/tableHelpers";
+import { columnsWithSerial, serialColumnFor, numberedRowFor, withSerialNumbers, isAttachmentColumn, isAttachmentField } from "../components/tableHelpers";
 import AuditTable from "../components/AuditTable";
 import { TableButtonGroup } from "../components/TableButtonGroup";
 import { partitionTablesByButtons, getScopedTableRows, buildScopedTableKey, normalizeTableButtons, getSectionKey, isTextFieldBlock } from "../utils/tableButtonHelpers";
@@ -8095,12 +8095,13 @@ function ReadOnlyFieldGrid({ fields, values }) {
 
         const rawType = String(field.fieldType || field.type || "text").trim().toLowerCase();
         const isWide = rawType === "textarea" || rawType === "paragraph" || rawType === "file" || rawType === "attachment" || rawType === "document";
+        const isFile = isAttachmentField(field);
         const val = resolveFieldValue(field, values);
 
         return (
           <div key={field.id} style={isWide ? styles.readOnlyWideField : styles.readOnlyField}>
             <div style={styles.readOnlyLabel}>{field.label}</div>
-            <div style={styles.readOnlyValue}>{renderValue(val)}</div>
+            <div style={styles.readOnlyValue}>{renderValue(val, { isAttachment: isFile })}</div>
           </div>
         );
       })}
@@ -8212,14 +8213,13 @@ function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType,
             {headerFields.length > 0 && (
               <div className="review-auditor-review-fields" style={styles.auditorReviewFieldGrid}>
                 {headerFields.map((field) => {
-                  const rawType = String(field.fieldType || field.type || "text").trim().toLowerCase();
-                  const isFile = rawType === "file" || rawType === "attachment" || rawType === "document";
+                  const isFile = isAttachmentField(field);
                   const val = resolveFieldValue(field, values);
                   return (
                     <div key={field.id} style={isFile ? styles.auditorReviewDocsField : styles.auditorReviewField}>
                       <div style={styles.readOnlyLabel}>{field.label}</div>
                       <div style={isFile ? styles.auditorReviewDocsValue : styles.auditorReviewValue}>
-                        {renderValue(val)}
+                        {renderValue(val, { isAttachment: isFile })}
                       </div>
                     </div>
                   );
@@ -8261,7 +8261,7 @@ function AuditorAssignmentReviewGrid({ fields, assignments, fallbackAuditorType,
                     {reviewRemarkField?.label || "Review Remarks / Observations"}
                   </div>
                   <div style={styles.auditorReviewValue}>
-                    {String(finalRemarks || "").trim() ? renderValue(finalRemarks) : "-"}
+                    {String(finalRemarks || "").trim() ? renderValue(finalRemarks, { isAttachment: false }) : "-"}
                   </div>
                 </div>
               </div>
@@ -8311,12 +8311,17 @@ function ReadOnlyTable({ table, rows = [], values = {} }) {
 
       {standaloneFields.length > 0 && (
         <div style={styles.readOnlyFieldGrid}>
-          {standaloneFields.map((field) => (
-            <div key={field.id} style={styles.readOnlyField}>
-              <div style={styles.readOnlyLabel}>{field.label}</div>
-              <div style={styles.readOnlyValue}>{renderValue(resolveFieldValue(field, values))}</div>
-            </div>
-          ))}
+          {standaloneFields.map((field) => {
+            const isFile = isAttachmentField(field);
+            return (
+              <div key={field.id} style={styles.readOnlyField}>
+                <div style={styles.readOnlyLabel}>{field.label}</div>
+                <div style={styles.readOnlyValue}>
+                  {renderValue(resolveFieldValue(field, values), { isAttachment: isFile })}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -8345,6 +8350,7 @@ function ReadOnlyTable({ table, rows = [], values = {} }) {
               <tr key={`${table.id || table.tableKey || "tbl"}-readonly-${rowIndex}`}>
                 {columns.map((column) => {
                   const isSerial = Boolean(serialColumnFor([column]));
+                  const isAttachment = isAttachmentColumn(column, table);
                   return (
                     <td
                       key={column}
@@ -8353,7 +8359,9 @@ function ReadOnlyTable({ table, rows = [], values = {} }) {
                         ...(isSerial ? { width: "65px", maxWidth: "70px", textAlign: "center" } : {}),
                       }}
                     >
-                      {renderValue(isSerial ? (row[column] || String(rowIndex + 1)) : getCellValue(row, column, table))}
+                      {isSerial
+                        ? (row[column] || String(rowIndex + 1))
+                        : renderValue(getCellValue(row, column, table), { isAttachment })}
                     </td>
                   );
                 })}
@@ -8366,36 +8374,75 @@ function ReadOnlyTable({ table, rows = [], values = {} }) {
   );
 }
 
-function renderValue(rawValue) {
+function renderValue(rawValue, options = {}) {
+  const isAttachmentField = options.isAttachment;
   const value = parseIfJson(rawValue);
 
+  // 1. If explicitly known to NOT be an attachment (text column, text input, remarks, etc.):
+  if (isAttachmentField === false) {
+    if (value === undefined || value === null || String(value).trim() === "") return "-";
+    if (Array.isArray(value)) {
+      const items = value
+        .map((item) => {
+          if (item && typeof item === "object") {
+            return item.name || item.fileName || item.filename || item.value || "";
+          }
+          return String(item);
+        })
+        .filter(Boolean);
+      return items.length ? items.join(", ") : "-";
+    }
+    if (value && typeof value === "object") {
+      return value.name || value.fileName || value.filename || value.value || "-";
+    }
+    return String(value).trim();
+  }
+
+  // 2. Arrays of values
   if (Array.isArray(value)) {
     return value.length ? (
       <div style={styles.attachmentList}>
         {value.map((file, index) => (
           <div key={`${file?.url || file?.name || "attachment"}-${index}`} style={styles.attachmentItem}>
-            {renderValue(file)}
+            {renderValue(file, options)}
           </div>
         ))}
       </div>
     ) : "-";
   }
 
-  if (typeof value === "string" && (value.includes("/api/attachments/") || /\.(pdf|docx?|xlsx?|png|jpe?g)$/i.test(value.trim()))) {
+  // 3. String values:
+  if (typeof value === "string") {
     const rawStr = value.trim();
-    const fileNameMatch = rawStr.match(/fileName=([^&]+)/i);
-    const fileName = fileNameMatch ? decodeURIComponent(fileNameMatch[1]) : rawStr.split("/").pop() || "Document";
-    const attachmentObj = {
-      name: fileName,
-      fileName: fileName,
-      url: rawStr,
-    };
-    return renderValue(attachmentObj);
+    // Only convert a string into an attachment preview if:
+    // a) It is an actual server upload URL path (/api/attachments/ or /uploads/), OR
+    // b) It is explicitly an attachment field/column (isAttachmentField === true) and ends with a recognized document extension.
+    const hasAttachmentUrl = rawStr.includes("/api/attachments/") || rawStr.includes("/uploads/");
+    const isAttachmentExt = /\.(pdf|docx?|xlsx?|png|jpe?g)$/i.test(rawStr);
+
+    if (hasAttachmentUrl || (isAttachmentField === true && isAttachmentExt)) {
+      const fileNameMatch = rawStr.match(/fileName=([^&]+)/i);
+      const fileName = fileNameMatch ? decodeURIComponent(fileNameMatch[1]) : rawStr.split("/").pop() || "Document";
+      const attachmentObj = {
+        name: fileName,
+        fileName: fileName,
+        url: rawStr,
+      };
+      return renderValue(attachmentObj, options);
+    }
+
+    return rawStr || "-";
   }
 
+  // 4. Attachment objects:
   if (isAttachmentValue(value)) {
     const name = value.name || value.fileName || value.filename || "Attachment";
     const url = value.url || value.publicUrl || value.downloadUrl;
+
+    if (isAttachmentField === false) {
+      return name;
+    }
+
     const canPreview = isBrowserPreviewableAttachment(value);
     return (
       <div style={styles.attachmentPreview}>
